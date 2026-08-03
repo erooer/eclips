@@ -65,6 +65,7 @@ namespace wServer.realm.entities
 
             if (potentialTrader.ContainsKey(target))
             {
+                Log.InfoFormat("[TRADE] started player={0} target={1}.", Name, target.Name);
                 tradeTarget = target;
                 trade = new bool[12];
                 tradeAccepted = false;
@@ -125,6 +126,7 @@ namespace wServer.realm.entities
 
         public void CancelTrade()
         {
+            Log.InfoFormat("[TRADE] canceled player={0} target={1}.", Name, tradeTarget?.Name);
             _client.SendPacket(new TradeDone()
             {
                 Code = 1,

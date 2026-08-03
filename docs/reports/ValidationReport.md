@@ -1,6 +1,6 @@
 Cosmic Realms Static Validation Report
 Scope: all
-Generated: 2026-08-01T22:35:04.665Z
+Generated: 2026-08-03T20:54:41.103Z
 
 Errors (0)
 - none
@@ -1563,5 +1563,5 @@ Warnings (1555)
 - World 'GuildHall' registers non-portal 'Guild Hall Portal'
 
 Summary
-- Resources: 6705 unique types (1361 grounds).
+- Resources: 6707 unique types (1361 grounds).
 - Maps: 198; largest Moon.jm (512x513); 186740 static object placements.

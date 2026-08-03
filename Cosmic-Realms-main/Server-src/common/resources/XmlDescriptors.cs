@@ -371,7 +371,8 @@ namespace common.resources
         NoDamageAbility,
         BurningLightning,
         FFragments,
-        OminousSealBlast
+        OminousSealBlast,
+        MaxStats
     }
 
     public class ActivateEffect

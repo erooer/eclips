@@ -232,6 +232,8 @@ namespace wServer.realm.entities
 
         private bool CanConsume(Item item)
         {
+            if (item.ActivateEffects.Any(effect => effect.Effect == ActivateEffects.MaxStats))
+                return Client?.Character != null && Manager.Resources.GameData.Classes.ContainsKey(ObjectType);
             var affectsHealth = item.ActivateEffects.Any(effect =>
                 effect.Effect == ActivateEffects.Heal || effect.Effect == ActivateEffects.HealNova);
             var affectsMana = item.ActivateEffects.Any(effect =>
@@ -243,6 +245,27 @@ namespace wServer.realm.entities
             return (!affectsHealth && !affectsMana) ||
                    (affectsHealth && !HasConditionEffect(ConditionEffects.Sick) && HP < Stats[0]) ||
                    (affectsMana && MP < Stats[1]);
+        }
+
+        // Shared by the admin /max command and the testing-only Max Potion.
+        // Moon bonuses are preserved exactly as they are by the existing command.
+        public bool MaxCharacterStats()
+        {
+            var pd = Manager.Resources.GameData.Classes[ObjectType];
+            var chr = Client.Character;
+            if (pd == null || chr == null)
+                return false;
+            Stats.Base[0] = pd.Stats[0].MaxValue + chr.LifePotsMoon;
+            Stats.Base[1] = pd.Stats[1].MaxValue + chr.ManaPotsMoon;
+            Stats.Base[2] = pd.Stats[2].MaxValue + chr.AttackStatsMoon;
+            Stats.Base[3] = pd.Stats[3].MaxValue + chr.DefensePotsMoon;
+            Stats.Base[4] = pd.Stats[4].MaxValue + chr.SpeedPotsMoon;
+            Stats.Base[5] = pd.Stats[5].MaxValue + chr.DexterityPotsMoon;
+            Stats.Base[6] = pd.Stats[6].MaxValue + chr.VitalityPotsMoon;
+            Stats.Base[7] = pd.Stats[7].MaxValue + chr.WisdomPotsMoon;
+            Stats.Base[11] = pd.Stats[11].MaxValue + chr.CritDmgPotsMoon;
+            Stats.Base[12] = pd.Stats[12].MaxValue + chr.CritHitPotsMoon;
+            return true;
         }
 
         private bool PersistConsumableState()
@@ -530,6 +553,10 @@ namespace wServer.realm.entities
 
                 switch (eff.Effect)
                 {
+                    case ActivateEffects.MaxStats:
+                        if (MaxCharacterStats())
+                            SendInfo("Your character stats have been maxed.");
+                        break;
                     case ActivateEffects.OminousSealBlast:
                         AEOminousSealBlast(time, item, target, eff);
                         break;

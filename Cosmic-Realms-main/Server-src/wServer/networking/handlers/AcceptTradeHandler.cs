@@ -25,12 +25,19 @@ namespace wServer.networking.handlers
             var player = client.Player;
             if (player == null || IsTest(client))
                 return;
-            if (player.tradeAccepted) return;
+            if (player.tradeAccepted || player.tradeTarget == null || player.trade == null ||
+                packet.MyOffer == null || packet.YourOffer == null ||
+                packet.MyOffer.Length != 12 || packet.YourOffer.Length != 12)
+            {
+                Log.WarnFormat("[TRADE] rejected confirmation from player={0}: invalid or stale trade state.", player.Name);
+                return;
+            }
 
             player.trade = packet.MyOffer;
             if (player.tradeTarget.trade.SequenceEqual(packet.YourOffer))
             {
                 player.tradeAccepted = true;
+                Log.InfoFormat("[TRADE] first confirmation player={0} target={1}.", player.Name, player.tradeTarget.Name);
                 player.tradeTarget.Client.SendPacket(new TradeAccepted()
                 {
                     MyOffer = player.tradeTarget.trade,
@@ -39,13 +46,6 @@ namespace wServer.networking.handlers
 
                 if (player.tradeAccepted && player.tradeTarget.tradeAccepted)
                 {
-                    if (player.Client.Account.Admin != player.tradeTarget.Client.Account.Admin)
-                    {
-                        player.tradeTarget.CancelTrade();
-                        player.CancelTrade();
-                        return;
-                    }
-
                     DoTrade(player);
                 }
             }
@@ -53,19 +53,10 @@ namespace wServer.networking.handlers
 
         private void DoTrade(Player player)
         {
-            var failedMsg = "Error while trading. Trade unsuccessful.";
-            var msg = "Trade Successful!";
-            var thisItems = new List<Item>();
-            var targetItems = new List<Item>();
-
             var tradeTarget = player.tradeTarget;
-
-            var targetTradedItems = "";
-            var playerTradedItems = "";
-            // make sure trade targets are valid
             if (tradeTarget == null || player.Owner == null || tradeTarget.Owner == null || player.Owner != tradeTarget.Owner)
             {
-                TradeDone(player, tradeTarget, failedMsg);
+                Fail(player, tradeTarget, "Trade participants are no longer in the same world.");
                 return;
             }
 
@@ -74,73 +65,65 @@ namespace wServer.networking.handlers
 
             var pInvTrans = player.Inventory.CreateTransaction();
             var tInvTrans = tradeTarget.Inventory.CreateTransaction();
-            
-            for (int i = 4; i < player.trade.Length; i++)
-                if (player.trade[i])
-                {
-                    thisItems.Add(player.Inventory[i]);
-                    pInvTrans[i] = null;
-                }
-
-            for (int i = 4; i < tradeTarget.trade.Length; i++)
-                if (tradeTarget.trade[i])
-                {
-                    targetItems.Add(tradeTarget.Inventory[i]);
-                    tInvTrans[i] = null;
-                }
-            
-            // move thisItems -> tradeTarget
-            for (var i = 0; i < 12; i++)
-                for (var j = 0; j < thisItems.Count; j++)
-                {
-                    if ((tradeTarget.SlotTypes[i] == 0 &&
-                            tInvTrans[i] == null) ||
-                        (thisItems[j] != null &&
-                            tradeTarget.SlotTypes[i] == thisItems[j].SlotType &&
-                            tInvTrans[i] == null))
-                    {
-                        tInvTrans[i] = thisItems[j];
-                        playerTradedItems += thisItems[j].DisplayName + ", ";
-                        thisItems.Remove(thisItems[j]);
-                        break;
-                    }
-                }
-
-            // move tradeItems -> this
-            for (var i = 0; i < 12; i++)
-                for (var j = 0; j < targetItems.Count; j++)
-                {
-                    if ((player.SlotTypes[i] == 0 &&
-                            pInvTrans[i] == null) ||
-                        (targetItems[j] != null &&
-                            player.SlotTypes[i] == targetItems[j].SlotType &&
-                            pInvTrans[i] == null))
-                    {
-                        pInvTrans[i] = targetItems[j];
-                        targetTradedItems += targetItems[j].DisplayName + ", ";
-                        targetItems.Remove(targetItems[j]);
-                        break;
-                    }
-                }
-            playerTradedItems = String.IsNullOrEmpty(playerTradedItems) ? "Nothing" : playerTradedItems;
-            targetTradedItems = String.IsNullOrEmpty(targetTradedItems) ? "Nothing" : targetTradedItems;
-           // wServer.networking.webhooks.Webhooks.SendToDiscordAsTradeLog("Trade","",$"**{player.Name}** traded: \n **{playerTradedItems}** \nfor\n**{targetTradedItems}**\nWith **{tradeTarget.Name}**");
-            // save
-            if (!Inventory.Execute(pInvTrans, tInvTrans))
+            var offeredByPlayer = GetOfferedItems(player, pInvTrans);
+            var offeredByTarget = GetOfferedItems(tradeTarget, tInvTrans);
+            if (offeredByPlayer == null || offeredByTarget == null ||
+                !PlaceItems(tInvTrans, offeredByPlayer) || !PlaceItems(pInvTrans, offeredByTarget))
             {
-                TradeDone(player, tradeTarget, failedMsg);
+                Fail(player, tradeTarget, "Both players need enough free inventory space for this trade.");
                 return;
             }
 
-            // check for lingering items
-            if (thisItems.Count > 0 ||
-                targetItems.Count > 0)
+            if (!Inventory.Execute(pInvTrans, tInvTrans))
             {
-                msg = "An error occured while trading! Some items were lost!";
+                Fail(player, tradeTarget, "The inventory changed before the trade could be completed.");
+                return;
             }
+            // Persist both character snapshots immediately after the single in-memory
+            // transaction.  This matches the normal save path and closes the window
+            // where a disconnect could reload a pre-trade inventory.
+            player.SaveToCharacter();
+            tradeTarget.SaveToCharacter();
+            player.Client.Character.FlushAsync();
+            tradeTarget.Client.Character.FlushAsync();
+            Log.InfoFormat("[TRADE] completed player={0} target={1} sent={2} received={3}.",
+                player.Name, tradeTarget.Name, offeredByPlayer.Count, offeredByTarget.Count);
+            TradeDone(player, tradeTarget, "Trade Successful!");
+        }
 
-            // trade successful, notify and save
-            TradeDone(player, tradeTarget, msg);
+        private static List<Item> GetOfferedItems(Player player, InventoryTransaction transaction)
+        {
+            if (player.trade == null || player.trade.Length != 12)
+                return null;
+            var items = new List<Item>();
+            for (var i = 4; i < 12; i++)
+                if (player.trade[i])
+                {
+                    var item = transaction[i];
+                    if (item == null || item.Soulbound)
+                        return null;
+                    items.Add(item);
+                    transaction[i] = null;
+                }
+            return items;
+        }
+
+        private static bool PlaceItems(InventoryTransaction transaction, IEnumerable<Item> items)
+        {
+            foreach (var item in items)
+            {
+                var slot = transaction.GetAvailableInventorySlot(item);
+                if (slot < 4)
+                    return false;
+                transaction[slot] = item;
+            }
+            return true;
+        }
+
+        private void Fail(Player player, Player target, string reason)
+        {
+            Log.WarnFormat("[TRADE] validation failure player={0} target={1}: {2}", player.Name, target?.Name, reason);
+            TradeDone(player, target, "Trade unsuccessful: " + reason);
         }
 
         private void TradeDone(Player player, Player tradeTarget, string msg)

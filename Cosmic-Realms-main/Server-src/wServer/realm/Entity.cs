@@ -560,10 +560,14 @@ namespace wServer.realm
 
             var tile = Owner.Map[xx, yy];
 
+            var tileDesc = Manager.Resources.GameData.Tiles[tile.TileId];
+            if (tileDesc?.NoWalk == true)
+                return true;
+
             if (tile.ObjType != 0)
             {
                 var objDesc = Manager.Resources.GameData.ObjectDescs[tile.ObjType];
-                if (objDesc?.FullOccupy == true)
+                if (objDesc?.FullOccupy == true || objDesc?.EnemyOccupySquare == true)
                     return true;
             }
             return false;
@@ -624,6 +628,7 @@ namespace wServer.realm
                 case "CharacterChanger":
                 case "MoneyChanger":
                 case "NameChanger":
+                case "PotionStorageObject":
                     return new StaticObject(manager, id, StaticObject.GetHP(node), true, false, true);
                 case "GuildRegister":
                 case "GuildChronicle":

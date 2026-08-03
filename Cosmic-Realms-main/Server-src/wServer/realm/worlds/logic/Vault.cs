@@ -112,6 +112,42 @@ namespace wServer.realm.worlds.logic
                 EnterWorld(x);
             }
 
+            // The storage UI already uses the account's PotionStoragePotions fields.
+            // Add one local access point beside the existing Daily Login/Tinkerer hub;
+            // it is a view only, not another inventory or persistence system.
+            ushort dailyLoginType;
+            ushort tinkererType;
+            Manager.Resources.GameData.IdToObjectType.TryGetValue("Daily Login Rewards", out dailyLoginType);
+            Manager.Resources.GameData.IdToObjectType.TryGetValue("Quest Rewards", out tinkererType);
+            var seer = StaticObjects.Values.FirstOrDefault(e =>
+                e.ObjectType == dailyLoginType || e.ObjectType == tinkererType);
+            if (seer != null)
+            {
+                var storage = Entity.Resolve(Manager, "Potion Storage");
+                if (storage != null)
+                {
+                    var placed = false;
+                    for (var radius = 2; radius <= 5 && !placed; radius++)
+                        for (var dx = -radius; dx <= radius && !placed; dx++)
+                            for (var dy = -radius; dy <= radius; dy++)
+                            {
+                                if (Math.Abs(dx) != radius && Math.Abs(dy) != radius)
+                                    continue;
+                                var x = (int)seer.X + dx + .5f;
+                                var y = (int)seer.Y + dy + .5f;
+                                if (!IsPassable(x, y, true))
+                                    continue;
+                                // Static objects export their server-side Size stat.  Set it
+                                // here so it cannot override the XML's 25% display size.
+                                storage.SetDefaultSize(25);
+                                storage.Move(x, y);
+                                EnterWorld(storage);
+                                placed = true;
+                                break;
+                            }
+                }
+            }
+
             var gifts = _client.Account.Gifts.ToList();
             while (gifts.Count > 0 && giftChestPosition.Count > 0)
             {

@@ -30470,8 +30470,8 @@
     <Class>Equipment</Class>
     <Item/>
     <Texture>
-      <File>lofiObj8</File>
-      <Index>0x13</Index>
+      <File>OminousBelowItems</File>
+      <Index>3</Index>
     </Texture>
     <SlotType>9</SlotType>
     <Description>A mythical necklace that magnifies the wearer's wisdom.</Description>
@@ -49383,5 +49383,15 @@
     <Description>Fragment of the legendary crown, when fused together has unlimited power!</Description>
     <BagType>10</BagType>
     <ST/>
+  </Object>
+  <Object type="0xF940" id="Max Potion">
+    <Class>Equipment</Class><Item/><Texture><File>lofiObj3</File><Index>0x0e</Index></Texture>
+    <SlotType>10</SlotType><Consumable/><Soulbound/><BagType>10</BagType>
+    <Description>Testing-only. Maxes every normal stat for this character's class.</Description>
+    <Activate>MaxStats</Activate><DisplayId>Max Potion</DisplayId>
+  </Object>
+  <Object type="0xF941" id="Potion Storage">
+    <Class>PotionStorageObject</Class><Static/><ShowName/><Texture><File>PotionStorageCabinet</File><Index>0</Index></Texture><Size>25</Size>
+    <DisplayId>Potion Storage</DisplayId>
   </Object>
 </Objects>

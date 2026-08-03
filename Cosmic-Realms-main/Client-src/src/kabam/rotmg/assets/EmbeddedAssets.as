@@ -171,6 +171,7 @@ public class EmbeddedAssets {
     public static var donorEmotesEmbed_:Class = EmbeddedAssets_donorEmotesEmbed_;
     public static var CustomItemsEmbed_:Class = EmbeddedAssets_CustomItemsEmbed_;
     public static var OminousBelowItemsEmbed_:Class = EmbeddedAssets_OminousBelowItemsEmbed_;
+    public static var PotionStorageCabinetEmbed_:Class = EmbeddedAssets_PotionStorageCabinetEmbed_;
     public static var summerNexusChars8x8Embed_:Class = EmbeddedAssets_summerNexusChars8x8Embed_;
     public static var summerNexusChars16x16Embed_:Class = EmbeddedAssets_summerNexusChars16x16Embed_;
     public static var summerNexusObjects8x8Embed_:Class = EmbeddedAssets_summerNexusObjects8x8Embed_;

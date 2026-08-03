@@ -339,6 +339,30 @@ namespace wServer.realm.entities
         float bleeding = 0;
         public override void Tick(RealmTime time)
         {
+            // Movement behaviours all use ValidateAndMove, but legacy/dynamic maps can
+            // still leave an enemy on a tile that later becomes impassable.  Recover to
+            // the closest valid tile before its AI can keep attacking from outside a map.
+            if (Owner != null && TileOccupied(X, Y))
+            {
+                var recovered = false;
+                for (var radius = 1; radius <= 3 && !recovered; radius++)
+                    for (var dx = -radius; dx <= radius && !recovered; dx++)
+                        for (var dy = -radius; dy <= radius; dy++)
+                        {
+                            if (System.Math.Abs(dx) != radius && System.Math.Abs(dy) != radius)
+                                continue;
+                            var x = (int)X + dx + 0.5f;
+                            var y = (int)Y + dy + 0.5f;
+                            if (!TileOccupied(x, y))
+                            {
+                                Move(x, y);
+                                recovered = true;
+                                break;
+                            }
+                        }
+                if (!recovered)
+                    return;
+            }
             if (pos == null)
                 pos = new Position() { X = X, Y = Y };
 

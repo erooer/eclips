@@ -7,6 +7,7 @@ namespace wServer.networking.handlers
 {
     class PotionsHandler : PacketHandlerBase<Potions>
     {
+        private static readonly object PotionStorageLock = new object();
         public override PacketId ID => PacketId.POTIONS;
 
         protected override void HandlePacket(Client client, Potions packet)
@@ -18,41 +19,51 @@ namespace wServer.networking.handlers
         {
             var plr = client.Player;
             var acc = client.Account;
-            var potionStoragePotions = acc.PotionStoragePotions;
-            var statInfo = plr.Manager.Resources.GameData.Classes[plr.ObjectType].Stats;
-
-            int potion = packet.Type;
-            bool max = packet.Max;
-            int consumeAmount = (potion == 0 || potion == 1) ? 5 : 1;
-            int leftToMax = statInfo[potion].MaxValue - plr.Stats.Base[potion];
-
-            if (plr.Stats.Base[potion] >= statInfo[potion].MaxValue)
-            {
-                plr.SendInfo("This stat is already maxed!");
+            if (plr == null || acc == null)
                 return;
-            } 
-            else
+
+            lock (PotionStorageLock)
             {
-                if (max == true)
+                var potion = packet.Type;
+                var classStats = plr.Manager.Resources.GameData.Classes[plr.ObjectType].Stats;
+                var storage = acc.PotionStoragePotions;
+                if (potion < 0 || potion >= classStats.Length || potion >= storage.Length)
+                    return;
+
+                var statCap = classStats[potion].MaxValue;
+                var current = plr.Stats.Base[potion];
+                if (current >= statCap)
                 {
-                    if (potionStoragePotions[potion] < statInfo[potion].MaxValue - plr.Stats.Base[potion])
-                    {
-                        plr.SendInfo("You don't have enough potions to max!");
-                        return;
-                    }
-                    else
-                    {
-                        plr.Stats.Base[potion] += consumeAmount * leftToMax;
-                        potionStoragePotions[potion] -= leftToMax;
-                    }
+                    plr.SendInfo("This stat is already maxed!");
+                    return;
                 }
-                else
+
+                // This is the same stat effect used by individual storage drinks:
+                // Life and Mana grant five points; all other supported stats grant one.
+                var pointsPerPotion = potion == 0 || potion == 1 ? 5 : 1;
+                var consumption = PotionStorageConsumption.Resolve(
+                    current, statCap, storage[potion], pointsPerPotion, packet.Max);
+                var toConsume = consumption.PotionsConsumed;
+
+                if (toConsume == 0)
                 {
-                    plr.Stats.Base[potion] += consumeAmount;
-                    potionStoragePotions[potion]--;
-                    acc.PotionStoragePotions = potionStoragePotions;
-                    acc.FlushAsync();
+                    if (packet.Max)
+                        plr.SendInfo("You don't have enough potions to max this stat.");
+                    return;
                 }
+
+                plr.Stats.Base[potion] += consumption.StatPointsApplied;
+                storage[potion] -= toConsume;
+                acc.PotionStoragePotions = storage;
+                acc.FlushAsync();
+
+                // Persist the character side of the same operation immediately; queued
+                // requests observe the updated authoritative values under this lock.
+                plr.SaveToCharacter();
+                client.Character.FlushAsync();
+
+                if (packet.Max && toConsume < consumption.PotionsNeeded)
+                    plr.SendInfo("You don't have enough potions to max this stat.");
             }
         }
     }

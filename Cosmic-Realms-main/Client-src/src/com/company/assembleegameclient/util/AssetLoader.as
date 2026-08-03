@@ -124,6 +124,7 @@ public class AssetLoader {
         AssetLibrary.addImageSet("Emotes", new EmbeddedAssets.emotesEmbed_().bitmapData, 64, 64);
         AssetLibrary.addImageSet("CustomItems", new EmbeddedAssets.CustomItemsEmbed_().bitmapData, 8,8);
         AssetLibrary.addImageSet("OminousBelowItems", new EmbeddedAssets.OminousBelowItemsEmbed_().bitmapData, 8, 8);
+        AssetLibrary.addImageSet("PotionStorageCabinet", new EmbeddedAssets.PotionStorageCabinetEmbed_().bitmapData, 64, 64);
         AssetLibrary.addImageSet("summerNexusObjects8x8",new EmbeddedAssets.summerNexusObjects8x8Embed_().bitmapData,8,8);
         AssetLibrary.addImageSet("summerNexusObjects16x16",new EmbeddedAssets.summerNexusObjects16x16Embed_().bitmapData,16,16);
         AssetLibrary.addImageSet("SilentWilderness", new EmbeddedAssets.SilentWildernessEmbed_().bitmapData, 8,8);

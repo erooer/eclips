@@ -2,6 +2,7 @@
 using log4net;
 using wServer.networking.packets.incoming;
 using wServer.networking.packets.outgoing;
+using System.Linq;
 
 namespace wServer.networking.handlers
 {
@@ -27,6 +28,12 @@ namespace wServer.networking.handlers
             if (player.tradeTarget == null)
                 return;
 
+            if (packet.Offer == null || packet.Offer.Length != 12)
+            {
+                Log.WarnFormat("[TRADE] rejected offer update player={0}: invalid offer length.", player.Name);
+                return;
+            }
+
             for (int i = 0; i < packet.Offer.Length; i++)
             {
                 if (packet.Offer[i])
@@ -42,6 +49,7 @@ namespace wServer.networking.handlers
             player.tradeAccepted = false;
             player.tradeTarget.tradeAccepted = false;
             player.trade = packet.Offer;
+            Log.InfoFormat("[TRADE] offer update player={0} target={1} offered={2}.", player.Name, player.tradeTarget.Name, packet.Offer.Count(i => i));
 
             player.tradeTarget.Client.SendPacket(new TradeChanged()
             {

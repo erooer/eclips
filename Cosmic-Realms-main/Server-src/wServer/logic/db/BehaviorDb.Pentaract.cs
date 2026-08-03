@@ -19,7 +19,8 @@ namespace wServer.logic
             )
             .Init("Pentaract Tower",
                 new State(
-                   new ScaleHP2(60, 3, 15),
+                    new ScaleHP2(60, 3, 15),
+                    new DropPortalOnDeath("Ominous Below Portal", .02),
                     new Spawn("Pentaract Eye", 5, coolDown: 10000, givesNoXp: false),
                     new TransformOnDeath("Pentaract Tower Corpse"),
                     new TransferDamageOnDeath("Pentaract Tower Corpse"),

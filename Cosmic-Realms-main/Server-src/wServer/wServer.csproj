@@ -218,6 +218,7 @@
     <Compile Include="networking\handlers\market\MarketRemoveHandler.cs" />
     <Compile Include="networking\handlers\market\MarketSearchHandler.cs" />
     <Compile Include="networking\handlers\PotionsHandler.cs" />
+    <Compile Include="networking\handlers\PotionStorageConsumption.cs" />
     <Compile Include="networking\handlers\UpgradeHandler.cs" />
     <Compile Include="networking\packets\incoming\ClaimDailyRewardMessage.cs" />
     <Compile Include="networking\packets\incoming\Potions.cs" />

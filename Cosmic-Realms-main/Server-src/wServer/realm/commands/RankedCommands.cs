@@ -1072,20 +1072,8 @@ namespace wServer.realm.commands
         public MaxCommand() : base("max", permLevel: 60) { }
         protected override bool Process(Player player, RealmTime time, string args)
         {
-            var pd = player.Manager.Resources.GameData.Classes[player.ObjectType];
-            var chr = player.Client.Character;
-
-            player.Stats.Base[0] = pd.Stats[0].MaxValue + chr.LifePotsMoon;
-            player.Stats.Base[1] = pd.Stats[1].MaxValue + chr.ManaPotsMoon;
-            player.Stats.Base[2] = pd.Stats[2].MaxValue + chr.AttackStatsMoon;
-            player.Stats.Base[3] = pd.Stats[3].MaxValue + chr.DefensePotsMoon;
-            player.Stats.Base[4] = pd.Stats[4].MaxValue + chr.SpeedPotsMoon;
-            player.Stats.Base[5] = pd.Stats[5].MaxValue + chr.DexterityPotsMoon;
-            player.Stats.Base[6] = pd.Stats[6].MaxValue + chr.VitalityPotsMoon;
-            player.Stats.Base[7] = pd.Stats[7].MaxValue + chr.WisdomPotsMoon;
-            player.Stats.Base[11] = pd.Stats[11].MaxValue + chr.CritDmgPotsMoon;
-            player.Stats.Base[12] = pd.Stats[12].MaxValue + chr.CritHitPotsMoon;
-
+            if (!player.MaxCharacterStats())
+                return false;
             player.SendInfo("Your character stats have been maxed.");
             return true;
         }

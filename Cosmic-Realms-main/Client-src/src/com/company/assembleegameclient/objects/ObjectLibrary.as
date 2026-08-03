@@ -75,6 +75,7 @@ public class ObjectLibrary {
         "Wall": Wall,
         "Pet": Pet,
         "PetUpgrader": PetUpgrader,
+        "PotionStorageObject": PotionStorageObject,
         "YardUpgrader": YardUpgrader,
         "ForgeStation": ForgeStation,
         "MarketObject":MarketObject
