@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/32.0">
+  <id>com.cosmicrealms.desktop</id><versionNumber>1.0.0</versionNumber>
+  <filename>CosmicRealms</filename><name>Cosmic Realms</name>
+  <description>Cosmic Realms standalone desktop client</description>
+  <initialWindow><content>CosmicRealmsAir.swf</content><visible>true</visible><width>800</width><height>600</height><minSize>640 480</minSize><resizable>true</resizable><systemChrome>standard</systemChrome><transparent>false</transparent><renderMode>auto</renderMode><aspectRatio>landscape</aspectRatio></initialWindow>
+  <supportedProfiles>desktop extendedDesktop</supportedProfiles>
+</application>

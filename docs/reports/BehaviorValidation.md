@@ -1,0 +1,887 @@
+Cosmic Realms Static Validation Report
+Scope: behaviors
+Generated: 2026-07-29T07:21:11.068Z
+
+Errors (0)
+- none
+
+Warnings (877)
+- Legacy/static finding: Behavior 'Grand Champion Chest' drops missing 'Magical Soul Hide'
+- Legacy/static finding: Behavior 'Event Chest' drops missing 'Quest Chest Item'
+- Legacy/static finding: Behavior 'shtrs blobomb maker' spawns missing 'shtrs blobomb'
+- Legacy/static finding: Behavior 'shtrs blobomb maker' spawns missing 'shtrs blobomb'
+- Legacy/static finding: Behavior 'vlntns Botany Bella' drops missing 'Quest Chest Item'
+- Legacy/static finding: BehaviorDb Init references missing entity 'Blue Demon'
+- Legacy/static finding: Behavior 'Gold Planet' references missing projectile 0
+- Legacy/static finding: Behavior 'Gold Planet' references missing projectile 0
+- Legacy/static finding: Behavior 'Gold Planet' references missing projectile 0
+- Legacy/static finding: Behavior 'Forbidden Crystal Prisoner' drops missing 'Magical Soul Hide'
+- Legacy/static finding: Behavior 'Crystal Core' references missing projectile 0
+- Legacy/static finding: Behavior 'Crystal Serpent' references missing projectile 0
+- Legacy/static finding: Behavior 'Zhin, The Demonic Sacrifice' references missing projectile 3
+- Legacy/static finding: Behavior 'Zhin, The Demonic Sacrifice' references missing projectile 3
+- Legacy/static finding: Behavior 'Zhin, The Demonic Sacrifice' references missing projectile 3
+- Legacy/static finding: Behavior 'C Zhin, The Demonic Sacrifice UP' references missing projectile 5
+- Legacy/static finding: Behavior 'C Zhin, The Demonic Sacrifice LEFT' references missing projectile 5
+- Legacy/static finding: Behavior 'C Zhin, The Demonic Sacrifice DOWN' references missing projectile 5
+- Legacy/static finding: Behavior 'C Zhin, The Demonic Sacrifice RIGHT' references missing projectile 5
+- Legacy/static finding: Behavior 'Minir, Follower of the Zahari' references missing projectile 1
+- Legacy/static finding: Behavior 'Palow, Follower of the Zahari' references missing projectile 1
+- Legacy/static finding: Behavior 'Balo, Follower of the Zahari' references missing projectile 1
+- Legacy/static finding: Behavior 'Cyclops God' references missing projectile 4
+- Legacy/static finding: Behavior 'Cyclops God' references missing projectile 4
+- Legacy/static finding: Behavior 'Cyclops God' references missing projectile 4
+- Legacy/static finding: Behavior 'Cyclops God' references missing projectile 4
+- Legacy/static finding: Behavior 'Cyclops God' references missing projectile 4
+- Legacy/static finding: Behavior 'Cyclops God' references missing projectile 4
+- Legacy/static finding: Behavior 'Royal Crownguard Dog' drops missing 'Critical Damage'
+- Legacy/static finding: Behavior 'Royal Crownguard Dog' drops missing 'Critical Chance'
+- Legacy/static finding: Behavior 'Crownguard' drops missing 'Critical Damage'
+- Legacy/static finding: Behavior 'Crownguard' drops missing 'Critical Chance'
+- Legacy/static finding: Behavior 'Grandolf, the Magic Orc' references missing projectile 2
+- Legacy/static finding: BehaviorDb Init references missing entity 'Any Wall That Breaks After A Miniboss Is Killed'
+- Legacy/static finding: Behavior 'Magi, Wonder Man of Vargo' references missing projectile 2
+- Legacy/static finding: Behavior 'Unbound Fighter' references missing projectile 2
+- Legacy/static finding: Behavior 'Unbound Fighter' references missing projectile 2
+- Legacy/static finding: Behavior 'Sand Sentry Turret' references missing projectile 0
+- Legacy/static finding: Behavior 'Sand Sentry Turret' references missing projectile 0
+- Legacy/static finding: Behavior 'Hero' references missing projectile 4
+- Legacy/static finding: Behavior 'Hero' drops missing 'Critical Damage'
+- Legacy/static finding: Behavior 'Hero' drops missing 'Critical Chance'
+- Legacy/static finding: Behavior 'F.E.R.A.L.' references missing projectile 3
+- Legacy/static finding: Behavior 'F.E.R.A.L.' references missing projectile 3
+- Legacy/static finding: Behavior 'F.E.R.A.L.' references missing projectile 3
+- Legacy/static finding: Behavior 'F.E.R.A.L.' references missing projectile 3
+- Legacy/static finding: Behavior 'Garnet Statue' drops missing 'Kageboshi'
+- Legacy/static finding: Behavior 'Jade Statue' drops missing 'Kageboshi'
+- Legacy/static finding: Behavior 'Ghost Ship' drops missing 'whirlpool trap'
+- Legacy/static finding: Behavior 'Cultist of the Halls' references missing projectile 10
+- Legacy/static finding: Behavior 'Cultist of the Halls' references missing projectile 11
+- Legacy/static finding: Behavior 'LH Void Entity' drops missing 'Potion of Greater Life'
+- Legacy/static finding: Behavior 'Left Horizontal Trap' references missing projectile 0
+- Legacy/static finding: Behavior 'Top Vertical Trap' references missing projectile 0
+- Legacy/static finding: Behavior '45-225 Diagonal Trap' references missing projectile 0
+- Legacy/static finding: Behavior '135-315 Diagonal Trap' references missing projectile 0
+- Legacy/static finding: BehaviorDb Init references missing entity 'iiBeer God'
+- Legacy/static finding: Behavior 'Ice Tomb Attacker' drops missing 'Staff of IceBlast'
+- Legacy/static finding: Behavior 'Krystaline' references missing projectile 5
+- Legacy/static finding: Duplicate BehaviorDb Init 'Krystaline' in Server-src\wServer\logic\db\BehaviorDb.Krystal.cs and Server-src\wServer\logic\db\BehaviorDb.Krystal.cs
+- Legacy/static finding: Behavior 'Phylactery Bearer' drops missing 'Mini Phylactery Skin'
+- Legacy/static finding: Behavior 'Raijin, the Lightning Guardian' drops missing 'Earth Shard'
+- Legacy/static finding: Behavior 'Raijin, the Lightning Guardian' drops missing 'Dragon Scale Armor'
+- Legacy/static finding: Behavior 'Legendary Dragon Kakashi' references missing projectile 4
+- Legacy/static finding: Behavior 'Legendary Dragon Kakashi' drops missing 'Dragon Scale Armor'
+- Legacy/static finding: Behavior 'Lost Sentry' drops missing 'Earth Shard'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Iatho'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Iawa'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Oshyu'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Seus'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Eango'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Ril'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Tiar'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Yimi'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Gharr'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Zhiar'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Itani'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Queq'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Tal'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Uoro'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Iri'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Serl'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Rilr'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Radph'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Vorv'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Oeti'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Sek'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Scheev'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Laen'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Utanu'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Deyst'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Issz'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Eati'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Idrae'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Urake'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Yangu'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Lauk'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Eashy'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW SayIt'
+- Legacy/static finding: BehaviorDb Init references missing entity 'MW Eendi'
+- Legacy/static finding: Behavior 'Assistant of the Cult' references missing projectile 0
+- Legacy/static finding: Behavior 'Arena Headless Horseman' drops missing 'Headless Rider Skin'
+- Legacy/static finding: Behavior 'Crystal Prisoner' references missing projectile 1
+- Legacy/static finding: Behavior 'Crystal Prisoner' references missing projectile 1
+- Legacy/static finding: Behavior 'Crystal Prisoner' references missing projectile 1
+- Legacy/static finding: Behavior 'Crystal Prisoner' references missing projectile 1
+- Legacy/static finding: BehaviorDb Init references missing entity 'Sadala'
+- Legacy/static finding: Behavior 'Coral Gift' drops missing 'Pineapple Ring'
+- Legacy/static finding: Behavior 'Thessal the Mermaid Goddess' drops missing 'Pineapple Ring'
+- Legacy/static finding: Behavior 'The Haunted Omen' references missing projectile 2
+- Legacy/static finding: Behavior 'The Haunted Omen' references missing projectile 2
+- Legacy/static finding: BehaviorDb Init references missing entity 'OM Loot Chest'
+- Legacy/static finding: Behavior 'Fate, The Lowend Guardian' drops missing 'Earth Shard'
+- Legacy/static finding: Behavior 'Abderus, The Mage' drops missing 'Orb of Oryx's Mysteries'
+- Legacy/static finding: Behavior 'Abderus, The Mage' drops missing 'Earth Shard'
+- Legacy/static finding: Behavior 'Abracax, The Forgotten' drops missing 'Earth Shard'
+- Legacy/static finding: Behavior 'Mythical Knight' references missing projectile 0
+- Legacy/static finding: Behavior 'King Toadstool' drops missing 'Earth Shard'
+- Legacy/static finding: Behavior 'SW First Core' references missing projectile 1
+- Legacy/static finding: BehaviorDb Init references missing entity '1Wilderness Protector1'
+- Legacy/static finding: BehaviorDb Init references missing entity '1Wilderness Swordsmen1'
+- Legacy/static finding: BehaviorDb Init references missing entity '1Flying Bug1'
+- Legacy/static finding: Behavior 'Limon Element 4' transitions to missing state '4'
+- Legacy/static finding: Behavior 'shtrs Stone Knight' references missing projectile 0
+- Legacy/static finding: BehaviorDb Init references missing entity 'ds Gulpord the Slime God'
+- Legacy/static finding: BehaviorDb Init references missing entity 'ds gulpord the slime god s'
+- Legacy/static finding: Behavior 'Mysterious Crystal Scorpion' drops missing 'Queen Crystal Helmet'
+- Legacy/static finding: Behavior 'Tidale, The Defender of the Ancients' references missing projectile 7
+- Legacy/static finding: Behavior 'Tidale, The Defender of the Ancients' references missing projectile 8
+- Legacy/static finding: Behavior 'Tidale, The Defender of the Ancients' references missing projectile 7
+- Legacy/static finding: Behavior 'Tidale, The Defender of the Ancients' references missing projectile 8
+- Legacy/static finding: Behavior 'Epic Larva' references missing projectile 0
+- Legacy/static finding: Behavior 'Epic Larva' references missing projectile 0
+- Legacy/static finding: Behavior 'Epic Larva' references missing projectile 0
+- Legacy/static finding: Behavior 'Epic Larva' references missing projectile 0
+- Legacy/static finding: Behavior 'Epic Larva' references missing projectile 0
+- Legacy/static finding: Behavior 'Epic Larva' references missing projectile 0
+- Legacy/static finding: Behavior 'Zombie Archer' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Rogue' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Wizard' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Warrior' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Knight' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Paladin' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Necromancer' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Huntress' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Mystic' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Trickster' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Sorcerer' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Ninja' drops missing 'Corrupted Cleaver'
+- Legacy/static finding: Behavior 'Zombie Assassin' drops missing 'Corrupted Cleaver'
+- Duplicate type 0x7b68 for 'Castle of Dark Magic Portal' and 'Master Zemith's Hideout Key'
+- Duplicate object name 'Super Magic Mushroom' in EmbeddedData_EquipCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0x7833 for 'Super Magic Mushroom' and 'Super Magic Mushroom'
+- Duplicate ground type 0x8590 for 'SP Crystal Light Ground' and 'Abyss Troom Ground'
+- Duplicate ground type 0x5579 for '1Crystal Graoundb1' and '1SnowGround1'
+- Duplicate ground type 0x0049 for 'Gothic Rug' and 'Gothic Rug'
+- Duplicate type 0x7fa9 for 'Ice Tomb Attacker Statue' and 'Void anchor'
+- Duplicate object name 'Lantern Flicker' in EmbeddedData_mountainTempleObjectCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0xab55 for 'Lantern Flicker' and 'Lantern Flicker'
+- Duplicate type 0x7412 for 'Nexus Anchor' and 'Royal Majesty Bolt2'
+- Duplicate type 0x7413 for 'Nexus Chinese Dragon' and 'Haunted Shield'
+- Duplicate type 0x8031 for 'Lil' Ghost Skin' and 'Carrot of Wisdom'
+- Duplicate type 0x8032 for 'Spirit Skin' and 'Carrot's Revenge Basic'
+- Duplicate type 0x8033 for 'Baby Skin' and 'Carrot's Revenge'
+- Duplicate type 0x8040 for 'Eagle Skin' and 'Planted Carrot'
+- Duplicate type 0x8078 for 'Blue Landfish Skin' and 'Sealed Crystal Skull'
+- Duplicate type 0x8300 for 'CloseRangeAttack' and 'Black Knight'
+- Duplicate object name 'Heal' in EmbeddedData_PetsCXML.dat and EmbeddedData_PetsCXML.dat
+- Duplicate object name 'Decoy' in EmbeddedData_PetsCXML.dat and EmbeddedData_AlliesCXML.dat
+- Duplicate object name 'Elf' in EmbeddedData_PlayersCXML.dat and EmbeddedData_PetsCXML.dat
+- Duplicate object name 'Poison Katana Slash' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0x217e for 'Poison Katana Slash' and 'Poison Katana Slash'
+- Duplicate object name 'BellaShot' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate object name 'BellaBerry' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate object name 'BellaPetal' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate object name 'BellaLeaf' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate object name 'Void Star' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0x716e for 'Void Star' and 'Void Star'
+- Duplicate object name 'TH Stinger Large' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0x011e for 'TH Stinger Large' and 'TH Stinger Large'
+- Duplicate object name 'TH Stinger Small' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0x011f for 'TH Stinger Small' and 'TH Stinger Small'
+- Duplicate object name 'TH Honey Daze' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0xa233 for 'TH Honey Daze' and 'TH Honey Daze'
+- Duplicate object name 'Dragon Arrow' in EmbeddedData_ProjectilesCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0x7fcc for 'Dragon Arrow' and 'Dragon Arrow'
+- Duplicate object name 'SW Catenae's shuriken large proj' in EmbeddedData_SilentWildernessCXML.dat and EmbeddedData_SilentWildernessCXML.dat
+- Duplicate type 0x0170 for 'Brown Wall' and 'MagicHeal'
+- Duplicate type 0x0180 for 'Broken Grey Pillar' and 'AttackMid'
+- Duplicate type 0x0181 for 'Broken Purple Pillar' and 'AttackFar'
+- Duplicate type 0x0182 for 'Broken Blue Pillar' and 'ElectricZap'
+- Duplicate type 0x0183 for 'Broken Red Pillar' and 'PetSavage'
+- Duplicate type 0x0184 for 'Cross' and 'PetDecoy'
+- Duplicate type 0x0185 for 'Fir Tree 1' and 'PetRisingFury'
+- Duplicate type 0x0194 for 'Cherry Tree' and 'Attack Mid'
+- Duplicate type 0x0197 for 'Saguaro Cactus 1' and 'Heal'
+- Duplicate type 0x0198 for 'Saguaro Cactus 2' and 'Magic Heal'
+- Duplicate type 0x0199 for 'Saguaro Cactus 3' and 'Savage'
+- Duplicate type 0x019a for 'Small Saguaro Cactus 1' and 'Decoy'
+- Duplicate type 0x019b for 'Small Saguaro Cactus 2' and 'Rising Fury'
+- Duplicate object name 'TH Fat Bees' in EmbeddedData_TheHiveCXML.dat and EmbeddedData_EncountersCXML.dat
+- Duplicate type 0x0127 for 'TH Fat Bees' and 'TH Fat Bees'
+- Duplicate object name 'Debug Spawn' in EmbeddedData_VoidCXML.dat and EmbeddedData_EquipCXML.dat
+- Duplicate type 0x4309 for 'Debug Spawn' and 'Debug Spawn'
+- Texture 'lofiChar216x8' for 'Purple Drake' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'White Drake' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Blue Drake' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Orange Drake' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Green Drake' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Yellow Drake' has no obvious client embed filename
+- Texture 'invisible' for 'Lil Firecracker' has no obvious client embed filename
+- Texture 'invisible' for 'Big Firecracker' has no obvious client embed filename
+- Texture 'invisible' for 'Rock Candy Grenade' has no obvious client embed filename
+- Texture 'lofiChar16x8' for 'Dragon Chain 1' has no obvious client embed filename
+- Texture 'lofiChar16x8' for 'Dragon Chain 2' has no obvious client embed filename
+- Texture 'lofiChar16x8' for 'Dragon Chain 3' has no obvious client embed filename
+- Texture 'lofiChar16x8' for 'Dragon Chain 4' has no obvious client embed filename
+- Texture 'invisible' for 'Treasure Dropper' has no obvious client embed filename
+- Texture 'invisible' for 'Treasure Flame Trap 1.2 Sec' has no obvious client embed filename
+- Texture 'invisible' for 'Treasure Flame Trap 1.7 Sec' has no obvious client embed filename
+- Texture 'invisible' for 'Treasure Robber' has no obvious client embed filename
+- Texture 'invisible' for 'Boulder Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Realm Portal Opener' has no obvious client embed filename
+- Missing XML ObjectId 'Water Blaster4' referenced by 'Alien U.F.O'
+- Texture 'invisible' for 'shtrs portal maker' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs blobomb maker' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs encounterportalspawn' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs encounterchestspawner' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Skull Shrine' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Red Flaming Skull' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Blue Flaming Skull' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Cube God' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cube Overseer' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cube Defender' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cube Blaster' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Pentaract Eye' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Pentaract Tower' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Pentaract Tower' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Pentaract' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Pentaract Tower Corpse' has no obvious client embed filename
+- Texture 'invisible' for 'Hermit God' has no obvious client embed filename
+- Texture 'invisible' for 'Hermit God Tentacle Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Hermit God Drop' has no obvious client embed filename
+- Texture 'invisible' for 'Zombie Horde' has no obvious client embed filename
+- Texture 'invisible' for 'Bonegrind 2' has no obvious client embed filename
+- Texture 'invisible' for 'Horde Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Tempest Cloud' has no obvious client embed filename
+- Texture 'invisible' for 'Pirate King Healer' has no obvious client embed filename
+- Texture 'invisible' for 'Bilgewater Anchor' has no obvious client embed filename
+- Texture 'invisible' for 'Bilgewater Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Bilgewater Darkwater Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Group Wall Observer' has no obvious client embed filename
+- Texture 'invisible' for 'Raid Portal Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Miniboss Wall Killer' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 1' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 1' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 1' has no obvious client embed filename
+- Texture 'invisible' for 'Vargo Wall Killer' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo FAKE Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 4' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 4' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 3' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 3' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 1' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist F NEW Wall 1' has no obvious client embed filename
+- Texture 'invisible' for 'Banner Portal Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Mind Obelisk Killer' has no obvious client embed filename
+- Texture 'invisible' for 'Body Obelisk Killer' has no obvious client embed filename
+- Texture 'invisible' for 'Soul Obelisk Killer' has no obvious client embed filename
+- Texture 'invisible' for 'Void Obelisk Killer' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 2' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 1' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 1' has no obvious client embed filename
+- Texture 'Grounds0' for 'Duelist Vargo Wall 1' has no obvious client embed filename
+- Texture 'invisible' for 'Cyberious Portal Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Healing Flowers Spawner' has no obvious client embed filename
+- Texture 'LRE' for 'Resurrected Archer's Armor' has no obvious client embed filename
+- Texture 'LRE' for 'Helm of the Golden King' has no obvious client embed filename
+- Texture 'LRE' for 'Helm of the Golden Warrior' has no obvious client embed filename
+- Texture 'LRE' for 'Quiver java' has no obvious client embed filename
+- Texture 'LRE' for 'The Infinity Javelin' has no obvious client embed filename
+- Texture 'invisible' for 'C Fire Spawner YES FALSE' has no obvious client embed filename
+- Texture 'LRE' for 'Red Ichor' has no obvious client embed filename
+- Texture 'LRE' for 'Ectoplasm' has no obvious client embed filename
+- Texture 'LRE' for 'Super Magic Mushroom' has no obvious client embed filename
+- Texture 'invisible' for 'C Fire Spawner YES' has no obvious client embed filename
+- Texture 'LRE' for 'Luminous Supernova' has no obvious client embed filename
+- Texture 'LRE' for 'Large Toolbelt' has no obvious client embed filename
+- Texture 'LRE' for 'Medium Toolbelt' has no obvious client embed filename
+- Texture 'LRE' for 'Small Toolbelt' has no obvious client embed filename
+- Texture 'LRE' for 'Tiny Toolbelt' has no obvious client embed filename
+- Texture 'LRE' for 'Void Demon Egg' has no obvious client embed filename
+- Texture 'LRE' for 'Cyberious Chest' has no obvious client embed filename
+- Texture 'LRE' for 'Cyberious Chest Item' has no obvious client embed filename
+- Texture 'LRE' for 'Bone-locked Skull of Rage' has no obvious client embed filename
+- Texture 'invisible' for 'LH Void Entity N' has no obvious client embed filename
+- Texture 'invisible' for 'LH Void Entity E' has no obvious client embed filename
+- Texture 'invisible' for 'LH Void Entity S' has no obvious client embed filename
+- Texture 'invisible' for 'LH Void Entity W' has no obvious client embed filename
+- Texture 'invisible' for 'LH Void Entity' has no obvious client embed filename
+- Texture 'invisible' for 'Circle Rabbit' has no obvious client embed filename
+- Texture 'invisible' for 'Lantern Flicker' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Epic Limon the Sprite God' has no obvious client embed filename
+- Texture 'LRE' for 'Avatar's Skull' has no obvious client embed filename
+- Texture 'LRE' for 'Plate of Mother Nature' has no obvious client embed filename
+- Texture 'LRE' for 'Luminous Supernova shot' has no obvious client embed filename
+- Texture 'LRE' for 'Enchanted Harlequin Hide' has no obvious client embed filename
+- Texture 'LRE' for 'The Exanity!' has no obvious client embed filename
+- Texture 'LRE' for 'Alien Core: Login' has no obvious client embed filename
+- Texture 'invisible' for 'Debug Spawn' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Void anchor' has no obvious client embed filename
+- Missing XML ObjectId 'Ninja Star Unity' referenced by 'Circle of Unity'
+- Texture 'LRE' for 'Natureshotmo' has no obvious client embed filename
+- Texture 'LRE' for 'Gladiator Guard' has no obvious client embed filename
+- Texture 'LRE' for 'Mastery Level Gem' has no obvious client embed filename
+- Texture 'LRE' for 'Mastery Points Gem' has no obvious client embed filename
+- Texture 'LRE' for 'Superior Shot' has no obvious client embed filename
+- Texture 'LRE' for 'Superior' has no obvious client embed filename
+- Texture 'LRE' for 'Genesis Spel Shot' has no obvious client embed filename
+- Texture 'LRE' for 'Genesis Spell' has no obvious client embed filename
+- Texture 'invisible' for 'Genesis Spell Portal 1' has no obvious client embed filename
+- Texture 'LRE' for 'Diplomatic Robe' has no obvious client embed filename
+- Texture 'LRE' for 'Chancellor's Claw Pendant' has no obvious client embed filename
+- Texture 'LRE' for 'Superior Shot2' has no obvious client embed filename
+- Texture 'LRE' for 'Superior Shot3' has no obvious client embed filename
+- Texture 'LRE' for 'Superior Shot4' has no obvious client embed filename
+- Texture 'LRE' for 'Superior Shot1' has no obvious client embed filename
+- Texture 'LRE' for 'Superior Shot0' has no obvious client embed filename
+- Texture 'LRE' for 'The Millionth Shot Arrow' has no obvious client embed filename
+- Texture 'LRE' for 'The Millionth Shot' has no obvious client embed filename
+- Texture 'LRE' for 'Shotz' has no obvious client embed filename
+- Texture 'LRE' for 'Void Dragon Egg' has no obvious client embed filename
+- Texture 'LRE' for 'ST Chest' has no obvious client embed filename
+- Texture 'LRE' for 'Furious OryxS' has no obvious client embed filename
+- Texture 'LRE' for 'S1W4' has no obvious client embed filename
+- Texture 'LRE' for 'S1W3' has no obvious client embed filename
+- Texture 'LRE' for 'S1W2' has no obvious client embed filename
+- Texture 'LRE' for 'S1W1' has no obvious client embed filename
+- Texture 'LRE' for 'S1W' has no obvious client embed filename
+- Texture 'LRE' for 'Carnelian' has no obvious client embed filename
+- Texture 'LRE' for 'Power Battery' has no obvious client embed filename
+- Texture 'LRE' for 'Sprite Essence' has no obvious client embed filename
+- Texture 'LRE' for 'Fate's Twisted Card Deck' has no obvious client embed filename
+- Texture 'LRE' for 'The Cards shot' has no obvious client embed filename
+- Texture 'LRE' for 'The Cards shot' has no obvious client embed filename
+- Texture 'LRE' for 'The Cards shot' has no obvious client embed filename
+- Texture 'LRE' for 'The Cards shot' has no obvious client embed filename
+- Texture 'lofiObj0' for 'Seal of Gleaming Hope' has no obvious client embed filename
+- Texture 'LRE' for 'Cyberious's Plate' has no obvious client embed filename
+- Missing XML ObjectId 'black missile' referenced by 'Black Warrior'
+- Texture 'LRE' for 'blue Energy Bolt' has no obvious client embed filename
+- Texture 'LRE' for 'Shroom Shot' has no obvious client embed filename
+- Texture 'LRE' for 'Shromite's Scroll' has no obvious client embed filename
+- Texture 'LRE' for 'jNova Shot' has no obvious client embed filename
+- Texture 'LRE' for 'Magic Jade Scroll' has no obvious client embed filename
+- Texture 'LRE' for 'Alien U.F.O Plate' has no obvious client embed filename
+- Texture 'LRE' for 'Scrapped Ship Plates' has no obvious client embed filename
+- Texture 'LRE' for 'Topaz' has no obvious client embed filename
+- Texture 'LRE' for 'Amethyst' has no obvious client embed filename
+- Texture 'LRE' for 'Jade' has no obvious client embed filename
+- Texture 'LRE' for 'Spell Scroll' has no obvious client embed filename
+- Texture 'LRE' for 'Magic Tome of Mush' has no obvious client embed filename
+- Texture 'LRE' for 'Green Blob22' has no obvious client embed filename
+- Texture 'LRE' for 'Green Blob222' has no obvious client embed filename
+- Texture 'LRE' for 'Cultist Chest' has no obvious client embed filename
+- Texture 'LRE' for 'Cultist Chest Item' has no obvious client embed filename
+- Texture 'LRE' for 'Forgotten King Chest' has no obvious client embed filename
+- Texture 'LRE' for 'Forgotten King Chest Item' has no obvious client embed filename
+- Texture 'LRE' for 'Void Entity Chest' has no obvious client embed filename
+- Texture 'LRE' for 'Void Entity Chest Item' has no obvious client embed filename
+- Texture 'LRE' for 'Marble Colossus Chest' has no obvious client embed filename
+- Texture 'LRE' for 'Marble Colossus Chest Item' has no obvious client embed filename
+- Texture 'LRE' for 'Harp Notes Thicc' has no obvious client embed filename
+- Texture 'LRE' for 'Harp Notes Thicc' has no obvious client embed filename
+- Texture 'LRE' for 'Harmonious Harp' has no obvious client embed filename
+- Texture 'LRE' for 'Angel's Fanfare' has no obvious client embed filename
+- Texture 'LRE' for 'Wings of Sanctity' has no obvious client embed filename
+- Texture 'LRE' for 'Heavenly Halo' has no obvious client embed filename
+- Texture 'LRE' for 'Pernicious Peridot' has no obvious client embed filename
+- Texture 'LRE' for 'Acidic Armor' has no obvious client embed filename
+- Texture 'LRE' for 'Virulent Venom' has no obvious client embed filename
+- Texture 'LRE' for 'Acid Bubble' has no obvious client embed filename
+- Texture 'LRE' for 'Acid Bubble Large' has no obvious client embed filename
+- Texture 'LRE' for 'Dagger of Toxin' has no obvious client embed filename
+- Texture 'LRE' for 'Iron Slash' has no obvious client embed filename
+- Texture 'LRE' for 'Iron Superslash' has no obvious client embed filename
+- Texture 'LRE' for 'Wakizashi Discoverer' has no obvious client embed filename
+- Texture 'LRE' for 'Kiritsukeru' has no obvious client embed filename
+- Texture 'LRE' for 'Watarimono' has no obvious client embed filename
+- Texture 'LRE' for 'Reinforced Root Hide' has no obvious client embed filename
+- Texture 'LRE' for 'Traveler's Trinket' has no obvious client embed filename
+- Texture 'LRE' for 'Pirate King Booty' has no obvious client embed filename
+- Texture 'LRE' for 'Pirate King Gold' has no obvious client embed filename
+- Texture 'LRE' for 'Swashbuckler's Sickle' has no obvious client embed filename
+- Texture 'LRE' for 'Tricorne of the High Seas' has no obvious client embed filename
+- Texture 'LRE' for 'Naval Uniform' has no obvious client embed filename
+- Texture 'LRE' for 'First Mate's Hook' has no obvious client embed filename
+- Texture 'LRE' for 'Epic ST Chest' has no obvious client embed filename
+- Texture 'LRE' for 'Demons Blade Shot' has no obvious client embed filename
+- Texture 'LRE' for 'Blade of Demons' has no obvious client embed filename
+- Texture 'LRE' for 'Shot doom enc' has no obvious client embed filename
+- Texture 'LRE' for 'Bow of Doom' has no obvious client embed filename
+- Texture 'LRE' for 'Shot coral enc' has no obvious client embed filename
+- Texture 'LRE' for 'Bow of Coral' has no obvious client embed filename
+- Texture 'LRE' for 'Ring of Pure Decades' has no obvious client embed filename
+- Texture 'LRE' for 'Hide of the Enraged' has no obvious client embed filename
+- Texture 'LRE' for 'Armor of the Enraged' has no obvious client embed filename
+- Texture 'LRE' for 'Robe of the Enraged' has no obvious client embed filename
+- Texture 'LRE' for 'Powered Reactor' has no obvious client embed filename
+- Texture 'LRE' for 'Supreme Alien Core: Powered Reactor' has no obvious client embed filename
+- Texture 'LRE' for 'Super Alien Core: Power' has no obvious client embed filename
+- Texture 'LRE' for 'Alien Core: Ruby' has no obvious client embed filename
+- Texture 'LRE' for 'Alien Core: Diamond' has no obvious client embed filename
+- Texture 'LRE' for 'Alien Core: Gold' has no obvious client embed filename
+- Texture 'LRE' for 'Alien Core: Emerald' has no obvious client embed filename
+- Texture 'LRE' for 'Advanced Alien Tech' has no obvious client embed filename
+- Texture 'LRE' for 'Basic Alien Tech' has no obvious client embed filename
+- Texture 'LRE' for 'Destructor AI Module' has no obvious client embed filename
+- Texture 'LRE' for 'Engine Cooling Module' has no obvious client embed filename
+- Texture 'LRE' for 'Energy Converter Module' has no obvious client embed filename
+- Texture 'LRE' for 'Atomic Battery Module' has no obvious client embed filename
+- Texture 'LRE' for 'Cyberious Infused Shard' has no obvious client embed filename
+- Texture 'LRE' for 'Plate of Tidale' has no obvious client embed filename
+- Texture 'LRE' for 'Scraps of the Descendant' has no obvious client embed filename
+- Texture 'LRE' for 'Mark of Cyberious' has no obvious client embed filename
+- Texture 'LRE' for 'Crystal Wakizashi' has no obvious client embed filename
+- Texture 'LRE' for 'Wakizashi Crystal' has no obvious client embed filename
+- Texture 'LRE' for 'Laser Lotus' has no obvious client embed filename
+- Texture 'LRE' for 'Bergenia Bow' has no obvious client embed filename
+- Texture 'LRE' for 'Hollyhock Hide' has no obvious client embed filename
+- Texture 'LRE' for 'Chrysanthemum Corsage' has no obvious client embed filename
+- Texture 'LRE' for 'Mega Mad God Missile' has no obvious client embed filename
+- Texture 'LRE' for 'Theurgy Wand' has no obvious client embed filename
+- Texture 'LRE' for 'Ceremonial Merlot' has no obvious client embed filename
+- Texture 'LRE' for 'Anointed Robe' has no obvious client embed filename
+- Texture 'LRE' for 'Ring of Pagan Favor' has no obvious client embed filename
+- Texture 'LRE' for 'Ring of the Inferno' has no obvious client embed filename
+- Texture 'LRE' for 'Molten Mantle' has no obvious client embed filename
+- Texture 'LRE' for 'Scorchium Stone' has no obvious client embed filename
+- Texture 'LRE' for 'Staff of Eruption' has no obvious client embed filename
+- Texture 'LRE' for 'Eruption Staff Proj Large' has no obvious client embed filename
+- Texture 'LRE' for 'Eruption Blast' has no obvious client embed filename
+- Texture 'LRE' for 'Crystal Katana Slash' has no obvious client embed filename
+- Texture 'LRE' for 'Crystal Katana Slash' has no obvious client embed filename
+- Texture 'LRE' for 'Crystal Kunai Proj' has no obvious client embed filename
+- Texture 'LRE' for 'Crystal Kunai Proj' has no obvious client embed filename
+- Texture 'LRE' for 'Radiant Heart' has no obvious client embed filename
+- Texture 'LRE' for 'Luminous Armor' has no obvious client embed filename
+- Texture 'LRE' for 'Crystalline Kunai' has no obvious client embed filename
+- Texture 'LRE' for 'Quartz Cutter' has no obvious client embed filename
+- Texture 'LRE' for 'Null-Magic Ring' has no obvious client embed filename
+- Texture 'LRE' for 'Magic-Resistance Robe' has no obvious client embed filename
+- Texture 'LRE' for 'Awoken Staff of Mother Nature' has no obvious client embed filename
+- Texture 'LRE' for 'Corrupted Staff of Mother Nature' has no obvious client embed filename
+- Texture 'LRE' for 'Staff of Mother Nature' has no obvious client embed filename
+- Texture 'invisible' for '1Golden Totem Spawner' has no obvious client embed filename
+- Texture 'LRE' for 'Awoken Blood Bath' has no obvious client embed filename
+- Texture 'LRE' for 'Corrupted Blood Bath' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Attack' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Defense' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Speed' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Vitality' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Wisdom' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Dexterity' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Health' has no obvious client embed filename
+- Texture 'LRE' for 'Bracelet of Magic' has no obvious client embed filename
+- Texture 'LRE' for 'Spear of One' has no obvious client embed filename
+- Texture 'LRE' for 'Blood Bath' has no obvious client embed filename
+- Texture 'theMachineObjects8x8' for 'Gilded Arrow' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'FR Boss Big' has no obvious client embed filename
+- Texture 'invisible' for 'Dracula' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Purple Drake Egg' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'White Drake Egg' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Blue Drake Egg' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Orange Drake Egg' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Green Drake Egg' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Yellow Drake Egg' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lvl20' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Fame' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Dragon Buddies' has no obvious client embed filename
+- Texture 'invisible' for 'Jungle Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Captain Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Maggot Sack' has no obvious client embed filename
+- Texture 'invisible' for 'Skuld Apparition' has no obvious client embed filename
+- Texture 'invisible' for 'Ghost of Skuld' has no obvious client embed filename
+- Texture 'invisible' for 'Zombie Rise' has no obvious client embed filename
+- Texture 'invisible' for 'Arena North Gate Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Arena South Gate Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Arena East Gate Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Arena West Gate Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Area 1 Controller' has no obvious client embed filename
+- Texture 'invisible' for 'Area 2 Controller' has no obvious client embed filename
+- Texture 'invisible' for 'Area 3 Controller' has no obvious client embed filename
+- Texture 'invisible' for 'Area 4 Controller' has no obvious client embed filename
+- Texture 'invisible' for 'Area 5 Controller' has no obvious client embed filename
+- Texture 'invisible' for 'Arena Ghost Bride' has no obvious client embed filename
+- Texture 'invisible' for 'Arena Horseman Anchor' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Red Demon' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Phoenix Lord' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Phoenix Reborn' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Phoenix Egg' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Cyclops God' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Oasis Giant' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Greater Nature Sprite' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Actual Greater Nature Sprite' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Minotaur' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Flayer God' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Undead Dwarf God' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Lizard God' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Dragon Egg' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'White Dragon Whelp' has no obvious client embed filename
+- Texture 'lofiChar16x8' for 'Juvenile White Dragon' has no obvious client embed filename
+- Texture 'invisible' for 'ic boss spawner live' has no obvious client embed filename
+- Texture 'invisible' for 'ic boss manager' has no obvious client embed filename
+- Texture 'invisible' for 'ic boss purifier generator' has no obvious client embed filename
+- Texture 'invisible' for 'ic Esben the Unwilling' has no obvious client embed filename
+- Texture 'invisible' for 'Ice Tomb Event Chest Dropper' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Ice Tomb Boss Anchor' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Activator' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Activator' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Activator' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Activator' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Activator' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Activator' has no obvious client embed filename
+- Texture 'invisible' for 'Hearticles' has no obvious client embed filename
+- Texture 'invisible' for 'NM Blue Dragon Soul' has no obvious client embed filename
+- Texture 'invisible' for 'NM Red Dragon Soul' has no obvious client embed filename
+- Texture 'invisible' for 'NM Green Dragon Soul' has no obvious client embed filename
+- Texture 'invisible' for 'NM Black Dragon Soul' has no obvious client embed filename
+- Texture 'invisible' for 'NM Blue Dragon Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'NM Red Dragon Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'NM Red Dragon Lava Bomb' has no obvious client embed filename
+- Texture 'invisible' for 'NM Red Dragon Lava Trigger' has no obvious client embed filename
+- Texture 'invisible' for 'NM Green Dragon Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'NM Green Dragon Shield Counter' has no obvious client embed filename
+- Texture 'invisible' for 'NM Black Dragon God' has no obvious client embed filename
+- Texture 'invisible' for 'NM Black Dragon God Hardmode' has no obvious client embed filename
+- Texture 'invisible' for 'NM Black Dragon Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'NM Green Open Wall' has no obvious client embed filename
+- Texture 'invisible' for 'NM Blue Open Wall' has no obvious client embed filename
+- Texture 'invisible' for 'NM Red Open Wall' has no obvious client embed filename
+- Texture 'invisible' for 'NM Black Open Wall' has no obvious client embed filename
+- Texture 'invisible' for 'drac wall blue' has no obvious client embed filename
+- Texture 'invisible' for 'drac wall green' has no obvious client embed filename
+- Texture 'invisible' for 'drac wall red' has no obvious client embed filename
+- Texture 'invisible' for 'drac wall black' has no obvious client embed filename
+- Texture 'invisible' for 'drac floor blue' has no obvious client embed filename
+- Texture 'invisible' for 'drac floor green' has no obvious client embed filename
+- Texture 'invisible' for 'drac floor red' has no obvious client embed filename
+- Texture 'invisible' for 'drac floor black' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Head of Shaitan' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Right Hand of Shaitan' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Left Hand of Shaitan' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Right Hand spawner' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Left Hand spawner' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Governor' has no obvious client embed filename
+- Texture 'invisible' for 'md1 LeftHandSmash' has no obvious client embed filename
+- Texture 'invisible' for 'md1 RightHandSmash' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Right Burst' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Mid Burst' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Left Burst' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Lava Makers' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Right Hand of Shaitan fake' has no obvious client embed filename
+- Texture 'invisible' for 'md1 Left Hand of Shaitan fake' has no obvious client embed filename
+- Texture 'invisible' for 'Mad Scientist Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Dr Terrible' has no obvious client embed filename
+- Texture 'invisible' for 'Mad Gas Controller' has no obvious client embed filename
+- Texture 'invisible' for 'Mad Lab Open Wall' has no obvious client embed filename
+- Texture 'invisible' for 'Horrific Creation Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'F.E.R.A.L.' has no obvious client embed filename
+- Texture 'invisible' for 'FERAL Controller' has no obvious client embed filename
+- Texture 'invisible' for 'FERAL Death' has no obvious client embed filename
+- Texture 'invisible' for 'Hexxer' has no obvious client embed filename
+- Texture 'invisible' for 'DeHexxer' has no obvious client embed filename
+- Texture 'invisible' for 'Lord Ruthven' has no obvious client embed filename
+- Texture 'invisible' for 'Mixcoatl Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Thessal Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Septavius Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Stheno Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Arachna Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Vampire Summoner' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Pink Blob' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Gray Blob' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Big Green Slime' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Little Green Slime' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Red Spider' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Black Bat' has no obvious client embed filename
+- Texture 'invisible' for 'md dwGenerator' has no obvious client embed filename
+- Texture 'invisible' for 'md Janus the Doorwarden' has no obvious client embed filename
+- Texture 'invisible' for 'md placer1' has no obvious client embed filename
+- Texture 'invisible' for 'md placer3' has no obvious client embed filename
+- Texture 'invisible' for 'md placer2' has no obvious client embed filename
+- Texture 'invisible' for 'md placer4' has no obvious client embed filename
+- Texture 'invisible' for 'md placer5' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Sprite Child' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Rock Bot' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Paper Bot' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Steel Bot' has no obvious client embed filename
+- Texture 'invisible' for 'Daichi the Fallen' has no obvious client embed filename
+- Texture 'invisible' for 'Fire Power' has no obvious client embed filename
+- Texture 'invisible' for 'Earth Power' has no obvious client embed filename
+- Texture 'invisible' for 'Water Power' has no obvious client embed filename
+- Texture 'invisible' for 'Air Power' has no obvious client embed filename
+- Texture 'invisible' for 'altar' has no obvious client embed filename
+- Texture 'invisible' for 'Fire socket' has no obvious client embed filename
+- Texture 'invisible' for 'Water socket' has no obvious client embed filename
+- Texture 'invisible' for 'Air socket' has no obvious client embed filename
+- Texture 'invisible' for 'Earth socket' has no obvious client embed filename
+- Texture 'invisible' for 'Encounter Altar' has no obvious client embed filename
+- Texture 'invisible' for 'A helper' has no obvious client embed filename
+- Texture 'invisible' for 'B helper' has no obvious client embed filename
+- Texture 'invisible' for 'Temple Encounter' has no obvious client embed filename
+- Texture 'invisible' for 'Daichi Outro' has no obvious client embed filename
+- Texture 'invisible' for 'Xil Hand' has no obvious client embed filename
+- Texture 'invisible' for 'Outro' has no obvious client embed filename
+- Texture 'invisible' for 'destnex Observer 1' has no obvious client embed filename
+- Texture 'invisible' for 'destnex Observer 2' has no obvious client embed filename
+- Texture 'invisible' for 'destnex Observer 3' has no obvious client embed filename
+- Texture 'invisible' for 'destnex Observer 4' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Oryx the Mad God Deux' has no obvious client embed filename
+- Texture 'invisible' for 'Lord Ruthven Deux' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Stheno the Snake Queen Deux' has no obvious client embed filename
+- Texture 'invisible' for 'NM Green Dragon Shield Counter Deux' has no obvious client embed filename
+- Texture 'invisible' for 'Pumpkin1' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Invisible Placeholder' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Nexus Portal' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Gravestone 1' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Gravestone 2' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Gravestone 3' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Gravestone 4' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Gravestone 5' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Gravestone 6' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Gravestone 7' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Gravestone 8' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Gravestone 9' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Gravestone 10' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Gravestone 11' has no obvious client embed filename
+- Texture 'invisible' for 'Winter now' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Charachter Changer Maker LF' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Charachter Changer Maker' has no obvious client embed filename
+- Texture 'invisible' for 'G Door Opener' has no obvious client embed filename
+- Texture 'invisible' for 'Daily Login Rewards Inv Object' has no obvious client embed filename
+- Texture 'invisible' for 'Quest Rewards Inv Object' has no obvious client embed filename
+- Texture 'invisible' for 'Nexus Anchor' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Nexus Paper Lantern Small' has no obvious client embed filename
+- Texture 'invisible' for 'Deep Sea Beast Spawner' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Sea Slurp Home' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Suit of Armor' has no obvious client embed filename
+- Texture 'invisible' for 'Oryx Guardian TaskMaster' has no obvious client embed filename
+- Texture 'invisible' for 'Oryx Armor Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Oryx Suit of Armor' has no obvious client embed filename
+- Texture 'invisible' for 'Oryx Suit of Armor Snowy' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Monstrosity Scarab' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Valentine' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Valentine' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Valentine' has no obvious client embed filename
+- Texture 'invisible' for 'Beach Ball' has no obvious client embed filename
+- Texture 'invisible' for 'Valentine Heart' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Lieutenant' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Commander' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Captain' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Admiral' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Brawler' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Sailor' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Veteran' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Moll' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Parrot' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Macaw' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Monkey' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Hunchback' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Cave Pirate Cabin Boy' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Hellfire' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Fireball' has no obvious client embed filename
+- Texture 'invisible' for 'Invisible' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Troll 1 Attack 1' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'boss spawn' has no obvious client embed filename
+- Texture 'd3LofiObjEmbed16' for 'Valentine Heart Bullet' has no obvious client embed filename
+- Texture 'invisible' for 'Puppet Theatre Boss Spawn' has no obvious client embed filename
+- Texture 'invisible' for 'The Puppet Master' has no obvious client embed filename
+- Texture 'invisible' for 'Rogue Puppet' has no obvious client embed filename
+- Texture 'invisible' for 'Sorc Bomb Thrower' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Mage Closer 1' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Final Fight Check' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs KillWall 1' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs KillWall 2' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs KillWall 3' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs KillWall 4' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs KillWall 7' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs KillWall 6' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Bridge Closer' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Player Check' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Spawn Bridge' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Bridge Review Board' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Goo Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Player Check Archmage' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Monster Cluster' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Firebomb' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs BirdSpawn 1' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs BirdSpawn 2' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Bird Check' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Crystal Check' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Add Lava' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Final Mediator Lava' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Laser1' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Laser2' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Laser3' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Laser4' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Laser5' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Laser6' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Soul Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Bridge Balloon Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Mage Balloon Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs King Balloon Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'shtrs Pause Watcher' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Red Gelatinous Cube' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Purple Gelatinous Cube' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Green Gelatinous Cube' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Stheno the Snake Queen' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Pit Snake' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Pit Viper' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Fire Python' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Brown Python' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Yellow Python' has no obvious client embed filename
+- Texture 'lofiChar16x8' for 'Greater Pit Snake' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Greater Pit Viper' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Arachna the Spider Queen' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Spider Egg Sac' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Green Den Spider Hatchling' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Black Den Spider' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Red Spotted Den Spider' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Black Spotted Den Spider' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Brown Den Spider' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Native Nature Sprite' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Native Darkness Sprite' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Limon the Sprite God' has no obvious client embed filename
+- Texture 'invisible' for 'Limon GroundShot' has no obvious client embed filename
+- Texture 'invisible' for 'Limon SafeGround' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Character Changer' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Statue of Oryx' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Name Changer' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Da' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Da' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Da' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Db' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Db' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Db' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ua' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ua' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ua' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ub' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ub' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ub' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light La' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light La' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light La' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Lb' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Lb' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Lb' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ra' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ra' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Ra' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Rb' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Rb' has no obvious client embed filename
+- Texture 'invisible' for 'Gothic Window Light Rb' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Character Changer NonStatic' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Name Changer NonStatic' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Winter Drift' has no obvious client embed filename
+- Texture 'lofiChar216x8' for 'Winter Drift' has no obvious client embed filename
+- Texture 'invisible' for 'Iinvisible NoWalk' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Character Changer LF' has no obvious client embed filename
+- Texture 'invisible' for 'St. Patricks Event Dead' has no obvious client embed filename
+- Texture 'invisible' for 'Patty Coin Drop' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Prod Enemy Item' has no obvious client embed filename
+- Texture 'invisible' for 'Prod Enemy Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Key Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Testing Pet Stasis' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Test Chicken' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Test Chicken Minions' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift A' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift B' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift C' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift D' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift E' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift F' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift G' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'XP Gift H' has no obvious client embed filename
+- Texture 'invisible' for 'Lvl20 Chicken Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'Fame Chicken Spawner' has no obvious client embed filename
+- Texture 'invisible' for 'TH honey Heal' has no obvious client embed filename
+- Texture 'invisible' for 'TH Queen Bee Summoner' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Tomb Boss Anchor' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Tomb Support Statue' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Tomb Attacker Statue' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Tomb Defender Statue' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Active Sarcophagus' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Inactive Sarcophagus' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Tomb Bomb Trap Switch' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Tomb Bomb Trap Switch' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Tomb Bomb Trap' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Deactivated Tomb Bomb Trap' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Deactivated Tomb Bomb Trap Switch' has no obvious client embed filename
+- Texture 'invisible' for 'DS Sick' has no obvious client embed filename
+- Texture 'invisible' for 'DS Gulpord Summoner' has no obvious client embed filename
+- Texture 'invisible' for 'Nexus Explanation Obj' has no obvious client embed filename
+- Texture 'lofiChar216x16' for 'Septavius the Ghost God' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Skeleton' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Skeleton Swordsman' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Skeleton Veteran' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Skeleton Mage' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Skeleton King' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Mummy' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Mummy King' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Mummy Pharaoh' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Lair Construct Giant' has no obvious client embed filename
+- Texture 'lofiChar16x16' for 'Lair Construct Titan' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Big Black Slime' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Medium Black Slime' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Little Black Slime' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Big Brown Slime' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Little Brown Slime' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Brown Bat' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Ghost Bat' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Reaper' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Vampire' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Vampire King' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Grey Spectre' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Blue Spectre' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair White Spectre' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Ghost Archer' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Ghost Warrior' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Ghost Mage' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Ghost Rogue' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Ghost Paladin' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Lair Ghost Knight' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Ghost Warrior of Septavius' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Ghost Mage of Septavius' has no obvious client embed filename
+- Texture 'lofiChar8x8' for 'Ghost Rogue of Septavius' has no obvious client embed filename
+- Texture 'invisible' for 'Crystal Guardian' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Buddy' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Buddy' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Buddy' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Buddy' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Buddy' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Buddy' has no obvious client embed filename
+- Texture 'lofiChar28x8' for 'Pirate Buddy' has no obvious client embed filename
+- Texture 'invisible' for 'SampleGenerator' has no obvious client embed filename
+- Texture 'invisible' for 'MadLabGreenBubbles' has no obvious client embed filename
+- Texture 'invisible' for 'MadLabBlueBubbles' has no obvious client embed filename
+- Texture 'invisible' for 'LavaBomb' has no obvious client embed filename
+- Texture 'invisible' for 'TemporaryLavaLonger' has no obvious client embed filename
+- Texture 'invisible' for 'FireMakerUp' has no obvious client embed filename
+- Texture 'invisible' for 'FireMakerDn' has no obvious client embed filename
+- Texture 'invisible' for 'FireMakerLf' has no obvious client embed filename
+- Texture 'invisible' for 'FireMakerRt' has no obvious client embed filename
+- Texture 'invisible' for 'TestFire' has no obvious client embed filename
+- Texture 'invisible' for 'TemporaryLava' has no obvious client embed filename
+
+Summary

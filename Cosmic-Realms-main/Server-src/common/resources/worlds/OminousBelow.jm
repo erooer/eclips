@@ -1,0 +1,210 @@
+{
+  "width": 115,
+  "height": 61,
+  "dict": [
+    {
+      "ground": "1GroundOmen1"
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "1CreepyWall1"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "regions": [
+        {
+          "id": "Spawn"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Drowned Pilgrim"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Lantern Wraith"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Riverbound Hound"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Ferryman's Attendant"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Soul Collector"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Ominous Soul Lantern"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "The Faceless Ferryman"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Soul Barge Anchor"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Shackled Revenant"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Oathbreaker Judge"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Iron Gaoler"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Condemned Oracle"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "The First Gaoler"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "The Last Gaoler"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Veyra, Warden of Chains"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Chain Anchor"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Abyssal Remnant"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Ominous Eye"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Hollow Devourer"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Ominous Seal"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "The Ominous One"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Ritual Pillar"
+        }
+      ]
+    },
+    {
+      "ground": "1GroundOmen1",
+      "objs": [
+        {
+          "id": "Ominous Return Portal"
+        }
+      ]
+    }
+  ],
+  "data": "eJztmlkPgjAQhIt4YLzjFf//H/XBxIOydLZocdsZXsq2zO6X0gJGV7kyDkTdoyqxp/86nYZ7tCklR1L2+w8XKVEHUobiVil1mWxTNmAm25RTMJNtSjQTKfuu04l7LOpQKmWtyj+Mcg1m6dbJOXeBHLC5lPNbnUs8q5ZypawOrynkkJIyTu8ex0gHmTK8E+Vwx4bbpIyvcPsFj7aDlnLOufxBhaTEHUgZbuspd63zgzdiH/R4f6u7Cj23D4eXR52EUi+Lc6lXGsppEZTd7QVUw39RTjoc4/bY5cAK228+46/LHJ4kUjxHytqL50jZePHqgz09pf5Lepw7VvfLSF7rchPlcXHnoHPsHjt/tqyvyzKeJKR8tUhpkbL24lYpJfe8vrwkd2yUthdTasqZugZblA/5/x3JkVI/ipSoxqHMd4+V46QkJS5Sog6kROKkJCUuUqIOpVAWcNwBZSQEbw=="
+}

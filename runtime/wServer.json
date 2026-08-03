@@ -1,0 +1,43 @@
+{
+  "dbInfo": {
+    "host": "127.0.0.1",
+    "port": "6379",
+    "auth": "",
+    "index": "15"
+  },
+  "serverInfo": {
+    "type": "World",
+    "name": "LOCALHOST",
+    "address": "127.0.0.1", //161.129.67.221 25.114.225.140
+    "port": "2050",
+    "coordinates": {
+      "latitude": "0",
+      "longitude": "0"
+    },
+    "adminOnly": "false"
+  },
+  "stallDiagnostics": {
+    "enabled": true,
+    "warningMs": 100,
+    "severeMs": 300,
+    "bufferSize": 512,
+    "actionBudgetMs": 6,
+    "actionBudgetCount": 256,
+    "spinThresholdMs": 1
+  },
+  "serverSettings": {
+    "logFolder": "./logs",
+    "resourceFolder": "./resources",
+    "version": "Release.2",
+    "tps": "40",
+    "worldTickMs": "75",
+    "nexusDroppedItemLifetimeMs": 60000,
+    "nexusTemporaryPortalLifetimeMs": 60000,
+    "mode": "Single",
+    "key": "B1A5ED",
+    "maxConnections": "512",
+    "maxPlayers": "200",
+    "maxPlayersWithPriority": "220",
+    "enablePets": "true"
+  }
+}

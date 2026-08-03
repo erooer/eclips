@@ -1,0 +1,97 @@
+########################################################
+# LIVE PLAYER DATA (NEVER COMMIT)
+########################################################
+
+runtime/redis-data/
+runtime/redis-backups/
+
+**/appendonly.aof
+**/*.rdb
+
+########################################################
+# LOGS
+########################################################
+
+runtime/logs/
+**/logs/
+
+*.log
+*.dmp
+
+########################################################
+# LOCAL BACKUPS
+########################################################
+
+backups/
+Backups/
+
+*.bak
+*.tmp
+
+########################################################
+# VISUAL STUDIO
+########################################################
+
+.vs/
+.idea/
+
+*.user
+*.suo
+*.userprefs
+
+########################################################
+# WINDOWS
+########################################################
+
+Thumbs.db
+Desktop.ini
+
+########################################################
+# BUILD ARTIFACTS
+########################################################
+
+**/bin/
+**/obj/
+
+########################################################
+# RELEASES
+########################################################
+
+# Keep player releases under version control.
+# Ignore only temporary packaging output if desired.
+# Release/
+
+########################################################
+# OPTIONAL LOCAL FILES
+########################################################
+
+*.cache
+*.pid
+
+# Entire bundled SDK/toolchains
+tools/air-sdk-32.0/
+tools/flex-air-32.0/
+tools/flex-sdk-4.9.1/
+tools/AdobeAIRSDK_Flex_15.0_Win.zip
+
+# Nested Git metadata/repositories
+Cosmic-Realms-main/.git/
+tools/**/.git/
+
+# Gradle-generated cache
+**/.gradle/
+
+# Extra nested repository metadata
+**/.git/
+
+# Large bundled SDK/toolchains
+tools/air-sdk-32.0/
+tools/flex-air-32.0/
+tools/flex-sdk-4.9.1/
+tools/AdobeAIRSDK_Flex_15.0_Win.zip
+tools/*.zip
+tools/air-sdk-32.0/
+tools/flex-air-32.0/
+tools/flex-sdk-4.9.1/
+Release/*.zip
+Cosmic-Realms-main/Server-src/Redis-x64-3.2.100.zip

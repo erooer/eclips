@@ -1,0 +1,11 @@
+{
+  "name": "OminousBelow",
+  "sbName": "The Ominous Below",
+  "isLimbo": false,
+  "persist": false,
+  "difficulty": 8,
+  "background": 0,
+  "showDisplays": true,
+  "portals": [ 0xF900 ],
+  "maps": [ "OminousBelow.jm" ]
+}

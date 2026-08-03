@@ -1,0 +1,9 @@
+{
+  "accountHost": "108.181.154.220",
+  "accountPort": 80,
+  "worldHost": "108.181.154.220",
+  "worldPort": 2050,
+  "environment": "production",
+  "deployment": "Production",
+  "useHttps": false
+}
