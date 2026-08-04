@@ -1,6 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $PSScriptRoot
 $server = Join-Path $here 'Cosmic-Realms-main\Server-src'
+$compiledBin = Join-Path $server 'bin'
+$runtime = Join-Path $here 'runtime'
 $nuget = Join-Path $here 'tools\nuget.exe'
 $msbuild = 'C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe'
 & (Join-Path $PSScriptRoot 'Validate-Preflight.ps1')
@@ -16,4 +18,37 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "account-server rebuild failed with exit code $LASTEXITCODE" }
     & $msbuild wServer\wServer.csproj /t:Rebuild /p:Configuration=Release /m
     if ($LASTEXITCODE -ne 0) { throw "world-server rebuild failed with exit code $LASTEXITCODE" }
+
+    # Server-src\bin is the only compiled server-artifact source. Keep the local
+    # runtime executable payload derived from it; runtime must never become a
+    # competing/stale source of binaries or game resources.
+    foreach ($file in @('server.exe', 'wServer.exe')) {
+        $source = Join-Path $compiledBin $file
+        $destination = Join-Path $runtime $file
+        Copy-Item -LiteralPath $source -Destination $destination -Force
+        if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash) {
+            throw "Runtime synchronization hash mismatch: $file"
+        }
+    }
+    Get-ChildItem -LiteralPath $compiledBin -File | Where-Object { $_.Extension -in @('.dll', '.pdb') } | ForEach-Object {
+        $destination = Join-Path $runtime $_.Name
+        Copy-Item -LiteralPath $_.FullName -Destination $destination -Force
+        if ((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash) {
+            throw "Runtime synchronization hash mismatch: $($_.Name)"
+        }
+    }
+    foreach ($resourceName in @('xmls', 'worlds', 'data')) {
+        $source = Join-Path $compiledBin "resources\\$resourceName"
+        $destination = Join-Path $runtime "resources\\$resourceName"
+        if (Test-Path -LiteralPath $source) {
+            Copy-Item -LiteralPath $source -Destination (Join-Path $runtime 'resources') -Recurse -Force
+            Get-ChildItem -LiteralPath $source -File -Recurse | ForEach-Object {
+                $relative = $_.FullName.Substring($source.Length).TrimStart('\\')
+                $runtimeFile = Join-Path $destination $relative
+                if ((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $runtimeFile -Algorithm SHA256).Hash) {
+                    throw "Runtime resource synchronization hash mismatch: $resourceName\\$relative"
+                }
+            }
+        }
+    }
 } finally { Pop-Location }

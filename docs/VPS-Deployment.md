@@ -31,7 +31,9 @@ Copy and verify files without stopping or restarting the live stack:
 
 ## What is deployed
 
-`Start-All.ps1` uses `Cosmic-Realms-main\Server-src\bin` as its input. The deployment script therefore copies Git `runtime` server executables, DLLs/PDBs, and resources into that directory before restarting. It also copies `build\client-unchanged.swf` and hosted web resources.
+`Start-All.ps1` uses `Cosmic-Realms-main\Server-src\bin` as its input. The deployment script therefore uses the Git checkout's compiled `Cosmic-Realms-main\Server-src\bin` as its only server-artifact source, then copies its executables, DLLs/PDBs, and resources into the live `Server-src\bin` before restarting. It also copies `build\client-unchanged.swf` and refreshes the live runtime web root from that same compiled resource set.
+
+`runtime` is deliberately not used as a deployment source: it is a generated execution directory which `Start-All.ps1` refreshes from `Server-src\bin` each time the stack starts.
 
 Every copied file is SHA-256 checked. The server executable, world executable, `common.dll`, client SWF, and `EmbeddedData_EquipCXML.dat` are explicitly verified before restart.
 

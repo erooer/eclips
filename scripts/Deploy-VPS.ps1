@@ -18,11 +18,11 @@ $ErrorActionPreference = 'Stop'
 $GitRoot = $GitRootPath
 $LiveRoot = $LiveRootPath
 $LiveProject = Join-Path $LiveRoot 'Cosmic-Realms-main'
-$GitRuntime = Join-Path $GitRoot 'runtime'
+$GitProject = Join-Path $GitRoot 'Cosmic-Realms-main'
 $LiveRuntime = Join-Path $LiveRoot 'runtime'
 $GitClientSwf = Join-Path $GitRoot 'build\client-unchanged.swf'
 $LiveClientSwf = Join-Path $LiveRoot 'build\client-unchanged.swf'
-$GitServerBin = $GitRuntime
+$GitServerBin = Join-Path $GitProject 'Server-src\bin'
 $LiveServerBin = Join-Path $LiveProject 'Server-src\bin'
 $DeploymentLogs = $DeploymentLogRoot
 $Timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -217,12 +217,12 @@ try {
         else { throw 'Administrator privileges are required.' }
     }
     foreach ($entry in @(
-        @($GitRoot, 'Git root'), @($LiveRoot, 'live root'), @($GitRuntime, 'Git runtime'), @($GitClientSwf, 'Git client SWF'),
+        @($GitRoot, 'Git root'), @($GitProject, 'Git compiled project'), @($LiveRoot, 'live root'), @($GitClientSwf, 'Git client SWF'),
         @((Join-Path $LiveRoot 'scripts\Start-All.ps1'), 'live Start-All.ps1'), @((Join-Path $LiveRoot 'scripts\Stop-All.ps1'), 'live Stop-All.ps1'),
         @($LiveServerBin, 'live Server-src bin'), @($LiveClientSwf, 'live client SWF'),
         @((Join-Path $LiveRuntime 'redis-data'), 'live protected Redis data directory'), @((Join-Path $LiveRuntime 'redis-backups'), 'live protected Redis backup directory'),
-        @((Join-Path $GitRuntime 'resources'), 'Git server resources'), @((Join-Path $GitRuntime 'resources\web'), 'Git hosted web resources'),
-        @((Join-Path $GitRuntime 'server.exe'), 'Git server.exe'), @((Join-Path $GitRuntime 'wServer.exe'), 'Git wServer.exe'), @((Join-Path $GitRuntime 'common.dll'), 'Git common.dll')
+        @($GitServerBin, 'Git compiled Server-src bin'), @((Join-Path $GitServerBin 'resources'), 'Git compiled server resources'), @((Join-Path $GitServerBin 'resources\web'), 'Git compiled hosted web resources'),
+        @((Join-Path $GitServerBin 'server.exe'), 'Git compiled server.exe'), @((Join-Path $GitServerBin 'wServer.exe'), 'Git compiled wServer.exe'), @((Join-Path $GitServerBin 'common.dll'), 'Git compiled common.dll')
     )) { Assert-Path $entry[0] $entry[1] }
 
     Push-Location $GitRoot
@@ -233,7 +233,7 @@ try {
     Pop-Location
 
     if ($WhatIfPreference) {
-        Write-Step "WHATIF: commit=$oldCommit; would create backup $BackupRoot, stop only Eclipse-owned processes, copy verified runtime/server resources and SWF, then restart unless -NoRestart."
+        Write-Step "WHATIF: commit=$oldCommit; would create backup $BackupRoot, stop only Eclipse-owned processes, copy verified compiled Server-src\\bin artifacts/resources and SWF, then restart unless -NoRestart."
         return
     }
 
@@ -262,9 +262,11 @@ try {
     # Server binaries used by Start-All.ps1 as its source of truth.
     foreach ($file in @('server.exe', 'wServer.exe')) { Copy-VerifiedFile (Join-Path $GitServerBin $file) (Join-Path $LiveServerBin $file) }
     Get-ChildItem -LiteralPath $GitServerBin -File | Where-Object { $_.Extension -in @('.dll', '.pdb') } | ForEach-Object { Copy-VerifiedFile $_.FullName (Join-Path $LiveServerBin $_.Name) }
-    Copy-VerifiedDirectory (Join-Path $GitRuntime 'resources') (Join-Path $LiveServerBin 'resources')
+    Copy-VerifiedDirectory (Join-Path $GitServerBin 'resources') (Join-Path $LiveServerBin 'resources')
     Copy-VerifiedFile $GitClientSwf $LiveClientSwf
-    Copy-VerifiedDirectory (Join-Path $GitRuntime 'resources\web') (Join-Path $LiveRuntime 'resources\web')
+    # Start-All runs from runtime, so refresh its hosted web root from the same
+    # compiled Server-src\\bin resource set. Runtime is never a deployment source.
+    Copy-VerifiedDirectory (Join-Path $GitServerBin 'resources\web') (Join-Path $LiveRuntime 'resources\web')
 
     # These scripts are deployment infrastructure, not VPS configuration. No server JSON,
     # Redis configuration, Redis data, logs, or air client configuration is copied from Git.
@@ -274,11 +276,11 @@ try {
     }
 
     foreach ($pair in @(
-        @((Join-Path $GitRuntime 'wServer.exe'), (Join-Path $LiveServerBin 'wServer.exe')),
-        @((Join-Path $GitRuntime 'server.exe'), (Join-Path $LiveServerBin 'server.exe')),
-        @((Join-Path $GitRuntime 'common.dll'), (Join-Path $LiveServerBin 'common.dll')),
+        @((Join-Path $GitServerBin 'wServer.exe'), (Join-Path $LiveServerBin 'wServer.exe')),
+        @((Join-Path $GitServerBin 'server.exe'), (Join-Path $LiveServerBin 'server.exe')),
+        @((Join-Path $GitServerBin 'common.dll'), (Join-Path $LiveServerBin 'common.dll')),
         @($GitClientSwf, $LiveClientSwf),
-        @((Join-Path $GitRuntime 'resources\xmls\EmbeddedData_EquipCXML.dat'), (Join-Path $LiveServerBin 'resources\xmls\EmbeddedData_EquipCXML.dat'))
+        @((Join-Path $GitServerBin 'resources\xmls\EmbeddedData_EquipCXML.dat'), (Join-Path $LiveServerBin 'resources\xmls\EmbeddedData_EquipCXML.dat'))
     )) {
         if ((Get-Sha256 $pair[0]) -ne (Get-Sha256 $pair[1])) { throw "Required deployment hash verification failed: $($pair[0])" }
         Write-Step "VERIFIED $($pair[1])"
