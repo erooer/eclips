@@ -1,7 +1,11 @@
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
 param(
     [switch]$SkipPull,
-    [switch]$NoRestart
+    [switch]$NoRestart,
+    # Optional only for isolated dry-run validation. Production defaults are fixed below.
+    [string]$GitRootPath = 'C:\Eclipse-Git\eclips',
+    [string]$LiveRootPath = 'C:\Eclipse\rebuild-original\rebuild-original',
+    [string]$DeploymentLogRoot = 'C:\Eclipse\deployment-logs'
 )
 
 # Eclipse VPS deployment. Run this script on the VPS from an elevated PowerShell.
@@ -11,8 +15,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$GitRoot = 'C:\Eclipse-Git\eclips'
-$LiveRoot = 'C:\Eclipse\rebuild-original\rebuild-original'
+$GitRoot = $GitRootPath
+$LiveRoot = $LiveRootPath
 $LiveProject = Join-Path $LiveRoot 'Cosmic-Realms-main'
 $GitRuntime = Join-Path $GitRoot 'runtime'
 $LiveRuntime = Join-Path $LiveRoot 'runtime'
@@ -20,7 +24,7 @@ $GitClientSwf = Join-Path $GitRoot 'build\client-unchanged.swf'
 $LiveClientSwf = Join-Path $LiveRoot 'build\client-unchanged.swf'
 $GitServerBin = $GitRuntime
 $LiveServerBin = Join-Path $LiveProject 'Server-src\bin'
-$DeploymentLogs = 'C:\Eclipse\deployment-logs'
+$DeploymentLogs = $DeploymentLogRoot
 $Timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $BackupRoot = Join-Path $LiveRoot "deployment-backups\$Timestamp"
 $CopiedFiles = [System.Collections.Generic.List[string]]::new()
@@ -203,13 +207,18 @@ function Start-AndVerify {
 }
 
 try {
-    if (!(Test-Administrator)) { throw 'Administrator privileges are required.' }
+    if (!(Test-Administrator)) {
+        # -WhatIf performs no service, file, Git, or deployment mutations and may be
+        # used by an operator to validate the plan before opening an elevated shell.
+        if ($WhatIfPreference) { Write-Warning 'Running read-only -WhatIf preflight without Administrator privileges.' }
+        else { throw 'Administrator privileges are required.' }
+    }
     foreach ($entry in @(
         @($GitRoot, 'Git root'), @($LiveRoot, 'live root'), @($GitRuntime, 'Git runtime'), @($GitClientSwf, 'Git client SWF'),
-        @(Join-Path $LiveRoot 'scripts\Start-All.ps1', 'live Start-All.ps1'), @(Join-Path $LiveRoot 'scripts\Stop-All.ps1', 'live Stop-All.ps1'),
+        @((Join-Path $LiveRoot 'scripts\Start-All.ps1'), 'live Start-All.ps1'), @((Join-Path $LiveRoot 'scripts\Stop-All.ps1'), 'live Stop-All.ps1'),
         @($LiveServerBin, 'live Server-src bin'), @($LiveClientSwf, 'live client SWF'),
-        @(Join-Path $GitRuntime 'resources', 'Git server resources'), @(Join-Path $GitRuntime 'resources\web', 'Git hosted web resources'),
-        @(Join-Path $GitRuntime 'server.exe', 'Git server.exe'), @(Join-Path $GitRuntime 'wServer.exe', 'Git wServer.exe'), @(Join-Path $GitRuntime 'common.dll', 'Git common.dll')
+        @((Join-Path $GitRuntime 'resources'), 'Git server resources'), @((Join-Path $GitRuntime 'resources\web'), 'Git hosted web resources'),
+        @((Join-Path $GitRuntime 'server.exe'), 'Git server.exe'), @((Join-Path $GitRuntime 'wServer.exe'), 'Git wServer.exe'), @((Join-Path $GitRuntime 'common.dll'), 'Git common.dll')
     )) { Assert-Path $entry[0] $entry[1] }
 
     Push-Location $GitRoot
@@ -219,16 +228,16 @@ try {
     $oldCommit = (& git rev-parse HEAD).Trim()
     Pop-Location
 
+    if ($WhatIfPreference) {
+        Write-Step "WHATIF: commit=$oldCommit; would create backup $BackupRoot, stop only Eclipse-owned processes, copy verified runtime/server resources and SWF, then restart unless -NoRestart."
+        return
+    }
+
     New-Item -ItemType Directory -Force -Path $DeploymentLogs | Out-Null
     $log = Join-Path $DeploymentLogs "deploy-$Timestamp.log"
     Start-Transcript -LiteralPath $log -Append | Out-Null
     $TranscriptStarted = $true
     Write-Step "Git commit before deployment: $oldCommit"
-
-    if ($WhatIfPreference) {
-        Write-Step "WHATIF: would backup to $BackupRoot, stop only Eclipse-owned processes, copy verified runtime/server resources and SWF, then restart unless -NoRestart."
-        return
-    }
 
     Push-Location $GitRoot
     if (!$SkipPull) {
