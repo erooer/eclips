@@ -51,6 +51,10 @@ Desktop.ini
 ########################################################
 
 **/bin/
+
+# Keep the deployable server build output
+!Cosmic-Realms-main/Server-src/bin/
+!Cosmic-Realms-main/Server-src/bin/**
 **/obj/
 
 ########################################################
