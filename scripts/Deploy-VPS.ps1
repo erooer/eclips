@@ -132,12 +132,15 @@ function New-DeploymentBackup {
     foreach ($relative in @('runtime\redis.conf', 'runtime\server.json', 'runtime\wServer.json', 'runtime\air\client.json', 'runtime\processes.json')) {
         Backup-Path (Join-Path $LiveRoot $relative) (Join-Path 'vps-config' $relative)
     }
+    # Redis persistence is protected live data. AOF/RDB files may be locked while
+    # Redis is running, so inventory metadata only—never hash, copy, or open them.
     $persistence = @()
     foreach ($directory in @((Join-Path $LiveRuntime 'redis-data'), (Join-Path $LiveRuntime 'redis-backups'))) {
-        if (Test-Path -LiteralPath $directory) {
-            Get-ChildItem -LiteralPath $directory -File -Recurse | ForEach-Object {
-                $persistence += [PSCustomObject]@{ Path = $_.FullName; Bytes = $_.Length; SHA256 = Get-Sha256 $_.FullName }
-            }
+        Assert-Path $directory 'protected Redis persistence directory'
+        Write-Step "PRESERVED REDIS DIRECTORY $directory"
+        Get-ChildItem -LiteralPath $directory -File -Recurse | ForEach-Object {
+            $persistence += [PSCustomObject]@{ Path = $_.FullName; Bytes = $_.Length; LastWriteTimeUtc = $_.LastWriteTimeUtc }
+            Write-Step "PRESERVED REDIS FILE path=$($_.FullName) bytes=$($_.Length) modifiedUtc=$($_.LastWriteTimeUtc.ToString('o'))"
         }
     }
     $persistence | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $BackupRoot 'redis-persistence-inventory.json') -Encoding UTF8
@@ -217,6 +220,7 @@ try {
         @($GitRoot, 'Git root'), @($LiveRoot, 'live root'), @($GitRuntime, 'Git runtime'), @($GitClientSwf, 'Git client SWF'),
         @((Join-Path $LiveRoot 'scripts\Start-All.ps1'), 'live Start-All.ps1'), @((Join-Path $LiveRoot 'scripts\Stop-All.ps1'), 'live Stop-All.ps1'),
         @($LiveServerBin, 'live Server-src bin'), @($LiveClientSwf, 'live client SWF'),
+        @((Join-Path $LiveRuntime 'redis-data'), 'live protected Redis data directory'), @((Join-Path $LiveRuntime 'redis-backups'), 'live protected Redis backup directory'),
         @((Join-Path $GitRuntime 'resources'), 'Git server resources'), @((Join-Path $GitRuntime 'resources\web'), 'Git hosted web resources'),
         @((Join-Path $GitRuntime 'server.exe'), 'Git server.exe'), @((Join-Path $GitRuntime 'wServer.exe'), 'Git wServer.exe'), @((Join-Path $GitRuntime 'common.dll'), 'Git common.dll')
     )) { Assert-Path $entry[0] $entry[1] }
