@@ -16,8 +16,7 @@ namespace wServer.logic
                      new Follow(2.5, 10),
                      new Wander(0.2)
                  ),
-                 new Reproduce("Mini Larva", coolDown: 500, densityMax: 10, densityRadius: 4),
-                 new Spawn("Mini Larva", 10, 0),
+                 new LifetimeSpawn("Mini Larva", maxTotal: 5),
                  new Shoot(25, projectileIndex: 0, count: 2, shootAngle: 10, coolDown: 500, coolDownOffset: 500),
                  new Shoot(25, projectileIndex: 1, count: 1, shootAngle: 0, coolDown: 500, coolDownOffset: 500)
              ),
@@ -64,8 +63,7 @@ namespace wServer.logic
                         new Follow(2.0, 10),
                         new Wander(0.2)
                     ),
-                    new Reproduce("Woodland Mini Megamoth", coolDown: 500, densityMax: 8, densityRadius: 5),
-                    new Spawn("Woodland Mini Megamoth", 8, 0),
+                    new LifetimeSpawn("Woodland Mini Megamoth", maxTotal: 5),
                     new Shoot(25, projectileIndex: 0, count: 3, shootAngle: 10, coolDown: 400)
                 ),
                 new State("change",

@@ -1,6 +1,6 @@
 Cosmic Realms Static Validation Report
 Scope: all
-Generated: 2026-08-03T20:54:41.103Z
+Generated: 2026-08-04T02:14:04.031Z
 
 Errors (0)
 - none
@@ -1564,4 +1564,4 @@ Warnings (1555)
 
 Summary
 - Resources: 6707 unique types (1361 grounds).
-- Maps: 198; largest Moon.jm (512x513); 186740 static object placements.
+- Maps: 198; largest Moon.jm (512x513); 186094 static object placements.

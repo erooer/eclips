@@ -53,7 +53,7 @@ namespace wServer.logic
                 )
             )
 
-            .Init("White Demon",
+        .Init("White Demon",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new DropPortalOnDeath("Abyss of Demons Portal", .17),
@@ -73,7 +73,7 @@ namespace wServer.logic
                     new TierLoot(9, ItemType.Armor, 0.25),
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                      new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Attack", 0.1)
                )
@@ -102,7 +102,7 @@ namespace wServer.logic
 
 
 
-          .Init("Death God",
+        .Init("Death God",
                 new State(
                     new DropPortalOnDeath("The Crawling Depths", .07),
                     new DropPortalOnDeath("Rainbow Road", .005),
@@ -122,12 +122,12 @@ namespace wServer.logic
                     new TierLoot(9, ItemType.Armor, 0.25),
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                      new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Attack", 0.1)
                )
             )
-            .Init("Sprite God",
+        .Init("Sprite God",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new Prioritize(
@@ -147,7 +147,7 @@ namespace wServer.logic
                     new TierLoot(9, ItemType.Armor, 0.25),
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ability, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                      new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Attack", 0.1)
                     )
@@ -162,7 +162,7 @@ namespace wServer.logic
                     new DropPortalOnDeath("Glowing Portal", .11)
                     )
             )
-            .Init("Medusa",
+        .Init("Medusa",
                 new State(
                    new DropPortalOnDeath("Rainbow Road", .005),
                     new DropPortalOnDeath("Snake Pit Portal", .17),
@@ -184,12 +184,12 @@ namespace wServer.logic
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
                     new TierLoot(4, ItemType.Ability, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                      new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Speed", 0.1)
                     )
             )
-            .Init("Ent God",
+        .Init("Ent God",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new DropPortalOnDeath("Woodland Labyrinth", .07),
@@ -208,12 +208,12 @@ namespace wServer.logic
                     new TierLoot(8, ItemType.Armor, 0.25),
                     new TierLoot(9, ItemType.Armor, 0.25),
                     new TierLoot(4, ItemType.Ability, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                      new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Defense", 0.07)
                     )
             )
-            .Init("Beholder",
+        .Init("Beholder",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new DropPortalOnDeath("Haunted Omen Portal", .10),
@@ -234,12 +234,12 @@ namespace wServer.logic
                     new TierLoot(9, ItemType.Armor, 0.25),
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Defense", 0.1)
                     )
             )
-            .Init("Flying Brain",
+        .Init("Flying Brain",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new Prioritize(
@@ -259,12 +259,12 @@ namespace wServer.logic
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
                     new TierLoot(4, ItemType.Ability, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Attack", 0.1)
                     )
             )
-            .Init("Slime God",
+        .Init("Slime God",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new DropPortalOnDeath("Toxic Sewers Portal", 0.17),
@@ -285,12 +285,12 @@ namespace wServer.logic
                     new TierLoot(9, ItemType.Armor, 0.25),
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Defense", 0.1)
                     )
             )
-            .Init("Ghost God",
+        .Init("Ghost God",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new Prioritize(
@@ -311,12 +311,12 @@ namespace wServer.logic
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
                     new TierLoot(4, ItemType.Ability, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Speed", 0.1)
                     )
             )
-            .Init("Rock Bot",
+        .Init("Rock Bot",
                 new State(
                     new DropPortalOnDeath("Foundry Portal", .11),
                     new Spawn("Paper Bot", maxChildren: 1, initialSpawn: 1, coolDown: 10000, givesNoXp: false),
@@ -333,11 +333,11 @@ namespace wServer.logic
                         )
                     ),
                 new Threshold(0.01,
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Potion of Attack", 0.1)
                 )
             )
-            .Init("Paper Bot",
+        .Init("Paper Bot",
                 new State(
                     new DropPortalOnDeath("Foundry Portal", .16),
                     new Prioritize(
@@ -359,11 +359,11 @@ namespace wServer.logic
                         )
                     ),
                 new Threshold(0.01,
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Potion of Attack", 0.1)
                 )
             )
-            .Init("Steel Bot",
+        .Init("Steel Bot",
                 new State(
                     new DropPortalOnDeath("Foundry Portal", .11),
                     new Prioritize(
@@ -386,11 +386,11 @@ namespace wServer.logic
                         )
                     ),
                 new Threshold(0.01,
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Potion of Attack", 0.1)
                 )
             )
-            .Init("Djinn",
+        .Init("Djinn",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .005),
                     new DropPortalOnDeath("Treasure Cave Portal", 0.17),
@@ -468,12 +468,12 @@ namespace wServer.logic
                     new TierLoot(3, ItemType.Ring, 0.25),
                     new TierLoot(4, ItemType.Ring, 0.125),
                     new TierLoot(4, ItemType.Ability, 0.125),
-                    new ItemLoot("Potion Crate", 0.015),
+                    new ItemLoot("Potion Crate", 0.5),
                     new ItemLoot("Items Crate", 0.009),
                     new ItemLoot("Potion of Speed", 0.1)
                     )
             )
-            .Init("Leviathan",
+        .Init("Leviathan",
                 new State(
                     new DropPortalOnDeath("Rainbow Road", .01),
                     new DropPortalOnDeath("Puppet Theatre Portal", .17),
@@ -510,7 +510,7 @@ namespace wServer.logic
                     ),
                 new Threshold(.01,
                     new ItemLoot("Items Crate", 0.009),
-                    new ItemLoot("Potion Crate", 0.015),//Items Crate
+                    new ItemLoot("Potion Crate", 0.5),//Items Crate
                     new ItemLoot("Potion of Defense", 0.1),
                     new TierLoot(6, ItemType.Weapon, 0.01),
                     new ItemLoot("Health Potion", 0.04),

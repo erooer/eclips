@@ -479,6 +479,7 @@
     <Compile Include="logic\behaviors\Grenade.cs" />
     <Compile Include="logic\behaviors\StayAbove.cs" />
     <Compile Include="logic\behaviors\Spawn.cs" />
+    <Compile Include="logic\behaviors\LifetimeSpawn.cs" />
     <Compile Include="logic\behaviors\StayBack.cs" />
     <Compile Include="logic\behaviors\Flash.cs" />
     <Compile Include="logic\behaviors\Shoot.cs" />
