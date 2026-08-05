@@ -14,6 +14,7 @@ using wServer.networking.packets.incoming;
 using wServer.networking.packets.outgoing;
 using wServer.realm.worlds.logic;
 using System.Diagnostics;
+using System.Threading;
 
 namespace wServer.networking
 {
@@ -42,6 +43,8 @@ namespace wServer.networking
         private readonly CommHandler _handler;
         private readonly Queue<Tuple<Packet, PacketPriority>> _deferredTextPackets = new Queue<Tuple<Packet, PacketPriority>>();
         private bool _initialUpdateAcknowledged;
+        private int _initialUpdateAcksOutstanding;
+        private int _initialUpdateRegistered;
 
         private volatile ProtocolState _state;
         public ProtocolState State
@@ -90,6 +93,8 @@ namespace wServer.networking
             Character = null;
             Player = null;
             _initialUpdateAcknowledged = false;
+            _initialUpdateAcksOutstanding = 0;
+            _initialUpdateRegistered = 0;
             lock (_deferredTextPackets)
                 _deferredTextPackets.Clear();
 
@@ -142,12 +147,32 @@ namespace wServer.networking
             }
         }
 
+        // A large initial UPDATE can be split into several protocol-valid frames.
+        // Startup text remains deferred until every frame has been acknowledged.
+        public bool RegisterInitialUpdatePackets(int packetCount)
+        {
+            if (packetCount <= 0 || _initialUpdateAcknowledged)
+                return false;
+
+            if (Interlocked.CompareExchange(ref _initialUpdateRegistered, 1, 0) != 0)
+                return false;
+
+            Interlocked.Exchange(ref _initialUpdateAcksOutstanding, packetCount);
+            return true;
+        }
+
         public void InitialUpdateAcknowledged()
         {
             if (_initialUpdateAcknowledged)
                 return;
 
+            if (Interlocked.Decrement(ref _initialUpdateAcksOutstanding) > 0)
+                return;
+
             _initialUpdateAcknowledged = true;
+            if (Player?.Owner is Vault)
+                Log.InfoFormat("[VAULT_SYNC] complete world={0} account={1}; all initial UPDATE chunks acknowledged.",
+                    Player.Owner.Id, Account?.AccountId ?? 0);
             Queue<Tuple<Packet, PacketPriority>> pending;
             lock (_deferredTextPackets)
             {

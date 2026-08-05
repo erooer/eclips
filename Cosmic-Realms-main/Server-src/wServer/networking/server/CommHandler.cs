@@ -369,7 +369,18 @@ namespace wServer.networking.server
             for (var i = 0; i < 3; i++)
                 while (_pendings[i] != null && _pendings[i].TryDequeue(out packet))
                 {
-                    var bytesWritten = packet.Write(_client, s.Data, s.BytesAvailable);
+                    int bytesWritten;
+                    try
+                    {
+                        bytesWritten = packet.Write(_client, s.Data, s.BytesAvailable);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.ErrorFormat("Outbound packet serialization failed account={0} packet={1} state={2}: {3}",
+                            _client.Account?.Name ?? "<none>", packet.ID, _client.State, e);
+                        _client.Disconnect("Outbound packet serialization failed.");
+                        return false;
+                    }
 
                     if (bytesWritten == 0)
                     {

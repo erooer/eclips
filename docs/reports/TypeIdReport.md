@@ -1,6 +1,6 @@
 Cosmic Realms Static Validation Report
 Scope: types
-Generated: 2026-07-29T07:20:56.373Z
+Generated: 2026-08-04T19:58:01.350Z
 
 Errors (0)
 - none
@@ -735,5 +735,5 @@ Warnings (727)
 - Texture 'invisible' for 'TemporaryLava' has no obvious client embed filename
 
 Summary
-- Resources: 6701 unique types (1361 grounds).
+- Resources: 6707 unique types (1361 grounds).
 - Maps: 0; largest n/a; 0 static object placements.

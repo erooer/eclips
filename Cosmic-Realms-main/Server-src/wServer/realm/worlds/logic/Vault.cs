@@ -15,6 +15,7 @@ namespace wServer.realm.worlds.logic
     public class Vault : World
     {
         public int AccountId { get; private set; }
+        public DateTime InitializedUtc { get; private set; }
 
         private readonly Client _client;
 
@@ -178,6 +179,8 @@ namespace wServer.realm.worlds.logic
                 e.Move(38, 68);
                 EnterWorld(e);
             }
+
+            InitializedUtc = DateTime.UtcNow;
         }
 
         public override void Tick(RealmTime time)

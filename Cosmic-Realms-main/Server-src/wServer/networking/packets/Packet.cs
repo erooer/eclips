@@ -76,6 +76,19 @@ namespace wServer.networking.packets
             return packetLength;
         }
 
+        // Serialization happens entirely in memory before a frame is appended to
+        // the socket buffer. Callers use this to bound compound packets (UPDATE)
+        // before queuing them, so an oversized frame cannot leave an initial world
+        // synchronization in a partial state.
+        public int GetFrameLength()
+        {
+            using (var s = new MemoryStream())
+            {
+                Write(new NWriter(s));
+                return checked((int)s.Position + 5);
+            }
+        }
+
         protected abstract void Read(NReader rdr);
         protected abstract void Write(NWriter wtr);
 

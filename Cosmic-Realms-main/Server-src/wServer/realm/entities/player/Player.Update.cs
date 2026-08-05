@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using wServer.networking.packets.outgoing;
+using wServer.networking.server;
 using wServer.realm.terrain;
+using wServer.realm.worlds.logic;
 
 namespace wServer.realm.entities
 {
@@ -65,6 +67,11 @@ namespace wServer.realm.entities
         public const int RadiusSqr = Radius * Radius;
         private const int StaticBoundingBox = Radius * 2;
         private const int AppoxAreaOfSight = (int)(Math.PI * Radius * Radius + 1);
+        // Keep every UPDATE frame comfortably below the 128 KiB socket buffer.
+        // UPDATE sections are independent, so chunking preserves protocol order.
+        private const int MaxTilesPerUpdatePacket = 8192;
+        private const int MaxObjectsPerUpdatePacket = 256;
+        private const int MaxDropsPerUpdatePacket = 8192;
 
         private readonly HashSet<IntPoint> _clientStatic = new HashSet<IntPoint>();
         private readonly UpdatedSet _clientEntities;
@@ -191,14 +198,144 @@ namespace wServer.realm.entities
                 _tiles = tilesUpdate.ToArray();
                 _newObjects = entitiesAdd.Select(_ => _.ToDefinition()).Concat(staticsUpdate).ToArray();
                 _removedObjects = entitiesRemove.ToArray();
-                _client.SendPacket(new Update
+
+                Update[] updates;
+                try
                 {
-                    Tiles = _tiles,
-                    NewObjs = _newObjects,
-                    Drops = _removedObjects
-                });
-                AwaitUpdateAck(time.TotalElapsedMs);
+                    updates = CreateUpdatePackets(_tiles, _newObjects, _removedObjects).ToArray();
+                }
+                catch (Exception e)
+                {
+                    Log.Error($"[VAULT_SYNC] UPDATE chunk creation failed world={Owner.Id} account={AccountId}.", e);
+                    _client.Disconnect("Initial world synchronization serialization failed.");
+                    return;
+                }
+                var initialBatch = _client.RegisterInitialUpdatePackets(updates.Length);
+                var isVaultInitialBatch = initialBatch && Owner is Vault;
+
+                if (isVaultInitialBatch)
+                {
+                    var vaultChests = _newObjects.Count(o => o.ObjectType == 0x0504 || o.ObjectType == 0x0505);
+                    var portals = _newObjects.Count(IsPortal);
+                    var vault = Owner as Vault;
+                    var entryAfterInitializationMs = vault == null || vault.InitializedUtc == default(DateTime)
+                        ? -1
+                        : (long)(DateTime.UtcNow - vault.InitializedUtc).TotalMilliseconds;
+                    Log.InfoFormat(
+                        "[VAULT_SYNC] begin world={0} account={1} entryAfterInitMs={2} tiles={3} staticObjects={4} vaultChests={5} portals={6} entities={7} expectedSerialized={7} updateChunks={8}",
+                        Owner.Id, AccountId, entryAfterInitializationMs, _tiles.Length, staticsUpdate.Length,
+                        vaultChests, portals, _newObjects.Length, updates.Length);
+                }
+
+                for (var index = 0; index < updates.Length; index++)
+                {
+                    var update = updates[index];
+                    int frameLength;
+                    try
+                    {
+                        frameLength = update.GetFrameLength();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error($"[VAULT_SYNC] UPDATE serialization failed world={Owner.Id} account={AccountId} chunk={index + 1}/{updates.Length}.", e);
+                        _client.Disconnect("Initial world synchronization serialization failed.");
+                        return;
+                    }
+
+                    if (frameLength > Server.BufferSize)
+                    {
+                        Log.ErrorFormat("[VAULT_SYNC] rejected oversized UPDATE world={0} account={1} chunk={2}/{3} bytes={4}.",
+                            Owner.Id, AccountId, index + 1, updates.Length, frameLength);
+                        _client.Disconnect("Initial world synchronization packet was too large.");
+                        return;
+                    }
+
+                    if (isVaultInitialBatch)
+                        Log.InfoFormat("[VAULT_SYNC] chunk world={0} account={1} index={2}/{3} bytes={4} tiles={5} objects={6} drops={7}",
+                            Owner.Id, AccountId, index + 1, updates.Length, frameLength,
+                            update.Tiles.Length, update.NewObjs.Length, update.Drops.Length);
+
+                    _client.SendPacket(update);
+                    AwaitUpdateAck(time.TotalElapsedMs);
+                }
             }
+        }
+
+        private bool IsPortal(ObjectDef obj)
+        {
+            common.resources.ObjectDesc desc;
+            return Manager.Resources.GameData.ObjectDescs.TryGetValue(obj.ObjectType, out desc) && desc.Class == "Portal";
+        }
+
+        private static IEnumerable<Update> CreateUpdatePackets(Update.TileData[] tiles, ObjectDef[] objects, int[] drops)
+        {
+            var complete = new Update { Tiles = tiles, NewObjs = objects, Drops = drops };
+            if (complete.GetFrameLength() <= Server.BufferSize)
+            {
+                yield return complete;
+                yield break;
+            }
+
+            foreach (var chunk in Chunk(tiles, MaxTilesPerUpdatePacket))
+                yield return new Update { Tiles = chunk, NewObjs = new ObjectDef[0], Drops = new int[0] };
+
+            foreach (var chunk in ChunkObjects(objects))
+                yield return new Update { Tiles = new Update.TileData[0], NewObjs = chunk, Drops = new int[0] };
+
+            foreach (var chunk in Chunk(drops, MaxDropsPerUpdatePacket))
+                yield return new Update { Tiles = new Update.TileData[0], NewObjs = new ObjectDef[0], Drops = chunk };
+        }
+
+        private static IEnumerable<T[]> Chunk<T>(T[] values, int size)
+        {
+            if (values.Length == 0)
+                return new T[0][];
+
+            var chunks = new List<T[]>((values.Length + size - 1) / size);
+            for (var offset = 0; offset < values.Length; offset += size)
+            {
+                var length = Math.Min(size, values.Length - offset);
+                var chunk = new T[length];
+                Array.Copy(values, offset, chunk, 0, length);
+                chunks.Add(chunk);
+            }
+            return chunks;
+        }
+
+        private static IEnumerable<ObjectDef[]> ChunkObjects(ObjectDef[] objects)
+        {
+            var chunk = new List<ObjectDef>(Math.Min(MaxObjectsPerUpdatePacket, objects.Length));
+            foreach (var obj in objects)
+            {
+                chunk.Add(obj);
+                var candidate = new Update
+                {
+                    Tiles = new Update.TileData[0],
+                    NewObjs = chunk.ToArray(),
+                    Drops = new int[0]
+                };
+
+                if (chunk.Count <= MaxObjectsPerUpdatePacket && candidate.GetFrameLength() <= Server.BufferSize)
+                    continue;
+
+                chunk.RemoveAt(chunk.Count - 1);
+                if (chunk.Count == 0)
+                    throw new InvalidOperationException("A single UPDATE object definition exceeds the protocol frame limit.");
+
+                yield return chunk.ToArray();
+                chunk.Clear();
+                chunk.Add(obj);
+                if ((new Update
+                {
+                    Tiles = new Update.TileData[0],
+                    NewObjs = chunk.ToArray(),
+                    Drops = new int[0]
+                }).GetFrameLength() > Server.BufferSize)
+                    throw new InvalidOperationException("A single UPDATE object definition exceeds the protocol frame limit.");
+            }
+
+            if (chunk.Count > 0)
+                yield return chunk.ToArray();
         }
 
         private IEnumerable<int> GetRemovedEntities(HashSet<IntPoint> visibleTiles)
