@@ -42,9 +42,12 @@ namespace wServer.networking
         private readonly Server _server;
         private readonly CommHandler _handler;
         private readonly Queue<Tuple<Packet, PacketPriority>> _deferredTextPackets = new Queue<Tuple<Packet, PacketPriority>>();
-        private bool _initialUpdateAcknowledged;
+        private int _initialWorldUpdateObserved;
+        private int _initialUpdateChunkSynchronizationActive;
         private int _initialUpdateAcksOutstanding;
+        private int _initialUpdateAcksExpected;
         private int _initialUpdateRegistered;
+        private DateTime _initialUpdateSynchronizationStartedUtc;
 
         private volatile ProtocolState _state;
         public ProtocolState State
@@ -92,9 +95,12 @@ namespace wServer.networking
             Account = null;
             Character = null;
             Player = null;
-            _initialUpdateAcknowledged = false;
+            _initialWorldUpdateObserved = 0;
+            _initialUpdateChunkSynchronizationActive = 0;
             _initialUpdateAcksOutstanding = 0;
+            _initialUpdateAcksExpected = 0;
             _initialUpdateRegistered = 0;
+            _initialUpdateSynchronizationStartedUtc = default(DateTime);
             lock (_deferredTextPackets)
                 _deferredTextPackets.Clear();
 
@@ -124,13 +130,14 @@ namespace wServer.networking
 
         public void SendPacket(Packet pkt, PacketPriority priority = PacketPriority.Normal)
         {
-            if (pkt is Text && !_initialUpdateAcknowledged && (State == ProtocolState.Handshaked || State == ProtocolState.Ready))
+            if (pkt is Text && Volatile.Read(ref _initialUpdateChunkSynchronizationActive) != 0 &&
+                (State == ProtocolState.Handshaked || State == ProtocolState.Ready))
             {
                 lock (_deferredTextPackets)
                     _deferredTextPackets.Enqueue(Tuple.Create(pkt, priority));
 
                 var earlyText = (Text)pkt;
-                Log.InfoFormat("[TEXT_TRACE] deferred until UPDATEACK account={0} state={1} objectId={2} name={3} bubble={4} text={5}",
+                Log.InfoFormat("[TEXT_TRACE] deferred until initial UPDATE chunks are acknowledged account={0} state={1} objectId={2} name={3} bubble={4} text={5}",
                     Account?.Name ?? "<none>", State, earlyText.ObjectId, earlyText.Name, earlyText.BubbleTime, earlyText.Txt);
                 return;
             }
@@ -147,32 +154,42 @@ namespace wServer.networking
             }
         }
 
+        // The initial-state marker is consumed exactly once per connection. Normal
+        // UPDATEs never activate chunk synchronization or defer gameplay traffic.
+        public bool MarkInitialWorldUpdate()
+        {
+            return Interlocked.CompareExchange(ref _initialWorldUpdateObserved, 1, 0) == 0;
+        }
+
         // A large initial UPDATE can be split into several protocol-valid frames.
-        // Startup text remains deferred until every frame has been acknowledged.
+        // Only this exceptional path defers startup TEXT until every chunk is acked.
         public bool RegisterInitialUpdatePackets(int packetCount)
         {
-            if (packetCount <= 0 || _initialUpdateAcknowledged)
+            if (packetCount <= 1)
                 return false;
 
             if (Interlocked.CompareExchange(ref _initialUpdateRegistered, 1, 0) != 0)
                 return false;
 
+            Interlocked.Exchange(ref _initialUpdateAcksExpected, packetCount);
             Interlocked.Exchange(ref _initialUpdateAcksOutstanding, packetCount);
+            _initialUpdateSynchronizationStartedUtc = DateTime.UtcNow;
+            Interlocked.Exchange(ref _initialUpdateChunkSynchronizationActive, 1);
             return true;
         }
 
         public void InitialUpdateAcknowledged()
         {
-            if (_initialUpdateAcknowledged)
+            if (Volatile.Read(ref _initialUpdateChunkSynchronizationActive) == 0)
                 return;
 
-            if (Interlocked.Decrement(ref _initialUpdateAcksOutstanding) > 0)
+            var outstanding = Interlocked.Decrement(ref _initialUpdateAcksOutstanding);
+            if (outstanding > 0)
                 return;
 
-            _initialUpdateAcknowledged = true;
-            if (Player?.Owner is Vault)
-                Log.InfoFormat("[VAULT_SYNC] complete world={0} account={1}; all initial UPDATE chunks acknowledged.",
-                    Player.Owner.Id, Account?.AccountId ?? 0);
+            if (outstanding < 0 || Interlocked.CompareExchange(ref _initialUpdateChunkSynchronizationActive, 0, 1) != 1)
+                return;
+
             Queue<Tuple<Packet, PacketPriority>> pending;
             lock (_deferredTextPackets)
             {
@@ -180,7 +197,15 @@ namespace wServer.networking
                 _deferredTextPackets.Clear();
             }
 
-            Log.InfoFormat("[TEXT_TRACE] flushing {0} deferred TEXT packets after UPDATEACK account={1}.", pending.Count, Account?.Name ?? "<none>");
+            var world = Player?.Owner;
+            var elapsedMs = _initialUpdateSynchronizationStartedUtc == default(DateTime)
+                ? -1
+                : (long)(DateTime.UtcNow - _initialUpdateSynchronizationStartedUtc).TotalMilliseconds;
+            Log.InfoFormat("[INITIAL_SYNC] released worldType={0} world={1} account={2} elapsedMs={3} acknowledgements={4}/{5} deferredPackets={6}",
+                world == null ? "<none>" : world.GetType().Name, world == null ? -1 : world.Id,
+                Account?.AccountId ?? 0, elapsedMs,
+                Volatile.Read(ref _initialUpdateAcksExpected) - Math.Max(outstanding, 0),
+                Volatile.Read(ref _initialUpdateAcksExpected), pending.Count);
             while (pending.Count > 0)
             {
                 var entry = pending.Dequeue();
