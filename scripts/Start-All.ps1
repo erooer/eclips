@@ -14,10 +14,26 @@ $logs = Join-Path $runtime 'logs'
 function Wait-ForRedisHealthy {
     param([int]$TimeoutSeconds = 30)
 
+    if (!(Test-Path -LiteralPath $redisCli -PathType Leaf)) {
+        throw "Missing redis-cli.exe: $redisCli"
+    }
+
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     do {
-        $reply = @(& $redisCli -h 127.0.0.1 -p 6379 ping 2>$null)
-        if ((($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
+        $reply = @()
+        $exitCode = $null
+        try {
+            $reply = @(& $redisCli -h 127.0.0.1 -p 6379 ping 2>&1)
+            $exitCode = $LASTEXITCODE
+        }
+        catch {
+            if ($LASTEXITCODE -ne 0) {
+                Start-Sleep -Milliseconds 250
+                continue
+            }
+            throw
+        }
+        if ($exitCode -eq 0 -and (($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
             return $true
         }
         Start-Sleep -Milliseconds 250

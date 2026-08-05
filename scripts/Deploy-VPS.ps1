@@ -56,8 +56,20 @@ function Wait-ForRedisPong([string]$RedisCli, [int]$TimeoutSeconds = 30) {
     Assert-Path $RedisCli 'redis-cli.exe'
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     do {
-        $reply = @(& $RedisCli -h 127.0.0.1 -p 6379 ping 2>$null)
-        if ((($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
+        $reply = @()
+        $exitCode = $null
+        try {
+            $reply = @(& $RedisCli -h 127.0.0.1 -p 6379 ping 2>&1)
+            $exitCode = $LASTEXITCODE
+        }
+        catch {
+            if ($LASTEXITCODE -ne 0) {
+                Start-Sleep -Milliseconds 250
+                continue
+            }
+            throw
+        }
+        if ($exitCode -eq 0 -and (($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
             return $true
         }
         Start-Sleep -Milliseconds 250
