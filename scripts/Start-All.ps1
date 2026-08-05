@@ -7,6 +7,25 @@ $redisCli = Join-Path $base 'Cosmic-Realms-main\Server-src\Redis-x64-3.2.100\red
 $redisConfig = Join-Path $runtime 'redis.conf'
 $data = Join-Path $runtime 'redis-data'
 $logs = Join-Path $runtime 'logs'
+
+# Redis can accept its first connection slightly after Start-Process returns.  A
+# successful PONG is the authoritative readiness signal; it is not necessary for
+# this invocation to have created a new redis-server.exe process.
+function Wait-ForRedisHealthy {
+    param([int]$TimeoutSeconds = 30)
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        $reply = @(& $redisCli -h 127.0.0.1 -p 6379 ping 2>$null)
+        if ((($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
+            return $true
+        }
+        Start-Sleep -Milliseconds 250
+    } while ((Get-Date) -lt $deadline)
+
+    return $false
+}
+
 New-Item -ItemType Directory -Force $data, $logs | Out-Null
 & "$PSScriptRoot\Stop-All.ps1"
 Copy-Item -LiteralPath "$sourceBin\server.exe", "$sourceBin\wServer.exe" -Destination $runtime -Force
@@ -17,9 +36,18 @@ Copy-Item -LiteralPath "$sourceBin\resources\xmls" -Destination "$runtime\resour
 Copy-Item -LiteralPath "$sourceBin\resources\worlds" -Destination "$runtime\resources" -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $base 'build\client-unchanged.swf') -Destination (Join-Path $runtime 'resources\web\rotmg.swf') -Force
 $procs = @{}
-$procs.redis = (Start-Process -FilePath $redis -ArgumentList "`"$redisConfig`"" -WorkingDirectory $runtime -WindowStyle Hidden -PassThru).Id
-Start-Sleep -Seconds 1
-if ((& $redisCli -p 6379 ping) -ne 'PONG') { throw 'Fresh isolated Redis did not start on port 6379.' }
+if (Wait-ForRedisHealthy -TimeoutSeconds 1) {
+    # A healthy local instance is sufficient.  Retaining it avoids failing a
+    # deployment merely because Redis completed startup after a prior attempt.
+    $procs.redis = $null
+    Write-Host 'Redis is already healthy on 127.0.0.1:6379; reusing it.'
+} else {
+    $redisArguments = '"{0}"' -f $redisConfig
+    $procs.redis = (Start-Process -FilePath $redis -ArgumentList $redisArguments -WorkingDirectory $runtime -WindowStyle Hidden -PassThru).Id
+}
+if (!(Wait-ForRedisHealthy -TimeoutSeconds 30)) {
+    throw 'Redis did not become healthy on 127.0.0.1:6379 within 30 seconds.'
+}
 Start-Sleep -Seconds 2
 $procs.account = (Start-Process -FilePath "$runtime\server.exe" -WorkingDirectory $runtime -WindowStyle Hidden -PassThru).Id
 $procs.world = (Start-Process -FilePath "$runtime\wServer.exe" -WorkingDirectory $runtime -WindowStyle Hidden -PassThru).Id

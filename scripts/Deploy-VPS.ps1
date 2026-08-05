@@ -52,6 +52,20 @@ function Get-Sha256([string]$Path) {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
 }
 
+function Wait-ForRedisPong([string]$RedisCli, [int]$TimeoutSeconds = 30) {
+    Assert-Path $RedisCli 'redis-cli.exe'
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        $reply = @(& $RedisCli -h 127.0.0.1 -p 6379 ping 2>$null)
+        if ((($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
+            return $true
+        }
+        Start-Sleep -Milliseconds 250
+    } while ((Get-Date) -lt $deadline)
+
+    return $false
+}
+
 function Copy-VerifiedFile([string]$Source, [string]$Destination) {
     Assert-Path $Source 'deployment source file'
     $destinationDirectory = Split-Path -Parent $Destination
@@ -192,7 +206,10 @@ function Start-AndVerify {
     Start-Sleep -Seconds 5
 
     $redisCli = Join-Path $LiveProject 'Server-src\Redis-x64-3.2.100\redis-cli.exe'
-    if ((& $redisCli -h 127.0.0.1 -p 6379 ping) -ne 'PONG') { throw 'Redis did not return PONG.' }
+    if (!(Wait-ForRedisPong -RedisCli $redisCli -TimeoutSeconds 30)) {
+        throw 'Redis did not return PONG on 127.0.0.1:6379 within 30 seconds.'
+    }
+    Write-Step 'HEALTH Redis PING = PONG'
     foreach ($port in @(80, 2050)) {
         if (!(Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue)) { throw "Port $port is not listening." }
     }
