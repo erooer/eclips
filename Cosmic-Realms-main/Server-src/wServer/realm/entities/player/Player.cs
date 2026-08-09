@@ -474,6 +474,8 @@ namespace wServer.realm.entities
             MagicPots = new ItemStacker(this, 255, 0x0A23,
                 client.Character.MagicStackCount, 3 + chr.Toolbelts);
             Stacks = new ItemStacker[] { HealthPots, MagicPots };
+            Log.InfoFormat("[POTION_PERSIST] world-entry account={0} char={1} targetWorld={2} hpLoaded={3} mpLoaded={4}.",
+                client.Account.Name, chr.CharId, client.TargetWorld, HealthPots.Count, MagicPots.Count);
 
             // inventory setup
             DbLink = new DbCharInv(Client.Account, Client.Character.CharId);

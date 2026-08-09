@@ -284,7 +284,19 @@ namespace wServer.networking
                 Account.Name, IP, State, pkt.Name, pkt.GameId);
 
             State = ProtocolState.Reconnecting;
-            Save(false);
+            // A reconnect immediately creates a new Player from Redis.  Do not allow
+            // that load to race the character write that contains the belt stacks.
+            Log.InfoFormat("[POTION_PERSIST] reconnect-save begin account={0} char={1} hp={2} mp={3} destination={4}.",
+                Account.Name, Character?.CharId ?? 0, Player?.HealthPots?.Count ?? 0,
+                Player?.MagicPots?.Count ?? 0, pkt.GameId);
+            if (!Save(false, true))
+            {
+                State = ProtocolState.Ready;
+                Log.ErrorFormat("[POTION_PERSIST] reconnect-save failed account={0} char={1}; reconnect cancelled.",
+                    Account.Name, Character?.CharId ?? 0);
+                SendFailure("Could not save your character before reconnecting.", Failure.MessageWithDisconnect);
+                return;
+            }
 
             Manager.ConMan.AddReconnect(Account.AccountId, pkt);
             SendPacket(pkt);
@@ -359,7 +371,7 @@ namespace wServer.networking
             }
         }
 
-        private void Save(bool unlock)
+        private bool Save(bool unlock, bool waitForCharacterCommit = false)
         {
             var acc = Account;
 
@@ -367,7 +379,7 @@ namespace wServer.networking
             {
                 if (unlock)
                     Manager.Database.ReleaseLock(acc);
-                return;
+                return true;
             }
             
             Player.SaveToCharacter();
@@ -376,7 +388,14 @@ namespace wServer.networking
             acc.FlushAsync();
             if (unlock)
                 Manager.Database.ReleaseLock(acc);
-            Manager.Database.SaveCharacter(acc, Character, Player.FameCounter.ClassStats, !unlock);
+            var saveTask = Manager.Database.SaveCharacter(acc, Character, Player.FameCounter.ClassStats, !unlock);
+            if (!waitForCharacterCommit)
+                return true;
+
+            var saved = saveTask.GetAwaiter().GetResult();
+            Log.InfoFormat("[POTION_PERSIST] reconnect-save committed account={0} char={1} hp={2} mp={3} saved={4}.",
+                acc.Name, Character.CharId, Character.HealthStackCount, Character.MagicStackCount, saved);
+            return saved;
         }
 
         public void Dispose()
