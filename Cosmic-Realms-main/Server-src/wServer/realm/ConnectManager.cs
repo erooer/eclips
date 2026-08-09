@@ -16,13 +16,17 @@ namespace wServer.realm
     {
         public readonly int Destination;
         public readonly byte[] Key;
+        public readonly string TraceId;
+        public readonly int SourceWorldId;
         public DateTime Timeout;
 
-        public ReconInfo(int dest, byte[] key, DateTime timeout)
+        public ReconInfo(int dest, byte[] key, DateTime timeout, string traceId, int sourceWorldId)
         {
             Destination = dest;
             Key = key;
             Timeout = timeout;
+            TraceId = traceId;
+            SourceWorldId = sourceWorldId;
         }
     }
 
@@ -97,12 +101,12 @@ namespace wServer.realm
             });
         }
 
-        public void AddReconnect(int accountId, Reconnect rcp)
+        public void AddReconnect(int accountId, Reconnect rcp, string traceId, int sourceWorldId)
         {
             if (rcp == null)
                 return;
 
-            var rInfo = new ReconInfo(rcp.GameId, rcp.Key, DateTime.Now.AddSeconds(ReconTTL));
+            var rInfo = new ReconInfo(rcp.GameId, rcp.Key, DateTime.Now.AddSeconds(ReconTTL), traceId, sourceWorldId);
             if (!_recon.TryAdd(accountId, rInfo))
                 Log.WarnFormat("[RECONNECT_TRACE] retained existing reconnect key for account={0}; duplicate destination={1} ignored.",
                     accountId, rcp.GameId);
@@ -198,6 +202,9 @@ namespace wServer.realm
                         Failure.MessageWithDisconnect);
                     return;
                 }
+
+                client.PortalTransitionTraceId = rInfo.TraceId;
+                client.PortalTransitionSourceWorldId = rInfo.SourceWorldId;
             }
             else
             {

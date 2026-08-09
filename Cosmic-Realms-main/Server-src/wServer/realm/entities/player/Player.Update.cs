@@ -87,6 +87,26 @@ namespace wServer.realm.entities
 
         public int TickId;
 
+        // This is intentionally called on every Player world entry, even though a
+        // newly constructed Player normally starts empty. It is the invariant that
+        // protects a reused connection from suppressing destination-world objects.
+        private void ResetWorldVisibilityState()
+        {
+            var staleEntities = _clientEntities.Count;
+            var staleStatics = _clientStatic.Count;
+            var staleKilled = ClientKilledEntity.Count;
+            _clientEntities.RemoveWhere(e => true);
+            _clientStatic.Clear();
+            Entity ignored;
+            while (ClientKilledEntity.TryDequeue(out ignored)) { }
+            using (TimedLock.Lock(_statUpdateLock))
+                _statUpdates.Clear();
+
+            Log.InfoFormat("[WORLD_SYNC] visibility-reset trace={0} account={1} char={2} staleEntities={3} staleStatics={4} staleKilled={5} afterEntities={6} afterStatics={7}.",
+                Client.PortalTransitionTraceId ?? "<none>", AccountId, Client.Character?.CharId ?? 0,
+                staleEntities, staleStatics, staleKilled, _clientEntities.Count, _clientStatic.Count);
+        }
+
         public void HandleStatChanges(object entity, StatChangedEventArgs statChange)
         {
             var e = entity as Entity;
@@ -173,6 +193,13 @@ namespace wServer.realm.entities
             FameCounter.TileSent(tilesUpdate.Count);
 
             // get list of new static objects to add
+            var expectedStaticObjects = sCircle.Count(point =>
+            {
+                var tile = Owner.Map[point.X, point.Y];
+                return tile.ObjId != 0 && tile.ObjType != 0;
+            });
+            var knownStaticsBefore = _clientStatic.Count;
+            var knownEntitiesBefore = _clientEntities.Count;
             var staticsUpdate = GetNewStatics(sCircle).ToArray();
 
             // get dropped entities list
@@ -198,16 +225,33 @@ namespace wServer.realm.entities
                 _newObjects = entitiesAdd.Select(_ => _.ToDefinition()).Concat(staticsUpdate).ToArray();
                 _removedObjects = entitiesRemove.ToArray();
 
+                var isInitialWorldUpdate = _client.MarkInitialWorldUpdate();
+
                 var initialUpdate = new Update
                 {
                     Tiles = _tiles,
                     NewObjs = _newObjects,
                     Drops = _removedObjects
                 };
-                var isInitialWorldUpdate = _client.MarkInitialWorldUpdate();
                 var initialFrameLength = -1;
                 if (isInitialWorldUpdate)
                 {
+                    var objectIds = new HashSet<int>();
+                    var duplicateObjectIds = _newObjects.Count(obj => !objectIds.Add(obj.Stats.Id));
+                    var dropObjectOverlap = _removedObjects.Count(id => objectIds.Contains(id));
+                    var filteredAsKnown = expectedStaticObjects - staticsUpdate.Length;
+                    Log.InfoFormat("[WORLD_SYNC] initial-enumeration trace={0} world={1} client={2} account={3} knownBeforeEntities={4} knownBeforeStatics={5} expectedStatics={6} filteredAsKnown={7} serializedObjects={8} queuedObjects={8} duplicateObjectIds={9} dropObjectOverlap={10}.",
+                        Client.PortalTransitionTraceId ?? "<none>", Owner.Id, Client.Id, AccountId,
+                        knownEntitiesBefore, knownStaticsBefore, expectedStaticObjects, filteredAsKnown,
+                        _newObjects.Length, duplicateObjectIds, dropObjectOverlap);
+                    if (knownStaticsBefore != 0 || knownEntitiesBefore != 0 || filteredAsKnown != 0 ||
+                        duplicateObjectIds != 0 || dropObjectOverlap != 0)
+                    {
+                        Log.ErrorFormat("[WORLD_SYNC] rejected inconsistent initial state trace={0} world={1} account={2}.",
+                            Client.PortalTransitionTraceId ?? "<none>", Owner.Id, AccountId);
+                        _client.Disconnect("Initial world synchronization invariant failed.");
+                        return;
+                    }
                     try
                     {
                         initialFrameLength = initialUpdate.GetFrameLength();

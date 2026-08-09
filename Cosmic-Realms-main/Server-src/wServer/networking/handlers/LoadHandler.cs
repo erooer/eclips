@@ -32,6 +32,7 @@ namespace wServer.networking.handlers
 
             var target = client.Manager.Worlds[client.TargetWorld];
 
+            client.BeginWorldSynchronization(target.Id, client.Character.CharId);
             client.Player = target is Test ? new Player(client, false) : new Player(client);
 
             client.SendPacket(new CreateSuccess()

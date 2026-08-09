@@ -65,6 +65,8 @@ namespace wServer.networking
 
         //Temporary connection state
         internal int TargetWorld = -1;
+        internal string PortalTransitionTraceId { get; set; }
+        internal int PortalTransitionSourceWorldId { get; set; } = -1;
 
         public Socket Skt { get; private set; }
         public string IP { get; private set; }
@@ -101,6 +103,8 @@ namespace wServer.networking
             _initialUpdateAcksExpected = 0;
             _initialUpdateRegistered = 0;
             _initialUpdateSynchronizationStartedUtc = default(DateTime);
+            PortalTransitionTraceId = null;
+            PortalTransitionSourceWorldId = -1;
             lock (_deferredTextPackets)
                 _deferredTextPackets.Clear();
 
@@ -159,6 +163,34 @@ namespace wServer.networking
         public bool MarkInitialWorldUpdate()
         {
             return Interlocked.CompareExchange(ref _initialWorldUpdateObserved, 1, 0) == 0;
+        }
+
+        // A portal reconnect can retain its TCP Client instance. Initial UPDATE
+        // handling is world-scoped, not socket-scoped: every destination world must
+        // get its own size check and (when needed) packet chunking.
+        internal void BeginWorldSynchronization(int destinationWorldId, int charId)
+        {
+            var previousInitialUpdate = Interlocked.Exchange(ref _initialWorldUpdateObserved, 0);
+            var previousChunkSync = Interlocked.Exchange(ref _initialUpdateChunkSynchronizationActive, 0);
+            var previousOutstanding = Interlocked.Exchange(ref _initialUpdateAcksOutstanding, 0);
+            var previousExpected = Interlocked.Exchange(ref _initialUpdateAcksExpected, 0);
+            Interlocked.Exchange(ref _initialUpdateRegistered, 0);
+            _initialUpdateSynchronizationStartedUtc = default(DateTime);
+
+            int deferredText;
+            lock (_deferredTextPackets)
+            {
+                deferredText = _deferredTextPackets.Count;
+                _deferredTextPackets.Clear();
+            }
+
+            if (string.IsNullOrEmpty(PortalTransitionTraceId))
+                PortalTransitionTraceId = "entry-" + Guid.NewGuid().ToString("N");
+
+            Log.InfoFormat("[WORLD_SYNC] begin trace={0} client={1} account={2} char={3} sourceWorld={4} destinationWorld={5} previousInitial={6} previousChunkSync={7} previousAcks={8}/{9} deferredTextCleared={10}.",
+                PortalTransitionTraceId, Id, Account?.AccountId ?? 0, charId, PortalTransitionSourceWorldId,
+                destinationWorldId, previousInitialUpdate, previousChunkSync, previousOutstanding,
+                previousExpected, deferredText);
         }
 
         // A large initial UPDATE can be split into several protocol-valid frames.
@@ -280,15 +312,16 @@ namespace wServer.networking
                 return;
             }
 
-            Log.InfoFormat("[RECONNECT_TRACE] issuing account={0} ip={1} state={2} destination={3} gameId={4}.",
-                Account.Name, IP, State, pkt.Name, pkt.GameId);
-
+            PortalTransitionTraceId = Guid.NewGuid().ToString("N");
+            PortalTransitionSourceWorldId = Player?.Owner?.Id ?? -1;
+            Log.InfoFormat("[RECONNECT_TRACE] issuing trace={0} account={1} ip={2} state={3} sourceWorld={4} destination={5} gameId={6}.",
+                PortalTransitionTraceId, Account.Name, IP, State, PortalTransitionSourceWorldId, pkt.Name, pkt.GameId);
             State = ProtocolState.Reconnecting;
             // A reconnect immediately creates a new Player from Redis.  Do not allow
             // that load to race the character write that contains the belt stacks.
-            Log.InfoFormat("[POTION_PERSIST] reconnect-save begin account={0} char={1} hp={2} mp={3} destination={4}.",
-                Account.Name, Character?.CharId ?? 0, Player?.HealthPots?.Count ?? 0,
-                Player?.MagicPots?.Count ?? 0, pkt.GameId);
+            Log.InfoFormat("[POTION_PERSIST] reconnect-save begin trace={0} account={1} char={2} sourceWorld={3} destinationWorld={4} hp={5} mp={6}.",
+                PortalTransitionTraceId, Account.Name, Character?.CharId ?? 0, PortalTransitionSourceWorldId,
+                pkt.GameId, Player?.HealthPots?.Count ?? 0, Player?.MagicPots?.Count ?? 0);
             if (!Save(false, true))
             {
                 State = ProtocolState.Ready;
@@ -298,7 +331,7 @@ namespace wServer.networking
                 return;
             }
 
-            Manager.ConMan.AddReconnect(Account.AccountId, pkt);
+            Manager.ConMan.AddReconnect(Account.AccountId, pkt, PortalTransitionTraceId, PortalTransitionSourceWorldId);
             SendPacket(pkt);
         }
 
@@ -393,8 +426,9 @@ namespace wServer.networking
                 return true;
 
             var saved = saveTask.GetAwaiter().GetResult();
-            Log.InfoFormat("[POTION_PERSIST] reconnect-save committed account={0} char={1} hp={2} mp={3} saved={4}.",
-                acc.Name, Character.CharId, Character.HealthStackCount, Character.MagicStackCount, saved);
+            Log.InfoFormat("[POTION_PERSIST] reconnect-save committed trace={0} account={1} char={2} hp={3} mp={4} saved={5}.",
+                PortalTransitionTraceId ?? "<none>", acc.Name, Character.CharId,
+                Character.HealthStackCount, Character.MagicStackCount, saved);
             return saved;
         }
 

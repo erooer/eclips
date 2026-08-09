@@ -474,8 +474,9 @@ namespace wServer.realm.entities
             MagicPots = new ItemStacker(this, 255, 0x0A23,
                 client.Character.MagicStackCount, 3 + chr.Toolbelts);
             Stacks = new ItemStacker[] { HealthPots, MagicPots };
-            Log.InfoFormat("[POTION_PERSIST] world-entry account={0} char={1} targetWorld={2} hpLoaded={3} mpLoaded={4}.",
-                client.Account.Name, chr.CharId, client.TargetWorld, HealthPots.Count, MagicPots.Count);
+            Log.InfoFormat("[POTION_PERSIST] player-created trace={0} account={1} char={2} targetWorld={3} hpLoaded={4} mpLoaded={5}.",
+                client.PortalTransitionTraceId ?? "<none>", client.Account.Name, chr.CharId,
+                client.TargetWorld, HealthPots.Count, MagicPots.Count);
 
             // inventory setup
             DbLink = new DbCharInv(Client.Account, Client.Character.CharId);
@@ -736,6 +737,7 @@ namespace wServer.realm.entities
 
         public override void Init(World owner)
         {
+            ResetWorldVisibilityState();
             var eventsInfo = Program.Config.eventsInfo;
             var x = 0;
             var y = 0;
@@ -772,23 +774,6 @@ namespace wServer.realm.entities
             else if (Client.Account.DonorClaim == false && Client.Account.Rank <= 40 && Client.Account.Rank >= 5)
             {
                 SendInfo($"You have unclaimed packages, /Claim to claim them.");
-            }
-
-            if (owner.Name.Equals("Nexus"))
-            {
-                    HealthPots = new ItemStacker(
-                  this,
-                  254,
-                  0x0A22,
-                  chr.Toolbelts,
-                  chr.Toolbelts);
-
-                    MagicPots = new ItemStacker(
-                        this,
-                        255,
-                        0x0A23,
-                        chr.Toolbelts,
-                        chr.Toolbelts);
             }
 
             // spawn pet if player has one attached
@@ -864,6 +849,9 @@ namespace wServer.realm.entities
                     Stats.ReCalculateValues();
                 }
             }
+            Log.InfoFormat("[POTION_PERSIST] destination-initialized trace={0} account={1} char={2} world={3} hp={4} mp={5}.",
+                Client.PortalTransitionTraceId ?? "<none>", AccountId, chr.CharId, owner.Id,
+                HealthPots.Count, MagicPots.Count);
             base.Init(owner);
         }//Deeparmor
 
