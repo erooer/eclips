@@ -4,43 +4,12 @@ $runtime = Join-Path $base 'runtime'
 $sourceBin = Join-Path $base 'Cosmic-Realms-main\Server-src\bin'
 $redis = Join-Path $base 'Cosmic-Realms-main\Server-src\Redis-x64-3.2.100\redis-server.exe'
 $redisCli = Join-Path $base 'Cosmic-Realms-main\Server-src\Redis-x64-3.2.100\redis-cli.exe'
+$redisHelpers = Join-Path $PSScriptRoot 'Redis-Helpers.ps1'
 $redisConfig = Join-Path $runtime 'redis.conf'
 $data = Join-Path $runtime 'redis-data'
 $logs = Join-Path $runtime 'logs'
 
-# Redis can accept its first connection slightly after Start-Process returns.  A
-# successful PONG is the authoritative readiness signal; it is not necessary for
-# this invocation to have created a new redis-server.exe process.
-function Wait-ForRedisHealthy {
-    param([int]$TimeoutSeconds = 30)
-
-    if (!(Test-Path -LiteralPath $redisCli -PathType Leaf)) {
-        throw "Missing redis-cli.exe: $redisCli"
-    }
-
-    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-    do {
-        $reply = @()
-        $exitCode = $null
-        try {
-            $reply = @(& $redisCli -h 127.0.0.1 -p 6379 ping 2>&1)
-            $exitCode = $LASTEXITCODE
-        }
-        catch {
-            if ($LASTEXITCODE -ne 0) {
-                Start-Sleep -Milliseconds 250
-                continue
-            }
-            throw
-        }
-        if ($exitCode -eq 0 -and (($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
-            return $true
-        }
-        Start-Sleep -Milliseconds 250
-    } while ((Get-Date) -lt $deadline)
-
-    return $false
-}
+. $redisHelpers
 
 New-Item -ItemType Directory -Force $data, $logs | Out-Null
 & "$PSScriptRoot\Stop-All.ps1"
@@ -52,7 +21,7 @@ Copy-Item -LiteralPath "$sourceBin\resources\xmls" -Destination "$runtime\resour
 Copy-Item -LiteralPath "$sourceBin\resources\worlds" -Destination "$runtime\resources" -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $base 'build\client-unchanged.swf') -Destination (Join-Path $runtime 'resources\web\rotmg.swf') -Force
 $procs = @{}
-if (Wait-ForRedisHealthy -TimeoutSeconds 1) {
+if (Wait-ForRedisPong -RedisCli $redisCli -TimeoutSeconds 1) {
     # A healthy local instance is sufficient.  Retaining it avoids failing a
     # deployment merely because Redis completed startup after a prior attempt.
     $procs.redis = $null
@@ -61,7 +30,7 @@ if (Wait-ForRedisHealthy -TimeoutSeconds 1) {
     $redisArguments = '"{0}"' -f $redisConfig
     $procs.redis = (Start-Process -FilePath $redis -ArgumentList $redisArguments -WorkingDirectory $runtime -WindowStyle Hidden -PassThru).Id
 }
-if (!(Wait-ForRedisHealthy -TimeoutSeconds 30)) {
+if (!(Wait-ForRedisPong -RedisCli $redisCli -TimeoutSeconds 30)) {
     throw 'Redis did not become healthy on 127.0.0.1:6379 within 30 seconds.'
 }
 Start-Sleep -Seconds 2

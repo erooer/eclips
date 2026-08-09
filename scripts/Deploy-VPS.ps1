@@ -25,12 +25,14 @@ $LiveClientSwf = Join-Path $LiveRoot 'build\client-unchanged.swf'
 $GitServerBin = Join-Path $GitProject 'Server-src\bin'
 $LiveServerBin = Join-Path $LiveProject 'Server-src\bin'
 $DeploymentLogs = $DeploymentLogRoot
+$RedisHelpers = Join-Path $PSScriptRoot 'Redis-Helpers.ps1'
 $Timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $BackupRoot = Join-Path $LiveRoot "deployment-backups\$Timestamp"
 $CopiedFiles = [System.Collections.Generic.List[string]]::new()
 $BackupCreated = $false
 $ServicesStopped = $false
 $TranscriptStarted = $false
+$DeploymentPhase = 'initialization'
 
 function Test-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -50,32 +52,6 @@ function Assert-Path([string]$Path, [string]$Description) {
 
 function Get-Sha256([string]$Path) {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
-}
-
-function Wait-ForRedisPong([string]$RedisCli, [int]$TimeoutSeconds = 30) {
-    Assert-Path $RedisCli 'redis-cli.exe'
-    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-    do {
-        $reply = @()
-        $exitCode = $null
-        try {
-            $reply = @(& $RedisCli -h 127.0.0.1 -p 6379 ping 2>&1)
-            $exitCode = $LASTEXITCODE
-        }
-        catch {
-            if ($LASTEXITCODE -ne 0) {
-                Start-Sleep -Milliseconds 250
-                continue
-            }
-            throw
-        }
-        if ($exitCode -eq 0 -and (($reply -join [Environment]::NewLine).Trim()) -eq 'PONG') {
-            return $true
-        }
-        Start-Sleep -Milliseconds 250
-    } while ((Get-Date) -lt $deadline)
-
-    return $false
 }
 
 function Copy-VerifiedFile([string]$Source, [string]$Destination) {
@@ -198,9 +174,12 @@ function Restore-DeploymentBackup {
 
     # Delete only files introduced by this failed deployment that had no backed-up counterpart.
     foreach ($destination in $script:CopiedFiles) {
+        if (!$destination.StartsWith($LiveServerBin, [System.StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
         $relative = $destination.Substring($LiveServerBin.Length).TrimStart('\')
         $backupEquivalent = Join-Path $backupBin $relative
-        if ($destination.StartsWith($LiveServerBin, [System.StringComparison]::OrdinalIgnoreCase) -and !(Test-Path -LiteralPath $backupEquivalent) -and (Test-Path -LiteralPath $destination)) {
+        if (!(Test-Path -LiteralPath $backupEquivalent) -and (Test-Path -LiteralPath $destination)) {
             Remove-Item -LiteralPath $destination -Force
         }
     }
@@ -239,6 +218,9 @@ function Start-AndVerify {
 }
 
 try {
+    $DeploymentPhase = 'preflight'
+    Assert-Path $RedisHelpers 'Redis helper script'
+    . $RedisHelpers
     if (!(Test-Administrator)) {
         # -WhatIf performs no service, file, Git, or deployment mutations and may be
         # used by an operator to validate the plan before opening an elevated shell.
@@ -285,9 +267,19 @@ try {
         if ($answer -notmatch '^(Y|y|Yes|yes)$') { Write-Step 'Deployment cancelled: no new commits.'; return }
     }
 
+    $DeploymentPhase = 'backup'
     New-DeploymentBackup
+    # Stop-All.ps1 is used before the main artifact-copy phase. Refresh only the
+    # Redis helper and stop script first so a stale live copy cannot fail on an
+    # expected connection refusal during a reboot deployment.
+    $DeploymentPhase = 'stop infrastructure update'
+    foreach ($scriptName in @('Redis-Helpers.ps1', 'Stop-All.ps1')) {
+        Copy-VerifiedFile (Join-Path $PSScriptRoot $scriptName) (Join-Path $LiveRoot "scripts\$scriptName")
+    }
+    $DeploymentPhase = 'stop'
     if (!$NoRestart) { Stop-EclipseServices }
 
+    $DeploymentPhase = 'copy'
     # Server binaries used by Start-All.ps1 as its source of truth.
     foreach ($file in @('server.exe', 'wServer.exe')) { Copy-VerifiedFile (Join-Path $GitServerBin $file) (Join-Path $LiveServerBin $file) }
     Get-ChildItem -LiteralPath $GitServerBin -File | Where-Object { $_.Extension -in @('.dll', '.pdb') } | ForEach-Object { Copy-VerifiedFile $_.FullName (Join-Path $LiveServerBin $_.Name) }
@@ -299,11 +291,12 @@ try {
 
     # These scripts are deployment infrastructure, not VPS configuration. No server JSON,
     # Redis configuration, Redis data, logs, or air client configuration is copied from Git.
-    foreach ($scriptName in @('Start-All.ps1', 'Stop-All.ps1', 'Health-Check.ps1')) {
+    foreach ($scriptName in @('Redis-Helpers.ps1', 'Start-All.ps1', 'Stop-All.ps1', 'Health-Check.ps1')) {
         $source = Join-Path $GitRoot "scripts\$scriptName"
         if (Test-Path -LiteralPath $source) { Copy-VerifiedFile $source (Join-Path $LiveRoot "scripts\$scriptName") }
     }
 
+    $DeploymentPhase = 'hash verification'
     foreach ($pair in @(
         @((Join-Path $GitServerBin 'wServer.exe'), (Join-Path $LiveServerBin 'wServer.exe')),
         @((Join-Path $GitServerBin 'server.exe'), (Join-Path $LiveServerBin 'server.exe')),
@@ -316,6 +309,7 @@ try {
     }
 
     Set-Content -LiteralPath (Join-Path $LiveRuntime 'deployed-version.txt') -Value $newCommit -Encoding ASCII
+    $DeploymentPhase = 'start and health verification'
     if ($NoRestart) {
         Write-Step "Deployment copied $($CopiedFiles.Count) files without restarting services (-NoRestart)."
     } else {
@@ -325,7 +319,9 @@ try {
 }
 catch {
     $failure = $_
-    Write-Error "Deployment failed: $($failure.Exception.Message)"
+    $line = $failure.InvocationInfo.ScriptLineNumber
+    $source = if ($failure.InvocationInfo.ScriptName) { $failure.InvocationInfo.ScriptName } else { $MyInvocation.MyCommand.Path }
+    Write-Error "Deployment failed during phase '$DeploymentPhase' at ${source}:${line}: $($failure.Exception.Message)"
     if (!$WhatIfPreference -and $BackupCreated) {
         try {
             if (!$NoRestart) { Stop-EclipseServices }
