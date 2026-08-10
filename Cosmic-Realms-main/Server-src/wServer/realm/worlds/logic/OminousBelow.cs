@@ -29,6 +29,9 @@ namespace wServer.realm.worlds.logic
         public override int EnterWorld(Entity entity)
         {
             var id = base.EnterWorld(entity);
+            var player = entity as Player;
+            if (player != null)
+                SendObjectiveSummary(player);
             var enemy = entity as Enemy;
             if (enemy != null)
             {
@@ -94,6 +97,7 @@ namespace wServer.realm.worlds.logic
                         Log.Info("OminousBelow: Ferryman arena opened and encounter activated.");
                         Announce("The Ferryman arena gate opens.");
                     }
+                    BroadcastObjectiveSummary();
                     break;
                 case "The Faceless Ferryman":
                     if (!_ferrymanDefeated) { _ferrymanDefeated = true; ClearDivider(47); Log.Info("OminousBelow: Ferryman defeated; complete prison divider removed."); Announce("The Ferryman's passage opens into the prison."); }
@@ -117,6 +121,7 @@ namespace wServer.realm.worlds.logic
                         _veyra.ApplyConditionEffect(ConditionEffectIndex.Invincible, 0);
                         Announce("The prison wards fail. Veyra is vulnerable.");
                     }
+                    BroadcastObjectiveSummary();
                     break;
                 case "Ominous Seal":
                     _sealsDestroyed++;
@@ -126,6 +131,7 @@ namespace wServer.realm.worlds.logic
                         _ominousOne.ApplyConditionEffect(ConditionEffectIndex.Invincible, 0);
                         Announce("The Ominous One awakens.");
                     }
+                    BroadcastObjectiveSummary();
                     break;
                 case "Chain Anchor":
                     if (--_chainAnchors <= 0 && _veyra != null)
@@ -251,6 +257,38 @@ namespace wServer.realm.worlds.logic
             chest.Inventory[1] = Manager.Resources.GameData.Items[0x0A1F]; // Potion of Attack
             chest.Inventory[2] = Manager.Resources.GameData.Items[0x0A20]; // Potion of Defense
             EnterWorld(chest);
+
+            // Completion-only exit: no permanent boss-room portal, but a run
+            // can never strand players after the completion chest appears.
+            var exit = Entity.Resolve(Manager, 0xF919);
+            exit.Move(101.5f, 25.5f);
+            EnterWorld(exit);
+            Timers.Add(new WorldTimer(60000, (world, time) =>
+            {
+                if (exit.Owner == world) world.LeaveWorld(exit);
+            }));
+        }
+
+        private void BroadcastObjectiveSummary()
+        {
+            foreach (var player in Players.Values) SendObjectiveSummary(player);
+        }
+
+        private void SendObjectiveSummary(Player player)
+        {
+            if (player == null || _completed) return;
+            if (_lanternsDestroyed < 3)
+                player.SendInfo("[Objective] Soul Lanterns: " + _lanternsDestroyed + "/3");
+            else if (!_ferrymanDefeated)
+                player.SendInfo("[Objective] Defeat the Faceless Ferryman.");
+            else if (_gaolersDefeated < 2)
+                player.SendInfo("[Objective] Gaolers: " + _gaolersDefeated + "/2");
+            else if (!_veyraDefeated)
+                player.SendInfo("[Objective] Defeat Veyra, Warden of Chains.");
+            else if (_sealsDestroyed < 4)
+                player.SendInfo("[Objective] Ominous Seals: " + _sealsDestroyed + "/4");
+            else
+                player.SendInfo("[Objective] Defeat the Ominous One.");
         }
 
         private void Announce(string text)
