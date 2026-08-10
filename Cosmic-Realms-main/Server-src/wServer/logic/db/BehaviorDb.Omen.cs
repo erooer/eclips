@@ -10,6 +10,9 @@ namespace wServer.logic
         private _ Omen = () => Behav()
          .Init("The Haunted Omen",//new TransformOnDeath("OM Loot Chest", 1, 1, 1),new ScaleHP(500),
             new State(
+                // Realm-event completion always creates exactly one normal
+                // Ominous Below portal. The behavior owns its per-boss guard.
+                new GuaranteedPortalOnDeath("Ominous Below Portal"),
                 new ScaleHP2(40,3,15),
                        new State("default",
                            new ConditionalEffect(ConditionEffectIndex.Invincible),
