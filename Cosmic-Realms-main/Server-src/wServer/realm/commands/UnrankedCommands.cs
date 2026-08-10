@@ -2217,5 +2217,19 @@ namespace wServer.realm.commands
         }
     }
 
+    class ForgeV1Command : Command
+    {
+        public ForgeV1Command() : base("forge", alias: "f") { }
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            var words = (args ?? "").Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) { player.SendInfo(ForgeV1Service.Describe(null)); return true; }
+            if (words[0].Equals("preview", StringComparison.OrdinalIgnoreCase)) { player.SendInfo(ForgeV1Service.Describe(string.Join(" ", words.Skip(1).ToArray()))); return true; }
+            if (words[0].Equals("salvage", StringComparison.OrdinalIgnoreCase) && words.Length == 2) { int slot; player.SendInfo(int.TryParse(words[1], out slot) ? ForgeV1Service.Salvage(player, slot) : "Enter a bag slot number."); return true; }
+            if (words[0].Equals("craft", StringComparison.OrdinalIgnoreCase) && words.Length >= 2) { player.SendInfo(ForgeV1Service.Craft(player, string.Join(" ", words.Skip(1).ToArray()))); return true; }
+            player.SendInfo("Usage: /forge | /forge preview <recipe> | /forge salvage <bag-slot> | /forge craft <recipe>"); return false;
+        }
+    }
+
 
     }

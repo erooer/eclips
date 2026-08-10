@@ -606,6 +606,12 @@ namespace common
             set { SetValue<string>("dungeonSigilState", value); }
         }
 
+        public string ForgeState
+        {
+            get { return GetValue<string>("forgeState") ?? ""; }
+            set { SetValue<string>("forgeState", value); }
+        }
+
         public ushort[] Skins
         {
             get { return GetValue<ushort[]>("skins") ?? new ushort[0]; }

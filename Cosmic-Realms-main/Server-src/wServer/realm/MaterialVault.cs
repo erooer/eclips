@@ -46,6 +46,9 @@ namespace wServer.realm
                 { "citadel_fragment", new MaterialDefinition { Id = "citadel_fragment", DisplayName = "Citadel Fragment", AutoDeposit = true } },
                 { "imprint_shard", new MaterialDefinition { Id = "imprint_shard", DisplayName = "Imprint Shard", AutoDeposit = true } },
                 { "event_token", new MaterialDefinition { Id = "event_token", DisplayName = "Event Token", AutoDeposit = true } }
+                , { "eye_blueprint", new MaterialDefinition { Id = "eye_blueprint", DisplayName = "Eye Blueprint", AutoDeposit = false } }
+                , { "mantle_blueprint", new MaterialDefinition { Id = "mantle_blueprint", DisplayName = "Mantle Blueprint", AutoDeposit = false } }
+                , { "judgement_blueprint", new MaterialDefinition { Id = "judgement_blueprint", DisplayName = "Judgement Blueprint", AutoDeposit = false } }
             };
 
         public static IEnumerable<MaterialDefinition> All { get { return Definitions.Values.OrderBy(m => m.Id); } }
@@ -55,6 +58,8 @@ namespace wServer.realm
             if (account == null || !Definitions.ContainsKey(materialId ?? "")) return 0;
             lock (account) return GetBalance(Load(account), materialId);
         }
+
+        public static bool IsKnownMaterial(string materialId) { return Definitions.ContainsKey(materialId ?? ""); }
 
         public static MaterialOperationResult TryDeposit(DbAccount account, string materialId, int amount, string operationId)
         {
