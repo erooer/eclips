@@ -325,6 +325,7 @@
     <Compile Include="realm\ISControl.cs" />
     <Compile Include="realm\Contracts.cs" />
     <Compile Include="realm\DungeonCodex.cs" />
+    <Compile Include="realm\MaterialVault.cs" />
     <Compile Include="logic\behaviors\AnnounceOnDeath.cs" />
     <Compile Include="logic\behaviors\ChangeMusic.cs" />
     <Compile Include="logic\behaviors\ChangeMusicOnDeath.cs" />

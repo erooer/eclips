@@ -2182,5 +2182,16 @@ namespace wServer.realm.commands
         }
     }
 
+    class MaterialsCommand : Command
+    {
+        public MaterialsCommand() : base("materials", alias: "material") { }
+
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            player.SendInfo(MaterialVaultService.Describe(player.Client.Account, args));
+            return true;
+        }
+    }
+
 
     }

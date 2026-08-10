@@ -592,6 +592,14 @@ namespace common
             set { SetValue<string>("dungeonCodexState", value); }
         }
 
+        // Account-wide non-item material ledger. Missing values intentionally
+        // deserialize as an empty vault for all existing accounts.
+        public string MaterialVaultState
+        {
+            get { return GetValue<string>("materialVaultState") ?? ""; }
+            set { SetValue<string>("materialVaultState", value); }
+        }
+
         public ushort[] Skins
         {
             get { return GetValue<ushort[]>("skins") ?? new ushort[0]; }
