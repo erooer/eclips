@@ -600,6 +600,12 @@ namespace common
             set { SetValue<string>("materialVaultState", value); }
         }
 
+        public string DungeonSigilState
+        {
+            get { return GetValue<string>("dungeonSigilState") ?? ""; }
+            set { SetValue<string>("dungeonSigilState", value); }
+        }
+
         public ushort[] Skins
         {
             get { return GetValue<ushort[]>("skins") ?? new ushort[0]; }

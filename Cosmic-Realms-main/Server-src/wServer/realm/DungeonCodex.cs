@@ -160,7 +160,18 @@ namespace wServer.realm
                 definition.DisplayName, definition.RecommendedProgression, definition.Difficulty,
                 string.Join(", ", definition.Bosses), string.Join(", ", definition.PotionDrops), string.Join(", ", definition.KnownUniques),
                 definition.MarkType, definition.QuestChest, definition.PortalSource, entry.Discovered ? "yes" : "no",
-                entry.Completions, entry.Deaths, solo, party);
+                entry.Completions, entry.Deaths, solo, party) + " | " + DungeonSigilService.DescribeAccess(account, definition);
+        }
+
+        public static int GetCompletionCount(DbAccount account, string dungeonKey)
+        {
+            if (account == null) return 0;
+            lock (account) return GetEntry(Load(account), dungeonKey).Completions;
+        }
+
+        public static bool TryResolveDefinition(string value, out DungeonCodexDefinition definition)
+        {
+            return TryResolve(value, out definition);
         }
 
         private static bool TryResolve(string value, out DungeonCodexDefinition definition)

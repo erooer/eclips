@@ -2193,5 +2193,29 @@ namespace wServer.realm.commands
         }
     }
 
+    class DungeonSigilsCommand : Command
+    {
+        public DungeonSigilsCommand() : base("sigils", alias: "sigil") { }
+
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            var words = (args ?? "").Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) { player.SendInfo("Sigils use sigil_fragment. /sigils buy <1-20> | /sigils open <dungeon>"); return true; }
+            if (words[0].Equals("buy", StringComparison.OrdinalIgnoreCase) && words.Length == 2)
+            {
+                int amount;
+                player.SendInfo(int.TryParse(words[1], out amount) ? DungeonSigilService.BuyFragments(player, amount) : "Enter a valid amount.");
+                return true;
+            }
+            if (words[0].Equals("open", StringComparison.OrdinalIgnoreCase) && words.Length >= 2)
+            {
+                player.SendInfo(DungeonSigilService.Open(player, string.Join(" ", words.Skip(1).ToArray())));
+                return true;
+            }
+            player.SendInfo("Usage: /sigils buy <1-20> | /sigils open <dungeon>");
+            return false;
+        }
+    }
+
 
     }
