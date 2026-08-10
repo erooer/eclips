@@ -331,6 +331,7 @@
     <Compile Include="logic\behaviors\MultiplyLootValue.cs" />
     <Compile Include="logic\behaviors\DropPortalOnDeath.cs" />
     <Compile Include="logic\behaviors\GuaranteedPortalOnDeath.cs" />
+    <Compile Include="logic\loot\WeightedRewardService.cs" />
     <Compile Include="logic\behaviors\MutePlayer.cs" />
     <Compile Include="logic\behaviors\PetBehaviors\PetBehavior.cs" />
     <Compile Include="logic\behaviors\PetBehaviors\PetDecoy.cs" />
