@@ -56,6 +56,7 @@ namespace wServer.realm
                 { "Manor of the Immortals", Def("Manor of the Immortals", "Manor of the Immortals", 4, "Mid game", new[] { "Lord Ruthven" }, new[] { "Potion of Attack" }, new[] { "Ruthven's Wand" }, "Epic Mark", "Grand Master Chest", "Realm ghost encounters and Manor portals") },
                 { "Ocean Trench", Def("Ocean Trench", "Ocean Trench", 5, "Mid game", new[] { "Thessal the Mermaid Goddess" }, new[] { "Potion of Wisdom" }, new[] { "Coral Bow" }, "Epic Mark", "Grand Master Chest", "Realm sea encounters and Ocean Trench portals") },
                 { "Mad Lab", Def("Mad Lab", "Mad Lab", 5, "Mid game", new[] { "Dr. Terrible" }, new[] { "Potion of Wisdom", "Potion of Vitality" }, new[] { "Conducting Wand" }, "Epic Mark", "Grand Master Chest", "Realm robot encounters and Mad Lab portals") },
+                { "SunkenReliquary", Def("SunkenReliquary", "Sunken Reliquary", 6, "Midgame", new[] { "Reliquary Custodian", "Nacre Warden" }, new[] { "Potion of Wisdom", "Potion of Vitality" }, new[] { "Nacre Talisman" }, "Reliquary Mark", "Grand Master Chest", "Realm sea-god encounters, Reliquary keys, and Dungeon Sigils") },
                 { "OminousBelow", Def("OminousBelow", "The Ominous Below", 8, "Advanced / endgame", new[] { "The Faceless Ferryman", "Veyra, Warden of Chains", "The Ominous One" }, new[] { "Potion of Attack", "Potion of Defense" }, new[] { "Eye of the Ominous", "Mantle of the Below", "Judgement" }, "Ominous Below Mark (Legendary)", "Grand Champion Chest", "Haunted Omen — Guaranteed Portal") }
             };
 
