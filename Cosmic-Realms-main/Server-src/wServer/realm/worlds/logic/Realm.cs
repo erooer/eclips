@@ -17,6 +17,7 @@ namespace wServer.realm.worlds.logic
         private readonly bool _oryxPresent;
         private readonly int _mapId;
         private Task _overseerTask;
+        private readonly RealmThreatController _threats = new RealmThreatController();
 
 
         private int GladiatorWorldTimer;
@@ -72,6 +73,7 @@ namespace wServer.realm.worlds.logic
                     if (Closed && Players.Count == 0 && _overseer != null)
                     {
                         Init(); // will reset everything back to the way it was when made
+                        _threats.Reset();
                         Closed = false;
                     }
 
@@ -100,6 +102,7 @@ namespace wServer.realm.worlds.logic
         }
         public void EnemyKilled(Enemy enemy, Player killer)
         {
+            _threats.AddActivity(this, enemy);
             if (_overseer != null && !enemy.Spawned)
                 _overseer.OnEnemyKilled(enemy, killer);
         }

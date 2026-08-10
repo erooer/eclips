@@ -2230,6 +2230,11 @@ namespace wServer.realm.commands
             player.SendInfo("Usage: /forge | /forge preview <recipe> | /forge salvage <bag-slot> | /forge craft <recipe>"); return false;
         }
     }
+    class FeaturedCommand : Command
+    {
+        public FeaturedCommand() : base("featured", alias: "feature") { }
+        protected override bool Process(Player player, RealmTime time, string args) { player.SendInfo(FeaturedDungeonService.Describe()); return true; }
+    }
 
 
     }

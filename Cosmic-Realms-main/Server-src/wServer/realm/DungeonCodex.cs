@@ -137,6 +137,7 @@ namespace wServer.realm
                 var entry = GetEntry(state, definition.Key);
                 entry.Discovered = true;
                 entry.Completions++;
+                FeaturedDungeonService.RecordCompletion(account, definition);
                 if (solo && elapsedMs > 0 && (entry.BestSoloClearMs == 0 || elapsedMs < entry.BestSoloClearMs))
                     entry.BestSoloClearMs = elapsedMs;
                 Save(account, state);

@@ -611,6 +611,11 @@ namespace common
             get { return GetValue<string>("forgeState") ?? ""; }
             set { SetValue<string>("forgeState", value); }
         }
+        public string FeaturedDungeonState
+        {
+            get { return GetValue<string>("featuredDungeonState") ?? ""; }
+            set { SetValue<string>("featuredDungeonState", value); }
+        }
 
         public ushort[] Skins
         {
