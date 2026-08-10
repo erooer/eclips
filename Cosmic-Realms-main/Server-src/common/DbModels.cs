@@ -616,6 +616,8 @@ namespace common
             get { return GetValue<string>("featuredDungeonState") ?? ""; }
             set { SetValue<string>("featuredDungeonState", value); }
         }
+        // Additive party identity; membership is resolved server-side after reconnect.
+        public string PartyState { get { return GetValue<string>("partyState") ?? ""; } set { SetValue<string>("partyState", value); } }
 
         public ushort[] Skins
         {

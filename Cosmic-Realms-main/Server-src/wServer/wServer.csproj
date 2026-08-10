@@ -327,6 +327,7 @@
     <Compile Include="realm\Contracts.cs" />
     <Compile Include="realm\DungeonCodex.cs" />
     <Compile Include="realm\DungeonAnomalies.cs" />
+    <Compile Include="realm\Parties.cs" />
     <Compile Include="realm\MaterialVault.cs" />
     <Compile Include="realm\DungeonSigils.cs" />
     <Compile Include="realm\ForgeV1.cs" />
