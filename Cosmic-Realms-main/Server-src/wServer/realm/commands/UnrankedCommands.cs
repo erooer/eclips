@@ -2171,5 +2171,16 @@ namespace wServer.realm.commands
         }
     }
 
+    class DungeonCodexCommand : Command
+    {
+        public DungeonCodexCommand() : base("codex", alias: "dungeoncodex") { }
+
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            player.SendInfo(DungeonCodexService.Describe(player.Client.Account, args));
+            return true;
+        }
+    }
+
 
     }

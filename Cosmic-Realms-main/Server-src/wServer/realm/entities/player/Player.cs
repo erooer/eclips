@@ -1512,6 +1512,7 @@ namespace wServer.realm.entities
             else
             {
                 _dead = true;
+                DungeonCodexService.RecordDeath(Client.Account, Owner);
                 SaveToCharacter();
                 Manager.Database.Death(Manager.Resources.GameData, _client.Account,
                     _client.Character, FameCounter.Stats, killer);

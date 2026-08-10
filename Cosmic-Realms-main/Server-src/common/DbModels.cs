@@ -584,6 +584,14 @@ namespace common
             set { SetValue<string>("contractState", value); }
         }
 
+        // Additive account-hash data. Older accounts simply start with an empty
+        // Codex state; no character, mark, or inventory data is migrated.
+        public string DungeonCodexState
+        {
+            get { return GetValue<string>("dungeonCodexState") ?? ""; }
+            set { SetValue<string>("dungeonCodexState", value); }
+        }
+
         public ushort[] Skins
         {
             get { return GetValue<ushort[]>("skins") ?? new ushort[0]; }

@@ -9,6 +9,7 @@ using common;
 using common.resources;
 using log4net;
 using wServer.logic.loot;
+using wServer.logic;
 using wServer.networking;
 using wServer.networking.packets;
 using wServer.networking.packets.outgoing;
@@ -16,6 +17,7 @@ using wServer.realm.entities;
 using wServer.realm.entities.vendors;
 using wServer.realm.terrain;
 using wServer.realm.worlds.logic;
+using wServer.realm;
 
 namespace wServer.realm.worlds
 {
@@ -102,6 +104,9 @@ namespace wServer.realm.worlds
         private static int _entityInc;
 
         private readonly object _deleteLock = new object();
+        private readonly Dictionary<int, DateTime> _codexEntryTimes = new Dictionary<int, DateTime>();
+        private readonly HashSet<int> _codexParticipants = new HashSet<int>();
+        private bool _codexCompletionRecorded;
 
         public World(ProtoWorld proto)
         {
@@ -354,6 +359,14 @@ namespace wServer.realm.worlds
                 Players.TryAdd(entity.Id, entity as Player);
                 PlayersCollision.Insert(entity);
                 Interlocked.Increment(ref _totalConnects);
+                var player = entity as Player;
+                DungeonCodexService.RecordDiscovery(player.Client.Account, this);
+                DungeonCodexDefinition codexDefinition;
+                if (DungeonCodexService.TryGet(this, out codexDefinition))
+                {
+                    _codexEntryTimes[player.Client.Account.AccountId] = DateTime.UtcNow;
+                    _codexParticipants.Add(player.Client.Account.AccountId);
+                }
             } else if (entity is Enemy)
             {
                 entity.Id = GetNextEntityId();
@@ -364,6 +377,9 @@ namespace wServer.realm.worlds
                     SpecialEnemies.TryAdd(entity.Id, entity as Enemy);
                 if (entity.ObjectDesc.Quest)
                     Quests.TryAdd(entity.Id, entity as Enemy);
+                var enemy = entity as Enemy;
+                if (DungeonCodexService.IsCompletionBoss(this, enemy.ObjectDesc.ObjectId))
+                    enemy.OnDeath += OnCodexCompletionBossDeath;
             } else if (entity is Projectile)
             {
                 entity.Init(this);
@@ -386,6 +402,22 @@ namespace wServer.realm.worlds
                 PlayersCollision.Insert(entity);
             }
             return entity.Id;
+        }
+
+        private void OnCodexCompletionBossDeath(object sender, BehaviorEventArgs args)
+        {
+            if (_codexCompletionRecorded) return;
+            _codexCompletionRecorded = true;
+            var now = DateTime.UtcNow;
+            var solo = _codexParticipants.Count == 1;
+            foreach (var player in Players.Values.ToArray())
+            {
+                DateTime entered;
+                if (!_codexEntryTimes.TryGetValue(player.Client.Account.AccountId, out entered))
+                    entered = now;
+                var elapsedMs = (long)Math.Max(0, (now - entered).TotalMilliseconds);
+                DungeonCodexService.RecordCompletion(player.Client.Account, this, elapsedMs, solo);
+            }
         }
 
         public virtual void LeaveWorld(Entity entity)
