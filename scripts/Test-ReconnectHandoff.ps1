@@ -8,7 +8,7 @@ $server = Join-Path $root 'Cosmic-Realms-main\Server-src'
 $connect = Get-Content -LiteralPath (Join-Path $server 'wServer\realm\ConnectManager.cs') -Raw
 $realm = Get-Content -LiteralPath (Join-Path $server 'wServer\realm\RealmManager.cs') -Raw
 
-if ($connect -notmatch 'HandoffReconnectSource\(client, rInfo\.SourceWorldId, rInfo\.CharacterId, rInfo\.TraceId\)' -or
+if ($connect -notmatch 'HandoffReconnectSource\(client, rInfo\.SourceWorldId, rInfo\.CharacterId, gameId, rInfo\.TraceId\)' -or
     $connect -notmatch 'Database\.AcquireLock\(acc\)') {
     throw 'Validated reconnect does not transfer the account lock after source detachment.'
 }
@@ -21,6 +21,16 @@ if ($realm -match 'priorClients = Clients\.Keys') {
 }
 if ($connect -notmatch 'if \(!conInfo\.Reconnecting && !client\.Manager\.Database\.AcquireLock\(acc\)\)') {
     throw 'Normal login account-in-use protection was weakened.'
+}
+foreach ($stage in 'pending_reconnect_lookup', 'reconnect_validation', 'key_consumption', 'destination_lock_acquire', 'destination_registration', 'mapinfo_begin') {
+    if ($connect -notmatch $stage) { throw "Missing reconnect failure diagnostic stage '$stage'." }
+}
+foreach ($stage in 'source_client_lookup', 'source_identity_match', 'source_player_removal', 'source_disconnect', 'source_lock_release') {
+    if ($realm -notmatch $stage) { throw "Missing reconnect handoff failure diagnostic stage '$stage'." }
+}
+if ($connect -notmatch '\[RECONNECT_HANDOFF\] FAILED stage=' -or
+    $connect -notmatch 'Account in use \(reconnect handoff failed: destination_lock_acquire\)') {
+    throw 'Reconnect handoff failure logs or player-facing stage message are incomplete.'
 }
 
 # Nexus->Vault, Nexus->Realm, and dungeon->Nexus all use the same transfer model:

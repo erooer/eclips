@@ -52,7 +52,7 @@ namespace wServer.networking.handlers
             {
                 Log.WarnFormat("[TRACE {0:O}] HELLO rejected: reconnect key did not resolve a pending session for gameId={1}.",
                     System.DateTime.UtcNow, packet.GameId);
-                client.SendFailure("Invalid reconnect.", Failure.MessageWithDisconnect);
+                client.SendFailure("Account in use (reconnect handoff failed: pending_reconnect_lookup)", Failure.MessageWithDisconnect);
                 return;
             }
 

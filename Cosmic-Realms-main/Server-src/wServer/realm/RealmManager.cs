@@ -538,27 +538,47 @@ namespace wServer.realm
         // Invoked only after ConnectManager has consumed and validated a
         // server-issued reconnect key.  It deliberately matches the recorded
         // source world so a normal simultaneous login is never displaced.
-        public bool HandoffReconnectSource(Client destination, int sourceWorldId, int characterId, string traceId)
+        public bool HandoffReconnectSource(Client destination, int sourceWorldId, int characterId, int destinationWorldId, string traceId)
         {
-            var source = Clients.Keys.FirstOrDefault(c =>
+            var candidates = Clients.Keys.Where(c =>
                 c != destination &&
                 c.Account != null && destination.Account != null &&
                 c.Account.AccountId == destination.Account.AccountId &&
-                c.Player?.Owner?.Id == sourceWorldId &&
-                (characterId == 0 || c.Character?.CharId == characterId));
+                c.Player?.Owner?.Id == sourceWorldId).ToArray();
+            var source = candidates.FirstOrDefault(c => characterId == 0 || c.Character?.CharId == characterId);
 
             if (source == null)
             {
-                Log.InfoFormat("[RECONNECT_HANDOFF {0}] no registered source client found for account={1} char={2} sourceWorld={3}; continuing with lock validation.",
-                    traceId, destination.Account?.AccountId ?? 0, characterId, sourceWorldId);
+                var stage = candidates.Length == 0 ? "source_client_lookup" : "source_identity_match";
+                var reason = candidates.Length == 0 ? "no active source client matched the recorded source world" : "source client character did not match the reconnect character";
+                Log.WarnFormat("[RECONNECT_HANDOFF] FAILED stage={0} account={1} character={2} sourceWorld={3} destinationWorld={4} sourceClient={5} destinationClient={6} reason={7}",
+                    stage, destination.Account?.AccountId ?? 0, characterId, sourceWorldId, destinationWorldId, -1, destination.Id, reason);
                 return false;
             }
 
             Log.InfoFormat("[RECONNECT_HANDOFF {0}] source disconnect begin account={1} char={2} sourceClient={3} sourceWorld={4} destinationSocket={5}.",
                 traceId, destination.Account.AccountId, characterId, source.Id, sourceWorldId, destination.IP);
-            source.Disconnect("Superseded by validated reconnect handoff.");
+            try
+            {
+                source.Disconnect("Superseded by validated reconnect handoff.");
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorFormat("[RECONNECT_HANDOFF] FAILED stage=source_disconnect account={0} character={1} sourceWorld={2} destinationWorld={3} sourceClient={4} destinationClient={5} reason={6}",
+                    destination.Account.AccountId, characterId, sourceWorldId, destinationWorldId, source.Id, destination.Id, ex.Message);
+                throw;
+            }
             Log.InfoFormat("[RECONNECT_HANDOFF {0}] source disconnect complete account={1} sourceClient={2}; source registered={3}.",
                 traceId, destination.Account.AccountId, source.Id, Clients.ContainsKey(source));
+            if (source.Player?.Owner != null)
+                Log.ErrorFormat("[RECONNECT_HANDOFF] FAILED stage=source_player_removal account={0} character={1} sourceWorld={2} destinationWorld={3} sourceClient={4} destinationClient={5} reason=source player retained a world owner after disconnect",
+                    destination.Account.AccountId, characterId, sourceWorldId, destinationWorldId, source.Id, destination.Id);
+            if (Clients.ContainsKey(source))
+                Log.ErrorFormat("[RECONNECT_HANDOFF] FAILED stage=source_disconnect account={0} character={1} sourceWorld={2} destinationWorld={3} sourceClient={4} destinationClient={5} reason=source client remained in realm registry after disconnect",
+                    destination.Account.AccountId, characterId, sourceWorldId, destinationWorldId, source.Id, destination.Id);
+            if (destination.Manager.Database.GetLockTime(destination.Account) != null)
+                Log.WarnFormat("[RECONNECT_HANDOFF] FAILED stage=source_lock_release account={0} character={1} sourceWorld={2} destinationWorld={3} sourceClient={4} destinationClient={5} reason=account lock remains present after source disconnect",
+                    destination.Account.AccountId, characterId, sourceWorldId, destinationWorldId, source.Id, destination.Id);
             return true;
         }
 

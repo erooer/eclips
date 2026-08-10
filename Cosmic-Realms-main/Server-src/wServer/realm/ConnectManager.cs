@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using common;
 using log4net;
 using wServer.networking;
 using wServer.networking.packets.outgoing;
@@ -134,7 +135,11 @@ namespace wServer.realm
 
                 var account = _manager.Database.GetAccount(entry.Key);
                 if (account == null)
+                {
+                    Log.ErrorFormat("[RECONNECT_HANDOFF] FAILED stage=pending_reconnect_lookup account={0} character={1} sourceWorld={2} destinationWorld={3} sourceClient=-1 destinationClient={4} reason=pending reconnect account could not be loaded",
+                        entry.Key, info.CharacterId, info.SourceWorldId, destination, client.Id);
                     return false;
+                }
 
                 client.Account = account;
                 client.PortalTransitionTraceId = info.TraceId;
@@ -143,7 +148,16 @@ namespace wServer.realm
                     info.TraceId, account.AccountId, info.SourceWorldId, destination);
                 return true;
             }
+            Log.WarnFormat("[RECONNECT_HANDOFF] FAILED stage=pending_reconnect_lookup account=0 character=0 sourceWorld=-1 destinationWorld={0} sourceClient=-1 destinationClient={1} reason=no pending reconnect matched the supplied destination and key",
+                destination, client.Id);
             return false;
+        }
+
+        private void LogReconnectHandoffFailure(string stage, Client client, DbAccount account, ReconInfo info, int destinationWorld, int sourceClient, string reason)
+        {
+            Log.ErrorFormat("[RECONNECT_HANDOFF] FAILED stage={0} account={1} character={2} sourceWorld={3} destinationWorld={4} sourceClient={5} destinationClient={6} reason={7}",
+                stage, account?.AccountId ?? 0, info?.CharacterId ?? 0, info?.SourceWorldId ?? -1,
+                destinationWorld, sourceClient, client?.Id ?? -1, reason);
         }
 
         public void Tick(RealmTime time)
@@ -215,21 +229,24 @@ namespace wServer.realm
                 ReconInfo rInfo;
                 if (!_recon.TryRemove(acc.AccountId, out rInfo))
                 {
-                    client.SendFailure("Invalid reconnect.",
+                    LogReconnectHandoffFailure("key_consumption", client, acc, null, gameId, -1, "pending reconnect was absent or already consumed");
+                    client.SendFailure("Account in use (reconnect handoff failed: key_consumption)",
                         Failure.MessageWithDisconnect);
                     return;
                 }
 
                 if (!gameId.Equals(rInfo.Destination))
                 {
-                    client.SendFailure("Invalid reconnect destination.",
+                    LogReconnectHandoffFailure("reconnect_validation", client, acc, rInfo, gameId, -1, "HELLO destination did not match pending reconnect destination");
+                    client.SendFailure("Account in use (reconnect handoff failed: reconnect_validation)",
                         Failure.MessageWithDisconnect);
                     return;
                 }
 
                 if (!conInfo.Key.SequenceEqual(rInfo.Key))
                 {
-                    client.SendFailure("Invalid reconnect key.",
+                    LogReconnectHandoffFailure("reconnect_validation", client, acc, rInfo, gameId, -1, "HELLO key did not match pending reconnect key");
+                    client.SendFailure("Account in use (reconnect handoff failed: reconnect_validation)",
                         Failure.MessageWithDisconnect);
                     return;
                 }
@@ -243,12 +260,11 @@ namespace wServer.realm
                 // source session.  Detach that source first (which releases its
                 // database lock), then acquire the lock for this new socket.
                 // Ordinary duplicate logins never enter this branch.
-                client.Manager.HandoffReconnectSource(client, rInfo.SourceWorldId, rInfo.CharacterId, rInfo.TraceId);
+                client.Manager.HandoffReconnectSource(client, rInfo.SourceWorldId, rInfo.CharacterId, gameId, rInfo.TraceId);
                 if (!client.Manager.Database.AcquireLock(acc))
                 {
-                    Log.ErrorFormat("[RECONNECT_HANDOFF {0}] failed to acquire destination account lock account={1} after source handoff.",
-                        rInfo.TraceId, acc.AccountId);
-                    client.SendFailure("Account in Use (reconnect handoff failed).", Failure.MessageWithDisconnect);
+                    LogReconnectHandoffFailure("destination_lock_acquire", client, acc, rInfo, gameId, -1, "destination account lock remained held after validated source handoff");
+                    client.SendFailure("Account in use (reconnect handoff failed: destination_lock_acquire)", Failure.MessageWithDisconnect);
                     return;
                 }
                 Log.InfoFormat("[RECONNECT_HANDOFF {0}] destination account lock acquired account={1} destinationSocket={2}.",
@@ -283,13 +299,19 @@ namespace wServer.realm
             // connect client to realm manager
             if (!client.Manager.TryConnect(client))
             {
-                client.SendFailure("Failed to connect");
+                if (conInfo.Reconnecting)
+                    LogReconnectHandoffFailure("destination_registration", client, acc, null, gameId, -1, "RealmManager rejected destination client registration");
+                client.SendFailure(conInfo.Reconnecting
+                    ? "Account in use (reconnect handoff failed: destination_registration)"
+                    : "Failed to connect");
                 return;
             }
 
             var world = client.Manager.GetWorld(gameId);
             if (world == null || world.Deleted)
             {
+                if (conInfo.Reconnecting)
+                    LogReconnectHandoffFailure("mapinfo_begin", client, acc, null, gameId, -1, "requested destination world was unavailable; falling back to Nexus");
                 client.SendPacket(new Text()
                 {
                     BubbleTime = 0,
@@ -298,6 +320,14 @@ namespace wServer.realm
                     Txt = "World does not exist."
                 });
                 world = client.Manager.GetWorld(World.Nexus);
+            }
+
+            if (world == null || world.Deleted)
+            {
+                if (conInfo.Reconnecting)
+                    LogReconnectHandoffFailure("mapinfo_begin", client, acc, null, gameId, -1, "Nexus fallback world was unavailable");
+                client.SendFailure("Account in use (reconnect handoff failed: mapinfo_begin)", Failure.MessageWithDisconnect);
+                return;
             }
 
             if (world is Test &&
