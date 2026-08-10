@@ -18,6 +18,13 @@ namespace common
 
         private const int _lockTTL = 20;
 
+        public enum AccountLockTransferResult
+        {
+            Transferred,
+            Missing,
+            OwnedByOther
+        }
+
         public int DatabaseIndex { get; }
 
         private ISManager _isManager;
@@ -217,6 +224,41 @@ namespace common
 
             acc.LockToken = committed ? lockToken : null;
             return committed;
+        }
+
+        // Atomically replaces only the lock token proved by the source session.
+        // A later source cleanup still holds the old token and therefore cannot
+        // delete the destination session's replacement lock.
+        public AccountLockTransferResult TransferLock(DbAccount acc, string sourceLockToken)
+        {
+            var aKey = $"lock:{acc.AccountId}";
+            if (string.IsNullOrEmpty(sourceLockToken))
+                return _db.KeyExists(aKey) ? AccountLockTransferResult.OwnedByOther : AccountLockTransferResult.Missing;
+
+            var destinationToken = Guid.NewGuid().ToString();
+            var tran = _db.CreateTransaction();
+            tran.AddCondition(Condition.StringEqual(aKey, sourceLockToken));
+            tran.StringSetAsync(aKey, destinationToken, TimeSpan.FromSeconds(_lockTTL));
+
+            if (acc.DiscordId != null)
+            {
+                var dKey = $"dLock:{acc.DiscordId}";
+                tran.AddCondition(Condition.StringEqual(dKey, sourceLockToken));
+                tran.StringSetAsync(dKey, destinationToken, TimeSpan.FromSeconds(_lockTTL));
+            }
+
+            if (tran.Execute())
+            {
+                acc.LockToken = destinationToken;
+                return AccountLockTransferResult.Transferred;
+            }
+
+            return _db.KeyExists(aKey) ? AccountLockTransferResult.OwnedByOther : AccountLockTransferResult.Missing;
+        }
+
+        public string GetLockProof(DbAccount acc)
+        {
+            return acc?.LockToken;
         }
 
         public TimeSpan? GetLockTime(DbAccount acc)

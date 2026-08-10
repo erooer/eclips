@@ -20,9 +20,10 @@ namespace wServer.realm
         public readonly string TraceId;
         public readonly int SourceWorldId;
         public readonly int CharacterId;
+        public readonly string SourceLockProof;
         public DateTime Timeout;
 
-        public ReconInfo(int dest, byte[] key, DateTime timeout, string traceId, int sourceWorldId, int characterId)
+        public ReconInfo(int dest, byte[] key, DateTime timeout, string traceId, int sourceWorldId, int characterId, string sourceLockProof)
         {
             Destination = dest;
             Key = key;
@@ -30,6 +31,7 @@ namespace wServer.realm
             TraceId = traceId;
             SourceWorldId = sourceWorldId;
             CharacterId = characterId;
+            SourceLockProof = sourceLockProof;
         }
     }
 
@@ -104,12 +106,12 @@ namespace wServer.realm
             });
         }
 
-        public void AddReconnect(int accountId, Reconnect rcp, string traceId, int sourceWorldId, int characterId)
+        public void AddReconnect(int accountId, Reconnect rcp, string traceId, int sourceWorldId, int characterId, string sourceLockProof)
         {
             if (rcp == null)
                 return;
 
-            var rInfo = new ReconInfo(rcp.GameId, rcp.Key, DateTime.Now.AddSeconds(ReconTTL), traceId, sourceWorldId, characterId);
+            var rInfo = new ReconInfo(rcp.GameId, rcp.Key, DateTime.Now.AddSeconds(ReconTTL), traceId, sourceWorldId, characterId, sourceLockProof);
             if (!_recon.TryAdd(accountId, rInfo))
                 Log.WarnFormat("[RECONNECT_TRACE] retained existing reconnect key for account={0}; duplicate destination={1} ignored.",
                     accountId, rcp.GameId);
@@ -256,17 +258,36 @@ namespace wServer.realm
                 Log.InfoFormat("[WORLD_TRANSITION {0}] reconnect key consumed account={1} sourceWorld={2} destinationWorld={3}.",
                     rInfo.TraceId, acc.AccountId, rInfo.SourceWorldId, gameId);
 
-                // A valid reconnect key authorizes replacement of only its own
-                // source session.  Detach that source first (which releases its
-                // database lock), then acquire the lock for this new socket.
-                // Ordinary duplicate logins never enter this branch.
-                client.Manager.HandoffReconnectSource(client, rInfo.SourceWorldId, rInfo.CharacterId, gameId, rInfo.TraceId);
-                if (!client.Manager.Database.AcquireLock(acc))
+                // The reconnect record carries the source session's Redis lock
+                // token. Transfer that exact token before old-client cleanup so
+                // the cleanup's compare-and-release cannot delete this new lock.
+                var transfer = client.Manager.Database.TransferLock(acc, rInfo.SourceLockProof);
+                if (transfer == Database.AccountLockTransferResult.OwnedByOther)
                 {
-                    LogReconnectHandoffFailure("destination_lock_acquire", client, acc, rInfo, gameId, -1, "destination account lock remained held after validated source handoff");
+                    Log.WarnFormat("[RECONNECT_HANDOFF {0}] source_already_detached_lock_owned_by_other_session account={1} character={2} sourceWorld={3} destinationWorld={4}.",
+                        rInfo.TraceId, acc.AccountId, rInfo.CharacterId, rInfo.SourceWorldId, gameId);
+                    LogReconnectHandoffFailure("destination_lock_acquire", client, acc, rInfo, gameId, -1, "account lock is owned by a different session token");
                     client.SendFailure("Account in use (reconnect handoff failed: destination_lock_acquire)", Failure.MessageWithDisconnect);
                     return;
                 }
+                if (transfer == Database.AccountLockTransferResult.Missing)
+                {
+                    Log.WarnFormat("[RECONNECT_HANDOFF {0}] source_already_detached_lock_missing account={1} character={2}; acquiring a new destination lock.",
+                        rInfo.TraceId, acc.AccountId, rInfo.CharacterId);
+                    if (!client.Manager.Database.AcquireLock(acc))
+                    {
+                        LogReconnectHandoffFailure("destination_lock_acquire", client, acc, rInfo, gameId, -1, "source lock was missing but a different session acquired the account before destination claim");
+                        client.SendFailure("Account in use (reconnect handoff failed: destination_lock_acquire)", Failure.MessageWithDisconnect);
+                        return;
+                    }
+                }
+                else
+                {
+                    Log.InfoFormat("[RECONNECT_HANDOFF {0}] lock_transfer_success account={1} character={2} sourceWorld={3} destinationWorld={4}.",
+                        rInfo.TraceId, acc.AccountId, rInfo.CharacterId, rInfo.SourceWorldId, gameId);
+                }
+
+                client.Manager.HandoffReconnectSource(client, rInfo.SourceWorldId, rInfo.CharacterId, gameId, transfer, rInfo.TraceId);
                 Log.InfoFormat("[RECONNECT_HANDOFF {0}] destination account lock acquired account={1} destinationSocket={2}.",
                     rInfo.TraceId, acc.AccountId, client.IP);
             }

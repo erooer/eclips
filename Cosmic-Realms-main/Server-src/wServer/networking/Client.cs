@@ -331,7 +331,8 @@ namespace wServer.networking
                 return;
             }
 
-            Manager.ConMan.AddReconnect(Account.AccountId, pkt, PortalTransitionTraceId, PortalTransitionSourceWorldId, Character?.CharId ?? 0);
+            Manager.ConMan.AddReconnect(Account.AccountId, pkt, PortalTransitionTraceId, PortalTransitionSourceWorldId,
+                Character?.CharId ?? 0, Manager.Database.GetLockProof(Account));
             SendPacket(pkt);
         }
 
