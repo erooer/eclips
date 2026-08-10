@@ -38,7 +38,7 @@ if ($updates -notmatch 'ResetWorldVisibilityState\(\)' -or
 }
 if ($hello -notmatch 'TryPrepareReconnect\(client, packet\.GameId, packet\.Key\)' -or
     $connections -notmatch 'public bool TryPrepareReconnect' -or
-    $realm -notmatch 'detaching stale client') {
+    $realm -notmatch 'HandoffReconnectSource') {
     throw 'Fresh-socket reconnect authentication or stale-client detachment contract is incomplete.'
 }
 if ($madLabXml -notmatch '<Object type="0x0992" id="Lab Open Wall">' -or

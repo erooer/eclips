@@ -99,11 +99,12 @@ namespace wServer.logic
                         ),
                     new State("4",
                         new Taunt(true, "I am near, when you find me make sure to say 'Ready'."),
+                        new PlayerTextTransition("85", @"^\s*ready\s*$", 85),
                         new TimedTransition(5000, "5")
                         ),
                     //repeat
                     new State("5",
-                        new PlayerTextTransition("85", "ready"),
+                        new PlayerTextTransition("85", @"^\s*ready\s*$", 85),
                         new TimedTransition(2000, "4")
                         ),
                     new State("6",

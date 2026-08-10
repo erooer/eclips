@@ -254,6 +254,11 @@ namespace wServer.realm
         {
             var origState = CurrentState;
 
+            if (ObjectDesc?.ObjectId == "Ghost of Skuld" && state?.Name == "85" &&
+                (origState?.Name == "4" || origState?.Name == "5"))
+                Log.InfoFormat("[SKULD_EVENT] fight activated entity={0} world={1}/{2} transition={3}->{4}.",
+                    Id, Owner?.Id ?? -1, Owner?.GetType().Name ?? "none", origState.Name, state.Name);
+
             CurrentState = state;
             GoDeeeeeeeep();
 
@@ -828,6 +833,15 @@ namespace wServer.realm
         public void OnChatTextReceived(Player player, string text)
         {
             var state = CurrentState;
+            if (ObjectDesc?.ObjectId == "Ghost of Skuld" &&
+                string.Equals(text?.Trim(), "ready", StringComparison.OrdinalIgnoreCase))
+            {
+                var distance = player == null ? -1 : MathsUtils.Dist(player.X, player.Y, X, Y);
+                var inRange = distance >= 0 && distance <= 85;
+                Log.InfoFormat("[SKULD_EVENT] ready received entity={0} world={1}/{2} player={3} distance={4:0.00} state={5} matched={6} target={7}.",
+                    Id, Owner?.Id ?? -1, Owner?.GetType().Name ?? "none", player?.Name ?? "none", distance,
+                    state?.Name ?? "none", inRange, inRange && (state?.Name == "4" || state?.Name == "5") ? "85" : "none");
+            }
             while (state != null)
             {
                 foreach (var t in state.Transitions.OfType<PlayerTextTransition>())

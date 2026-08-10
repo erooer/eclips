@@ -515,20 +515,6 @@ namespace wServer.realm
         {
             if (client?.Account == null)
                 return false;
-
-            // A portal reconnect uses a new Client instance. Remove an old
-            // account session before destination packets are queued so source
-            // world broadcasts cannot leak into the destination initialization.
-            var priorClients = Clients.Keys
-                .Where(c => c != client && c.Account != null && c.Account.AccountId == client.Account.AccountId)
-                .ToArray();
-            foreach (var priorClient in priorClients)
-            {
-                Log.WarnFormat("[WORLD_TRANSITION {0}] detaching stale client={1} account={2} oldWorld={3} before destination assignment.",
-                    client.PortalTransitionTraceId ?? "initial", priorClient.Id, client.Account.AccountId,
-                    priorClient.Player?.Owner?.Id ?? -1);
-                priorClient.Disconnect("Superseded by a reconnect session.");
-            }
             if (Clients.Keys.Contains(client))
                 Disconnect(client);
             client.Id = Interlocked.Increment(ref _nextClientId);
@@ -546,6 +532,33 @@ namespace wServer.realm
             Config.serverInfo.maxPlayers = Config.serverSettings.maxPlayers;
             Config.serverInfo.queueLength = ConMan.QueueLength();
             Config.serverInfo.playerList.Add(plrInfo);
+            return true;
+        }
+
+        // Invoked only after ConnectManager has consumed and validated a
+        // server-issued reconnect key.  It deliberately matches the recorded
+        // source world so a normal simultaneous login is never displaced.
+        public bool HandoffReconnectSource(Client destination, int sourceWorldId, int characterId, string traceId)
+        {
+            var source = Clients.Keys.FirstOrDefault(c =>
+                c != destination &&
+                c.Account != null && destination.Account != null &&
+                c.Account.AccountId == destination.Account.AccountId &&
+                c.Player?.Owner?.Id == sourceWorldId &&
+                (characterId == 0 || c.Character?.CharId == characterId));
+
+            if (source == null)
+            {
+                Log.InfoFormat("[RECONNECT_HANDOFF {0}] no registered source client found for account={1} char={2} sourceWorld={3}; continuing with lock validation.",
+                    traceId, destination.Account?.AccountId ?? 0, characterId, sourceWorldId);
+                return false;
+            }
+
+            Log.InfoFormat("[RECONNECT_HANDOFF {0}] source disconnect begin account={1} char={2} sourceClient={3} sourceWorld={4} destinationSocket={5}.",
+                traceId, destination.Account.AccountId, characterId, source.Id, sourceWorldId, destination.IP);
+            source.Disconnect("Superseded by validated reconnect handoff.");
+            Log.InfoFormat("[RECONNECT_HANDOFF {0}] source disconnect complete account={1} sourceClient={2}; source registered={3}.",
+                traceId, destination.Account.AccountId, source.Id, Clients.ContainsKey(source));
             return true;
         }
 
