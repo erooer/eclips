@@ -2155,5 +2155,21 @@ namespace wServer.realm.commands
             return true;
         } }
 
+    class ContractsCommand : Command
+    {
+        public ContractsCommand() : base("contracts", alias: "contract") { }
+
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            var account = player.Client.Account;
+            var words = (args ?? "").Trim().ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) { player.SendInfo(ContractService.Describe(account)); return true; }
+            if (words[0] == "reroll") { player.SendInfo(ContractService.Reroll(account)); return true; }
+            if (words[0] == "claim" && words.Length == 2) { player.SendInfo(ContractService.Claim(account, words[1])); return true; }
+            player.SendInfo("Usage: /contracts | /contracts claim <daily-marks|daily-chests|daily-bonus|weekly-marks|weekly-chests|weekly-bonus> | /contracts reroll");
+            return false;
+        }
+    }
+
 
     }

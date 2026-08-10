@@ -323,6 +323,7 @@
     <Compile Include="realm\entities\player\Player.Party.cs" />
     <Compile Include="realm\entities\player\Player.Equipped.cs" />
     <Compile Include="realm\ISControl.cs" />
+    <Compile Include="realm\Contracts.cs" />
     <Compile Include="logic\behaviors\AnnounceOnDeath.cs" />
     <Compile Include="logic\behaviors\ChangeMusic.cs" />
     <Compile Include="logic\behaviors\ChangeMusicOnDeath.cs" />

@@ -1167,6 +1167,7 @@ namespace wServer.realm.entities
             var acc = Client.Account;
             acc.LegendaryMarks += 1;
             acc.FlushAsync();
+            ContractService.RecordMark(acc, acc.LegendaryMarks >= 4);
 
             if (acc.LegendaryMarks >= 4)
             {
@@ -1219,6 +1220,7 @@ namespace wServer.realm.entities
             var acc = Client.Account;
             acc.EpicMarks += 1;
             acc.FlushAsync();
+            ContractService.RecordMark(acc, acc.EpicMarks >= 4);
 
             if (acc.EpicMarks >= 4)
             {
@@ -1272,6 +1274,7 @@ namespace wServer.realm.entities
             var acc = Client.Account;
             acc.RareMarks += 1;
             acc.FlushAsync();
+            ContractService.RecordMark(acc, acc.RareMarks >= 4);
 
             if (acc.RareMarks >= 4)
             {
@@ -1324,6 +1327,7 @@ namespace wServer.realm.entities
             var acc = Client.Account;
             acc.CommonMarks += 1;
             acc.FlushAsync();
+            ContractService.RecordMark(acc, acc.CommonMarks >= 6);
 
             if (acc.CommonMarks >= 6)
             {

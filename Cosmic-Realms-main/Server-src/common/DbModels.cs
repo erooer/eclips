@@ -576,6 +576,14 @@ namespace common
             set { SetValue<int>("LegendaryMarks", value); }
         }
 
+        // Versioned JSON payload for additive account-wide contract progress.
+        // Missing data intentionally reads as an empty state for existing saves.
+        public string ContractState
+        {
+            get { return GetValue<string>("contractState") ?? ""; }
+            set { SetValue<string>("contractState", value); }
+        }
+
         public ushort[] Skins
         {
             get { return GetValue<ushort[]>("skins") ?? new ushort[0]; }
