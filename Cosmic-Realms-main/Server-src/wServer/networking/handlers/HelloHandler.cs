@@ -48,6 +48,13 @@ namespace wServer.networking.handlers
                 client.Account = acc;
                 Log.InfoFormat("[TRACE {0:O}] HELLO authenticated account={1} id={2}", System.DateTime.UtcNow, acc.Name, acc.AccountId);
             }
+            else if (!client.Manager.ConMan.TryPrepareReconnect(client, packet.GameId, packet.Key))
+            {
+                Log.WarnFormat("[TRACE {0:O}] HELLO rejected: reconnect key did not resolve a pending session for gameId={1}.",
+                    System.DateTime.UtcNow, packet.GameId);
+                client.SendFailure("Invalid reconnect.", Failure.MessageWithDisconnect);
+                return;
+            }
 
             if (!VerifyConnection(client, packet, client.Account))
             {

@@ -1,6 +1,6 @@
 Cosmic Realms Static Validation Report
 Scope: all
-Generated: 2026-08-09T06:59:56.854Z
+Generated: 2026-08-10T02:21:23.156Z
 
 Errors (0)
 - none
@@ -590,7 +590,7 @@ Warnings (1555)
 - Texture 'invisible' for 'Mad Scientist Summoner' has no obvious client embed filename
 - Texture 'invisible' for 'Dr Terrible' has no obvious client embed filename
 - Texture 'invisible' for 'Mad Gas Controller' has no obvious client embed filename
-- Texture 'invisible' for 'Mad Lab Open Wall' has no obvious client embed filename
+- Texture 'invisible' for 'Lab Open Wall' has no obvious client embed filename
 - Texture 'invisible' for 'Horrific Creation Summoner' has no obvious client embed filename
 - Texture 'invisible' for 'F.E.R.A.L.' has no obvious client embed filename
 - Texture 'invisible' for 'FERAL Controller' has no obvious client embed filename
@@ -1100,7 +1100,6 @@ Warnings (1555)
 - Map dictionary entry 0 has no ground in MadLab.jm
 - Map 'MadLab.jm' references missing object 'Tesla Coil Check'
 - Map dictionary entry 27 has no ground in MadLab.jm
-- Map 'MadLab.jm' references missing object 'Lab Open Wall'
 - Map 'MadLab.jm' references missing object 'Tesla Coil 3'
 - Map 'MadLab.jm' references missing object 'Tesla Coil Check 3'
 - Map 'MadLab.jm' references missing object 'Lab Open Wall 3'
@@ -1114,6 +1113,7 @@ Warnings (1555)
 - Map 'MadLab.jm' references missing object 'Tesla Coil Check 1'
 - Map 'MadLab.jm' references missing object 'Tesla Coil 1'
 - Map dictionary entry 4 has no ground in MadLabOLD.jm
+- Map 'MadLabOLD.jm' references missing object 'Mad Lab Open Wall'
 - Black/void tile placement in MagmaCastle.jm
 - Map dictionary entry 0 has no ground in MagmaCastle.jm
 - Map dictionary entry 1 has no ground in MagmaCastle.jm

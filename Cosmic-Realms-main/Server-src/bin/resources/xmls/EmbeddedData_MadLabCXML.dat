@@ -485,7 +485,7 @@
          <ConditionEffect duration=".5">Confused</ConditionEffect>
       </Projectile>
    </Object>
-   <Object type="0x0992" id="Mad Lab Open Wall">
+   <Object type="0x0992" id="Lab Open Wall">
       <DisplayId>Horrific Creation</DisplayId>
       <Class>Character</Class>
       <Enemy/>

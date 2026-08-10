@@ -467,7 +467,7 @@ namespace wServer.logic
                     )
                 )
             )
-        .Init("Mad Lab Open Wall",
+        .Init("Lab Open Wall",
             new State(
                 new ConditionalEffect(ConditionEffectIndex.Invincible),
                 new State("1",

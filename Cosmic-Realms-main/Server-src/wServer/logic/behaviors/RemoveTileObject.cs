@@ -25,6 +25,7 @@ namespace wServer.logic.behaviors
             var w = map.Width;
             var h = map.Height;
 
+            var removed = 0;
             for (var y = 0; y < h; y++)
                 for (var x = 0; x < w; x++)
                 {
@@ -52,7 +53,13 @@ namespace wServer.logic.behaviors
                     tile.ObjType = 0;
                     tile.UpdateCount++;
                     map[x, y] = tile;
+                    removed++;
                 }
+
+            if (host.ObjectDesc?.ObjectId == "Lab Open Wall")
+                log4net.LogManager.GetLogger(typeof(RemoveTileObject)).InfoFormat(
+                    "[MAD_LAB_GATE] controller={0} opened second-boss gate by removing {1} tile object(s) type=0x{2:X4} within range={3}.",
+                    host.Id, removed, _objType, _range);
         }
 
         protected override void TickCore(Entity host, RealmTime time, ref object state) { }

@@ -515,6 +515,20 @@ namespace wServer.realm
         {
             if (client?.Account == null)
                 return false;
+
+            // A portal reconnect uses a new Client instance. Remove an old
+            // account session before destination packets are queued so source
+            // world broadcasts cannot leak into the destination initialization.
+            var priorClients = Clients.Keys
+                .Where(c => c != client && c.Account != null && c.Account.AccountId == client.Account.AccountId)
+                .ToArray();
+            foreach (var priorClient in priorClients)
+            {
+                Log.WarnFormat("[WORLD_TRANSITION {0}] detaching stale client={1} account={2} oldWorld={3} before destination assignment.",
+                    client.PortalTransitionTraceId ?? "initial", priorClient.Id, client.Account.AccountId,
+                    priorClient.Player?.Owner?.Id ?? -1);
+                priorClient.Disconnect("Superseded by a reconnect session.");
+            }
             if (Clients.Keys.Contains(client))
                 Disconnect(client);
             client.Id = Interlocked.Increment(ref _nextClientId);

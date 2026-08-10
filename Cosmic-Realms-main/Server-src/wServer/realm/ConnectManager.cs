@@ -115,6 +115,35 @@ namespace wServer.realm
                     accountId, rcp.GameId, rInfo.Timeout);
         }
 
+        // A reconnect uses a fresh TCP Client. HELLO arrives before Connect()
+        // consumes the single-use key, so resolve its account from the pending
+        // random key first; consumption and destination validation remain in
+        // Connect().
+        public bool TryPrepareReconnect(Client client, int destination, byte[] key)
+        {
+            if (client == null || key == null || key.Length == 0)
+                return false;
+
+            foreach (var entry in _recon)
+            {
+                var info = entry.Value;
+                if (info.Destination != destination || !key.SequenceEqual(info.Key))
+                    continue;
+
+                var account = _manager.Database.GetAccount(entry.Key);
+                if (account == null)
+                    return false;
+
+                client.Account = account;
+                client.PortalTransitionTraceId = info.TraceId;
+                client.PortalTransitionSourceWorldId = info.SourceWorldId;
+                Log.InfoFormat("[WORLD_TRANSITION {0}] reconnect HELLO prepared account={1} sourceWorld={2} destinationWorld={3}.",
+                    info.TraceId, account.AccountId, info.SourceWorldId, destination);
+                return true;
+            }
+            return false;
+        }
+
         public void Tick(RealmTime time)
         {
             _queue.KeepAlive(time);
@@ -205,6 +234,8 @@ namespace wServer.realm
 
                 client.PortalTransitionTraceId = rInfo.TraceId;
                 client.PortalTransitionSourceWorldId = rInfo.SourceWorldId;
+                Log.InfoFormat("[WORLD_TRANSITION {0}] reconnect key consumed account={1} sourceWorld={2} destinationWorld={3}.",
+                    rInfo.TraceId, acc.AccountId, rInfo.SourceWorldId, gameId);
             }
             else
             {
@@ -306,6 +337,9 @@ namespace wServer.realm
             var seed = (uint)((long)Environment.TickCount * conInfo.GUID.GetHashCode()) % uint.MaxValue;
             client.Random = new wRandom(seed);
             client.TargetWorld = world.Id;
+            Log.InfoFormat("[WORLD_TRANSITION {0}] MAPINFO queued account={1} client={2} sourceWorld={3} destinationWorld={4} destinationName={5}.",
+                client.PortalTransitionTraceId ?? "initial", acc.AccountId, client.Id,
+                client.PortalTransitionSourceWorldId, world.Id, world.Name);
 
             var now = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
