@@ -993,6 +993,7 @@ namespace wServer.realm.entities
             }
             if (exp != 0)
             {
+                if (FeaturedDungeonService.IsFeaturedWorld(Owner)) exp = (int)Math.Ceiling(exp * FeaturedDungeonService.XpMultiplier);
                 Experience += exp;
             }
             FameCounter.Killed(enemy, killer);

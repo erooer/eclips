@@ -14,6 +14,7 @@ namespace wServer.realm
         public const int EchoDustBonusPercent = 25;
         public static DungeonCodexDefinition Current { get { var pool = DungeonCodexService.All.ToArray(); var day = (int)(DateTime.UtcNow.Date - new DateTime(2024, 1, 1)).TotalDays; return pool[Math.Abs(day) % pool.Length]; } }
         public static string Describe() { return "[Featured] " + Current.DisplayName + " | +20% XP | +15% relative direct rare chance | +25% Echo Dust | first clear: 1 sigil_fragment."; }
+        public static bool IsFeaturedWorld(wServer.realm.worlds.World world) { return world != null && string.Equals(world.Name, Current.Key, StringComparison.OrdinalIgnoreCase); }
         public static void RecordCompletion(DbAccount account, DungeonCodexDefinition definition)
         {
             if (account == null || definition.Key != Current.Key) return;
@@ -24,6 +25,7 @@ namespace wServer.realm
                 var op = "featured:" + account.AccountId + ":" + day + ":" + definition.Key;
                 var reward = MaterialVaultService.TryDeposit(account, "sigil_fragment", 1, op);
                 if (!reward.Success) return;
+                MaterialVaultService.TryDeposit(account, "echo_dust", EchoDustBonusPercent, op + ":echo");
                 state.LastRewardDate = day; state.LastRewardDungeon = definition.Key; Save(account, state);
             }
         }
