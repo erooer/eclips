@@ -2251,6 +2251,9 @@ namespace wServer.realm.commands
         }
     }
     class PartyChatCommand : Command { public PartyChatCommand() : base("p") { } protected override bool Process(Player p,RealmTime t,string a){PartyService.Chat(p,a);return true;} }
+    class MasteryCommand : Command { public MasteryCommand():base("mastery"){ } protected override bool Process(Player p,RealmTime t,string a){p.SendInfo(AccountProgressionService.Describe(p.Client.Account));return true;} }
+    class HistoryCommand : Command { public HistoryCommand():base("history"){ } protected override bool Process(Player p,RealmTime t,string a){p.SendInfo(AccountProgressionService.Deaths(p.Client.Account));return true;} }
+    class LeaderboardCommand : Command { public LeaderboardCommand():base("leaderboard",alias:"lb"){ } protected override bool Process(Player p,RealmTime t,string a){p.SendInfo(EclipseLeaderboards.Describe(string.IsNullOrWhiteSpace(a)?"weekly-clears":a.Trim()));return true;} }
 
 
     }

@@ -1,0 +1,12 @@
+using System;using System.Collections.Generic;using System.Linq;using common;using Newtonsoft.Json;
+namespace wServer.realm {
+ public sealed class DeathRecap { public string Class;public int Level;public int Maxed;public int Fame;public string World;public string Killer;public string Equipment;public long Utc; }
+ public sealed class EclipseProgress { public int Mastery;public HashSet<string> Awards=new HashSet<string>();public List<DeathRecap> Deaths=new List<DeathRecap>();public Dictionary<string,int> GuildTrophies=new Dictionary<string,int>(); }
+ public static class AccountProgressionService { const int MaxDeaths=20; public static EclipseProgress Load(DbAccount a){try{return JsonConvert.DeserializeObject<EclipseProgress>(a.EclipseProgressState)??new EclipseProgress();}catch{return new EclipseProgress();}} static void Save(DbAccount a,EclipseProgress s){a.EclipseProgressState=JsonConvert.SerializeObject(s);a.FlushAsync().Wait();}
+ public static void Award(DbAccount a,string key,int mastery=1){lock(a){var s=Load(a);if(!s.Awards.Add(key))return;s.Mastery+=mastery; if(s.Mastery%10==0)MaterialVaultService.TryDeposit(a,"sigil_fragment",1,"mastery:"+key);Save(a,s);}}
+ public static void RecordDeath(DbAccount a,DeathRecap d){if(a==null||d==null)return;lock(a){var s=Load(a);s.Deaths.Insert(0,d);if(s.Deaths.Count>MaxDeaths)s.Deaths.RemoveRange(MaxDeaths,s.Deaths.Count-MaxDeaths);Save(a,s);}}
+ public static string Describe(DbAccount a){var s=Load(a);return "Mastery "+s.Mastery+" | titles unlocked: "+s.Awards.Count+" | recent deaths: "+s.Deaths.Count;}
+ public static string Deaths(DbAccount a){var s=Load(a);return s.Deaths.Count==0?"No recorded permanent deaths.":string.Join(" | ",s.Deaths.Take(5).Select(x=>x.Class+" L"+x.Level+" fame "+x.Fame+" in "+x.World));}
+ }
+ public static class EclipseLeaderboards { static readonly Dictionary<string,List<KeyValuePair<int,long>>> Boards=new Dictionary<string,List<KeyValuePair<int,long>>>(); public static void Record(string category,int account,long score){lock(Boards){List<KeyValuePair<int,long>> b;if(!Boards.TryGetValue(category,out b))Boards[category]=b=new List<KeyValuePair<int,long>>();b.Add(new KeyValuePair<int,long>(account,score));b.Sort((x,y)=>y.Value.CompareTo(x.Value));if(b.Count>100)b.RemoveRange(100,b.Count-100);}} public static string Describe(string category){lock(Boards){List<KeyValuePair<int,long>> b;return Boards.TryGetValue(category,out b)?string.Join(", ",b.Take(10).Select(x=>x.Key+":"+x.Value)):"No entries.";}} }
+}

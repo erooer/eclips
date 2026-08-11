@@ -618,6 +618,7 @@ namespace common
         }
         // Additive party identity; membership is resolved server-side after reconnect.
         public string PartyState { get { return GetValue<string>("partyState") ?? ""; } set { SetValue<string>("partyState", value); } }
+        public string EclipseProgressState { get { return GetValue<string>("eclipseProgressState") ?? ""; } set { SetValue<string>("eclipseProgressState", value); } }
 
         public ushort[] Skins
         {

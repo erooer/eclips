@@ -140,6 +140,9 @@ namespace wServer.realm
                 var entry = GetEntry(state, definition.Key);
                 entry.Discovered = true;
                 entry.Completions++;
+                AccountProgressionService.Award(account, "clear:" + definition.Key);
+                EclipseLeaderboards.Record("weekly-clears", account.AccountId, entry.Completions);
+                if (definition.Key == "OminousBelow" || definition.Key == "StarfallObservatory") EclipseLeaderboards.Record(definition.Key + (solo ? "-solo" : "-party"), account.AccountId, elapsedMs);
                 FeaturedDungeonService.RecordCompletion(account, definition);
                 solo = solo && !PartyService.IsParty(account);
                 if (solo && elapsedMs > 0 && (entry.BestSoloClearMs == 0 || elapsedMs < entry.BestSoloClearMs))
