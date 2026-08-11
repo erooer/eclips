@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using common.resources;
 using wServer.realm.worlds;
+using wServer.realm.entities;
 
 namespace wServer.realm
 {
@@ -22,6 +23,14 @@ namespace wServer.realm
         public static void Attach(World world, DungeonAnomaly anomaly) { if (world != null && anomaly != null) Active[world.Id] = anomaly; }
         public static bool TryGet(World world, out DungeonAnomaly anomaly) { anomaly = null; return world != null && Active.TryGetValue(world.Id, out anomaly); }
         public static void Cleanup(World world) { if (world != null) { DungeonAnomaly ignored; Active.TryRemove(world.Id, out ignored); } }
+        public static void Apply(World world, Enemy enemy)
+        {
+            DungeonAnomaly a;
+            if (enemy == null || !TryGet(world, out a)) return;
+            // Only the documented safe HP modifiers are applied in V1; no
+            // projectile/timer mutation occurs on the world thread.
+            enemy.HP = (int)(enemy.HP * (1 + (enemy.ObjectDesc.God || enemy.ObjectDesc.Quest ? .20 : a.Grade >= 2 ? .25 : 0)));
+        }
         public static string Describe(World world) { DungeonAnomaly a; return TryGet(world, out a) ? "[Anomaly " + a.Grade + "] " + string.Join(", ", a.Modifiers) : "No active dungeon anomaly."; }
     }
 }

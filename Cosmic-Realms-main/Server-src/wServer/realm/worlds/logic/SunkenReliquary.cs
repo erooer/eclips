@@ -15,6 +15,7 @@ namespace wServer.realm.worlds.logic
             if (player != null && !_populated) { _populated = true; Spawn("Pearlbound Sentinel",2,2); Spawn("Tideglass Oracle",7,2); Spawn("Reliquary Custodian",5,4); Spawn("Nacre Shield Pearl",3,7); Spawn("Nacre Shield Pearl",5,7); Spawn("Nacre Shield Pearl",7,7); Spawn("Nacre Warden",5,8); }
             var e = entity as Enemy;
             if (e == null) return id;
+            DungeonAnomalyService.Apply(this, e);
             e.OnDeath += (s, a) => OnDeath(e);
             if (e.ObjectDesc.ObjectId == "Nacre Warden") { _warden = e; _warden.ApplyConditionEffect(ConditionEffectIndex.Invincible); }
             return id;
