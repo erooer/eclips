@@ -1306,6 +1306,28 @@ namespace common
             SetValue<ItemInstanceRecord[]>(Field + ".instances", next);
             return next;
         }
+
+        // Authoritative cross-owner primitive. Callers validate gameplay slots
+        // first; this moves the existing record and legacy type together, and
+        // restores both arrays if the destination is not empty or inconsistent.
+        public static bool TransferInstance(RInventory source, int sourceSlot, RInventory destination, int destinationSlot)
+        {
+            if (source == null || destination == null || sourceSlot < 0 || destinationSlot < 0) return false;
+            var first = string.CompareOrdinal(source.Field, destination.Field) <= 0 ? source : destination;
+            var second = first == source ? destination : source;
+            lock (first) lock (second)
+            {
+                var sourceItems = source.Items; var destinationItems = destination.Items;
+                if (sourceSlot >= sourceItems.Length || destinationSlot >= destinationItems.Length || sourceItems[sourceSlot] == 0xffff || destinationItems[destinationSlot] != 0xffff) return false;
+                var sourceRecords = source.ItemInstances; var destinationRecords = destination.ItemInstances;
+                var moving = sourceRecords[sourceSlot];
+                if (moving == null || moving.ObjectType != sourceItems[sourceSlot] || destinationRecords.Any(x => x != null && x.Id == moving.Id)) return false;
+                var type = sourceItems[sourceSlot]; sourceItems[sourceSlot] = 0xffff; destinationItems[destinationSlot] = type;
+                sourceRecords[sourceSlot] = null; destinationRecords[destinationSlot] = moving;
+                try { source.SetValue<ushort[]>(source.Field, sourceItems); destination.SetValue<ushort[]>(destination.Field, destinationItems); source.SetValue<ItemInstanceRecord[]>(source.Field + ".instances", sourceRecords); destination.SetValue<ItemInstanceRecord[]>(destination.Field + ".instances", destinationRecords); return true; }
+                catch { source.SetValue<ushort[]>(source.Field, source.Items); destination.SetValue<ushort[]>(destination.Field, destination.Items); return false; }
+            }
+        }
     }
 
     public class DbVaultSingle : RInventory
