@@ -1260,10 +1260,51 @@ namespace common
     {
         public string Field { get; protected set; }
 
+        // Additive server-only identity ledger. The wire format remains the legacy
+        // ushort object-type array; no client packet change is required.
+        public sealed class ItemInstanceRecord
+        {
+            public string Id;
+            public ushort ObjectType;
+            public string Metadata;
+        }
+
         public ushort[] Items
         {
             get { return GetValue<ushort[]>(Field) ?? Enumerable.Repeat((ushort)0xffff, 20).ToArray(); }
-            set { SetValue<ushort[]>(Field, value); }
+            set { SetValue<ushort[]>(Field, value); ReconcileInstances(value); }
+        }
+
+        public ItemInstanceRecord[] ItemInstances
+        {
+            get
+            {
+                var items = Items;
+                var records = GetValue<ItemInstanceRecord[]>(Field + ".instances");
+                if (records == null || records.Length != items.Length || records.Where((r, i) => items[i] != 0xffff && (r == null || r.ObjectType != items[i] || string.IsNullOrEmpty(r.Id))).Any())
+                    return ReconcileInstances(items);
+                return records;
+            }
+        }
+
+        // Preserves an existing ID when a type is moved inside the same owner;
+        // creates an ID only for a legacy/new type with no available identity.
+        private ItemInstanceRecord[] ReconcileInstances(ushort[] items)
+        {
+            var old = GetValue<ItemInstanceRecord[]>(Field + ".instances") ?? new ItemInstanceRecord[0];
+            var unused = old.Where(x => x != null && !string.IsNullOrEmpty(x.Id)).ToList();
+            var next = new ItemInstanceRecord[items.Length];
+            for (var i = 0; i < items.Length; i++)
+            {
+                if (items[i] == 0xffff) continue;
+                var found = unused.FirstOrDefault(x => x.ObjectType == items[i]);
+                if (found != null) { next[i] = found; unused.Remove(found); }
+                else next[i] = new ItemInstanceRecord { Id = Guid.NewGuid().ToString("N"), ObjectType = items[i], Metadata = "" };
+            }
+            var ids = next.Where(x => x != null).Select(x => x.Id).ToArray();
+            if (ids.Distinct().Count() != ids.Length) throw new InvalidOperationException("Duplicate item instance ID rejected.");
+            SetValue<ItemInstanceRecord[]>(Field + ".instances", next);
+            return next;
         }
     }
 
