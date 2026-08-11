@@ -174,6 +174,7 @@
     <Compile Include="logic\db\BehaviorDb.Omen.cs" />
     <Compile Include="logic\db\BehaviorDb.OminousBelow.cs" />
     <Compile Include="logic\db\BehaviorDb.SunkenReliquary.cs" />
+    <Compile Include="logic\db\BehaviorDb.AshenFoundry.cs" />
     <Compile Include="logic\db\BehaviorDb.Oryx3.cs" />
     <Compile Include="logic\db\BehaviorDb.SnowMaiden.cs" />
     <Compile Include="logic\db\BehaviorDb.PermafrostLord.cs" />
@@ -718,6 +719,7 @@
     <Compile Include="realm\worlds\logic\Nexus.cs" />
     <Compile Include="realm\worlds\logic\OminousBelow.cs" />
     <Compile Include="realm\worlds\logic\SunkenReliquary.cs" />
+    <Compile Include="realm\worlds\logic\AshenFoundry.cs" />
     <Compile Include="realm\worlds\logic\Test.cs" />
     <Compile Include="realm\worlds\logic\Vault.cs" />
     <Compile Include="realm\WorldTimer.cs" />
