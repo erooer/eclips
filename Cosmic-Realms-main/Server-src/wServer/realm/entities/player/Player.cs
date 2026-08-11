@@ -1513,6 +1513,8 @@ namespace wServer.realm.entities
             {
                 _dead = true;
                 DungeonCodexService.RecordDeath(Client.Account, Owner);
+                CalculateFame();
+                AccountProgressionService.RecordDeath(Client.Account, new DeathRecap { Class = ObjectDesc.ObjectId, Level = Level, Fame = Fame, World = Owner == null ? "Unknown" : Owner.Name, Killer = killer ?? "Unknown", Equipment = string.Join(",", Inventory.Where(i => i != null).Select(i => i.ObjectId)), Utc = DateTime.UtcNow.Ticks });
                 SaveToCharacter();
                 Manager.Database.Death(Manager.Resources.GameData, _client.Account,
                     _client.Character, FameCounter.Stats, killer);
