@@ -161,6 +161,8 @@ namespace wServer.logic.loot
                     {
                         var DMGExtraLB = player.Item2 / x2; // Maximum lb 25% (deal 100% of the bosses hp for a 25% increase to lb)
                         var LootChance = i.Probabilty * (1 + sizeBoost); // Item Drop Chance * Solo Boss Drop LB which is (BOSSHP * 4) / DMG)
+                        if (FeaturedDungeonService.IsFeaturedWorld(enemy.Owner) && (i.Item.BagType >= 9 || i.Item.Mythical || i.Item.Radiant))
+                            LootChance *= FeaturedDungeonService.RareDropMultiplier;
                         if (i.Item.Tier >= 0 && i.Item.Potion != true)// If item is tiered, dont drop loot modified with loot boost stats.
                         {
                             if (Rand.NextDouble() < LootChance * (1 + lootDropBoost + eventBoost))
