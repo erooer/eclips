@@ -139,8 +139,10 @@ namespace wServer.realm
                 entry.Discovered = true;
                 entry.Completions++;
                 FeaturedDungeonService.RecordCompletion(account, definition);
+                solo = solo && !PartyService.IsParty(account);
                 if (solo && elapsedMs > 0 && (entry.BestSoloClearMs == 0 || elapsedMs < entry.BestSoloClearMs))
                     entry.BestSoloClearMs = elapsedMs;
+                if (!solo && elapsedMs > 0 && (entry.BestPartyClearMs == 0 || elapsedMs < entry.BestPartyClearMs)) entry.BestPartyClearMs = elapsedMs;
                 Save(account, state);
             }
         }

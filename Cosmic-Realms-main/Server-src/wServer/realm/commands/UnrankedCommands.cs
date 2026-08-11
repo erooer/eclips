@@ -2235,6 +2235,22 @@ namespace wServer.realm.commands
         public FeaturedCommand() : base("featured", alias: "feature") { }
         protected override bool Process(Player player, RealmTime time, string args) { player.SendInfo(FeaturedDungeonService.Describe()); return true; }
     }
+    class PartyCommand : Command
+    {
+        public PartyCommand() : base("party") { }
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            var w=(args??"").Trim().Split(new[]{' '},StringSplitOptions.RemoveEmptyEntries); var a=player.Client.Account;
+            if(w.Length==0){player.SendInfo(PartyService.Status(a));return true;}
+            if(w[0].Equals("create",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Create(a));
+            else if(w[0].Equals("accept",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Accept(a));
+            else if(w[0].Equals("leave",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Leave(a));
+            else if(w[0].Equals("gather",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Gather(player));
+            else if((w[0].Equals("invite",StringComparison.OrdinalIgnoreCase)||w[0].Equals("kick",StringComparison.OrdinalIgnoreCase))&&w.Length==2){var t=player.Owner.Players.Values.FirstOrDefault(x=>x.Name.Equals(w[1],StringComparison.OrdinalIgnoreCase));if(t==null)player.SendInfo("Player must be in this world.");else player.SendInfo(w[0].Equals("invite",StringComparison.OrdinalIgnoreCase)?PartyService.Invite(a,t.Client.Account):PartyService.Kick(a,t.Client.Account));}
+            else player.SendInfo("Usage: /party create|invite <name>|accept|leave|kick <name>|gather"); return true;
+        }
+    }
+    class PartyChatCommand : Command { public PartyChatCommand() : base("p") { } protected override bool Process(Player p,RealmTime t,string a){PartyService.Chat(p,a);return true;} }
 
 
     }
