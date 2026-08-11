@@ -1,1 +1,1 @@
-{ "name":"AshenFoundry", "sbName":"Ashen Foundry", "isLimbo":false, "persist":false, "difficulty":7, "background":0, "showDisplays":true, "portals":[0xF940], "maps":[] }
+{ "name":"AshenFoundry", "sbName":"Ashen Foundry", "isLimbo":false, "persist":false, "difficulty":7, "background":0, "showDisplays":true, "portals":[0xF940], "maps":["SP_Horde.jm"] }

@@ -582,7 +582,10 @@ namespace wServer.logic
                         new Shoot(0, count: 10, shootAngle: 36, fixedAngle: 0),
                         new Suicide()
                         ),
-                    new DropPortalOnDeath("The Crawling Depths", 1)
+                    new DropPortalOnDeath("The Crawling Depths", 1),
+                    new DropPortalOnDeath("Sunken Reliquary Portal", .05),
+                    new DropPortalOnDeath("Ashen Foundry Portal", .04),
+                    new DropPortalOnDeath("Starfall Observatory Portal", .03)
                     ),
                 new Threshold(0.01
                 )

@@ -1,5 +1,5 @@
 {
   "name": "SunkenReliquary", "sbName": "Sunken Reliquary", "isLimbo": false,
   "persist": false, "difficulty": 6, "background": 0, "showDisplays": true,
-  "portals": [ 0xF930 ], "maps": []
+  "portals": [ 0xF930 ], "maps": [ "SP_Horde.jm" ]
 }
