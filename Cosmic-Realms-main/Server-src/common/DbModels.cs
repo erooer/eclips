@@ -1331,6 +1331,38 @@ namespace common
                 catch { source.SetValue<ushort[]>(source.Field, source.Items); destination.SetValue<ushort[]>(destination.Field, destination.Items); return false; }
             }
         }
+
+        // Used by the live INVSWAP path after its gameplay validation has passed.
+        // It moves records, not item types; the enclosing inventory transaction is
+        // still authoritative for the client-visible ushort arrays.
+        public static bool SwapInstances(RInventory first, int firstSlot, RInventory second, int secondSlot)
+        {
+            if (first == null || second == null || firstSlot < 0 || secondSlot < 0) return false;
+            var left = string.CompareOrdinal(first.Key + ":" + first.Field, second.Key + ":" + second.Field) <= 0 ? first : second;
+            var right = left == first ? second : first;
+            lock (left) lock (right)
+            {
+                var firstItems = first.Items; var secondItems = second.Items;
+                if (firstSlot >= firstItems.Length || secondSlot >= secondItems.Length) return false;
+                var firstRecords = first.ItemInstances; var secondRecords = second == first ? firstRecords : second.ItemInstances;
+                var recordA = firstRecords[firstSlot]; var recordB = secondRecords[secondSlot];
+                if ((firstItems[firstSlot] != 0xffff && (recordA == null || recordA.ObjectType != firstItems[firstSlot])) ||
+                    (secondItems[secondSlot] != 0xffff && (recordB == null || recordB.ObjectType != secondItems[secondSlot]))) return false;
+                firstRecords[firstSlot] = recordB;
+                secondRecords[secondSlot] = recordA;
+                var all = (second == first ? firstRecords : firstRecords.Concat(secondRecords)).Where(x => x != null).Select(x => x.Id).ToArray();
+                if (all.Any(string.IsNullOrEmpty) || all.Distinct().Count() != all.Length) return false;
+                try
+                {
+                    first.SetValue<ItemInstanceRecord[]>(first.Field + ".instances", firstRecords);
+                    second.SetValue<ItemInstanceRecord[]>(second.Field + ".instances", secondRecords);
+                    first.FlushAsync().GetAwaiter().GetResult();
+                    if (second != first) second.FlushAsync().GetAwaiter().GetResult();
+                    return true;
+                }
+                catch { return false; }
+            }
+        }
     }
 
     public class DbVaultSingle : RInventory

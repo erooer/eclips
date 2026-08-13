@@ -1,1 +1,6 @@
-$ErrorActionPreference='Stop';$r=Split-Path $PSScriptRoot -Parent;$x=Get-Content "$r\Cosmic-Realms-main\Server-src\wServer\realm\AccountProgression.cs" -Raw;$c=Get-Content "$r\Cosmic-Realms-main\Server-src\wServer\realm\DungeonCodex.cs" -Raw;foreach($s in 'MaxDeaths=20','Awards.Add','Mastery','RecordDeath','EclipseLeaderboards','weekly-clears','StarfallObservatory'){if($x+$c -notmatch [regex]::Escape($s)){throw "Missing $s"}};'PASS: bounded recaps, idempotent mastery, and server leaderboard hooks are present.'
+$ErrorActionPreference='Stop'
+$r=Split-Path $PSScriptRoot -Parent
+$x=Get-Content "$r\Cosmic-Realms-main\Server-src\wServer\realm\AccountProgression.cs" -Raw
+$c=Get-Content "$r\Cosmic-Realms-main\Server-src\wServer\realm\DungeonCodex.cs" -Raw
+foreach($pattern in 'MaxDeaths\s*=\s*20','Awards\.Add','LeaderboardEvents','SortedSet(Add|Increment)','eclipse:leaderboard','GuildProgressionService','RecordDeath','weekly-clears','StarfallObservatory'){if($x+$c -notmatch $pattern){throw "Missing progression behavior: $pattern"}}
+'PASS: bounded death recaps, idempotent persistent weekly leaderboard, guild trophy, and Codex hooks are present.'

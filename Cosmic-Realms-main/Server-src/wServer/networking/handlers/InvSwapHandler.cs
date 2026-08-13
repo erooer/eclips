@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using common;
 using common.resources;
 using Mono.Game;
 using wServer.realm;
@@ -161,6 +162,17 @@ namespace wServer.networking.handlers
             // swap items
             if (Inventory.Execute(conATrans, conBTrans))
             {
+                // Persistent containers (character inventory and vault chests)
+                // additionally exchange their existing instance records. Ground
+                // bags/gift chests remain legacy ushort-only containers for now.
+                if (conA.DbLink != null && conB.DbLink != null &&
+                    !RInventory.SwapInstances(conA.DbLink, slotA, conB.DbLink, slotB))
+                {
+                    Inventory.Revert(conATrans, conBTrans);
+                    a.ForceUpdate(slotA); b.ForceUpdate(slotB);
+                    player.Client.SendPacket(new InvResult() { Result = 1 });
+                    return;
+                }
                 // remove gift if from gift chest
                 var db = player.Manager.Database;
                 var trans = db.Conn.CreateTransaction();
