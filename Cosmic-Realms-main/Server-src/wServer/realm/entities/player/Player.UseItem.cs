@@ -406,22 +406,19 @@ namespace wServer.realm.entities
                             successor = gameData.Items[gameData.IdToObjectType[item.SuccessorId]];
                         cInv[slot] = successor;
 
-                        var giftTransaction = db.Conn.CreateTransaction();
-                        if (container is GiftChest)
-                            if (successor != null)
-                                db.SwapGift(Client.Account, item.ObjectType, successor.ObjectType, giftTransaction);
-                            else
-                                db.RemoveGift(Client.Account, item.ObjectType, giftTransaction);
-
-                        if (container is GiftChest && !giftTransaction.Execute())
-                        {
-                            RejectConsumableUse(entity, slot, "gift inventory transaction did not commit.");
-                            return;
-                        }
-
                         if (!Inventory.Execute(cInv))
                         {
                             RejectConsumableUse(entity, slot, "inventory transaction could not be applied.");
+                            return;
+                        }
+
+                        // Gift Chest entries are indexed, not merely typed. Update
+                        // the exact visible record after the container mutation and
+                        // roll it back if the account-side CAS does not commit.
+                        if (container is GiftChest && !ItemInstanceTransferService.TryConsumeGift(this, (GiftChest)container, slot, item, successor))
+                        {
+                            Inventory.Revert(cInv);
+                            RejectConsumableUse(entity, slot, "gift inventory transaction did not commit.");
                             return;
                         }
 

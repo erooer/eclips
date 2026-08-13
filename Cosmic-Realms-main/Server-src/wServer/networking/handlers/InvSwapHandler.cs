@@ -45,6 +45,32 @@ namespace wServer.networking.handlers
             var conA = (IContainer)a;
             var conB = (IContainer)b;
 
+            // Gift Chest withdrawal is an account+character transaction. Handle
+            // it before the generic in-memory swap so a failed Redis condition
+            // cannot create a temporary duplicate in the player inventory.
+            var giftChest = a as GiftChest;
+            if (giftChest != null && b == player && conB.Inventory[slotB] == null)
+            {
+                if (ItemInstanceTransferService.TryWithdrawGift(player, giftChest, slotA, slotB))
+                {
+                    player.Client.SendPacket(new InvResult() { Result = 0 });
+                    return;
+                }
+                a.ForceUpdate(slotA); b.ForceUpdate(slotB);
+                player.Client.SendPacket(new InvResult() { Result = 1 });
+                return;
+            }
+
+            // Gift Chests are reward-only containers. Swapping an inventory
+            // item into one has never had persistent storage semantics; reject
+            // it rather than risking a type-only overwrite of an instance.
+            if (b is GiftChest || (giftChest != null && b == player))
+            {
+                a.ForceUpdate(slotA); b.ForceUpdate(slotB);
+                player.Client.SendPacket(new InvResult() { Result = 1 });
+                return;
+            }
+
             // check if stacking operation
             if (b == player)
                 foreach (var stack in player.Stacks)
@@ -57,9 +83,12 @@ namespace wServer.networking.handlers
                             // if a stackable item ends up in a gift chest it becomes infinite if not removed
                             if (a is GiftChest && stackTrans[slotA] != null)
                             {
-                                var trans = player.Manager.Database.Conn.CreateTransaction();
-                                player.Manager.Database.RemoveGift(player.Client.Account, stackTrans[slotA].ObjectType, trans);
-                                trans.Execute();
+                                if (!ItemInstanceTransferService.TryConsumeGift(player, (GiftChest)a, slotA, stackTrans[slotA], null))
+                                {
+                                    a.ForceUpdate(slotA); b.ForceUpdate(slotB);
+                                    player.Client.SendPacket(new InvResult() { Result = 1 });
+                                    return;
+                                }
                             }
 
                             stackTrans[slotA] = null;

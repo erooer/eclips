@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using StackExchange.Redis;
 using common.resources;
 using log4net;
+using Newtonsoft.Json;
 using DiscordWebhook;
 
 namespace common
@@ -1525,36 +1526,60 @@ namespace common
 
         public bool AddGifts(DbAccount acc, IEnumerable<ushort> items, ITransaction transaction = null)
         {
-            acc.Reload("gifts"); // not ideal but will work for now
-            
+            acc.Reload("gifts"); acc.Reload("giftInstances");
             var gList = acc.Gifts.ToList();
-            gList.AddRange(items);
+            var records = NormalizeGiftInstances(acc, gList);
+            foreach (var item in items) { gList.Add(item); records.Add(NewGiftRecord(item)); }
             var giftBytes = GetGiftBytes(gList.ToArray());
-            
-            return SetGifts(acc, giftBytes, transaction);
+            return SetGifts(acc, giftBytes, records.ToArray(), transaction);
         }
 
         public bool RemoveGift(DbAccount acc, ushort item, ITransaction transaction = null)
         {
-            acc.Reload("gifts");
-
+            acc.Reload("gifts"); acc.Reload("giftInstances");
             var gList = acc.Gifts.ToList();
-            gList.Remove(item);
+            var records = NormalizeGiftInstances(acc, gList);
+            var index = gList.IndexOf(item); if (index < 0) return false;
+            gList.RemoveAt(index); records.RemoveAt(index);
             var giftBytes = GetGiftBytes(gList.ToArray());
-            
-            return SetGifts(acc, giftBytes, transaction);
+            return SetGifts(acc, giftBytes, records.ToArray(), transaction);
         }
 
         public bool SwapGift(DbAccount acc, ushort oldItem, ushort newItem, ITransaction transaction = null)
         {
-            acc.Reload("gifts");
-
+            acc.Reload("gifts"); acc.Reload("giftInstances");
             var gList = acc.Gifts.ToList();
-            gList.Remove(oldItem);
-            gList.Add(newItem);
+            var records = NormalizeGiftInstances(acc, gList);
+            var index = gList.IndexOf(oldItem); if (index < 0) return false;
+            gList[index] = newItem; records[index].ObjectType = newItem;
             var giftBytes = GetGiftBytes(gList.ToArray());
+            return SetGifts(acc, giftBytes, records.ToArray(), transaction);
+        }
 
-            return SetGifts(acc, giftBytes, transaction);
+        public RInventory.ItemInstanceRecord[] EnsureGiftInstances(DbAccount acc)
+        {
+            acc.Reload("gifts"); acc.Reload("giftInstances");
+            var normalized = NormalizeGiftInstances(acc, acc.Gifts.ToList()).ToArray();
+            if (acc.GiftItemInstances.Length != normalized.Length || acc.GiftItemInstances.Where((x, i) => x == null || x.Id != normalized[i].Id).Any())
+            {
+                acc.GiftItemInstances = normalized;
+                acc.FlushAsync().GetAwaiter().GetResult();
+            }
+            return normalized;
+        }
+
+        private static RInventory.ItemInstanceRecord NewGiftRecord(ushort item) { return new RInventory.ItemInstanceRecord { Id = Guid.NewGuid().ToString("N"), ObjectType = item, Metadata = "" }; }
+        private static List<RInventory.ItemInstanceRecord> NormalizeGiftInstances(DbAccount acc, IList<ushort> gifts)
+        {
+            var old = acc.GiftItemInstances ?? new RInventory.ItemInstanceRecord[0];
+            var result = new List<RInventory.ItemInstanceRecord>();
+            for (var i = 0; i < gifts.Count; i++)
+            {
+                var record = i < old.Length ? old[i] : null;
+                result.Add(record != null && record.ObjectType == gifts[i] && !string.IsNullOrWhiteSpace(record.Id) ? record : NewGiftRecord(gifts[i]));
+            }
+            if (result.Select(x => x.Id).Distinct().Count() != result.Count) throw new InvalidOperationException("Duplicate Gift Chest item instance ID rejected.");
+            return result;
         }
 
         private byte[] GetGiftBytes(Array gifts)
@@ -1567,13 +1592,16 @@ namespace common
             return buff;
         }
 
-        private bool SetGifts(DbAccount acc, byte[] giftBytes, ITransaction transaction = null)
+        private bool SetGifts(DbAccount acc, byte[] giftBytes, RInventory.ItemInstanceRecord[] records, ITransaction transaction = null)
         {
             var currentGiftBytes = GetGiftBytes(acc.Gifts.ToArray());
+            var currentRecordBytes = acc.Database.HashGet(acc.Key, "giftInstances");
 
             var t = transaction ?? _db.CreateTransaction();
             t.AddCondition(Condition.HashEqual(acc.Key, "gifts", currentGiftBytes));
+            t.AddCondition(Condition.HashEqual(acc.Key, "giftInstances", currentRecordBytes));
             t.HashSetAsync(acc.Key, "gifts", giftBytes);
+            t.HashSetAsync(acc.Key, "giftInstances", JsonConvert.SerializeObject(records));
             return transaction == null && t.Execute();
         }
         public async Task<PlayerShopItem> CreatePlayerShopItemAsync(ushort item, int price, int time, int accountId)

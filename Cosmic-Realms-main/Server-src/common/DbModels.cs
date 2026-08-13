@@ -495,6 +495,14 @@ namespace common
             set { SetValue<ushort[]>("gifts", value); }
         }
 
+        // Parallel, server-only metadata for Gifts. The client continues to see
+        // only Gifts' legacy ushort object types.
+        public RInventory.ItemInstanceRecord[] GiftItemInstances
+        {
+            get { return GetValue<RInventory.ItemInstanceRecord[]>("giftInstances") ?? new RInventory.ItemInstanceRecord[0]; }
+            set { SetValue<RInventory.ItemInstanceRecord[]>("giftInstances", value); }
+        }
+
         public int MaxCharSlot
         {
             get { return GetValue<int>("maxCharSlot"); }

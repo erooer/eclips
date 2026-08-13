@@ -150,17 +150,29 @@ namespace wServer.realm.worlds.logic
             }
 
             var gifts = _client.Account.Gifts.ToList();
+            var giftRecords = _client.Manager.Database.EnsureGiftInstances(_client.Account).ToList();
+            gifts = _client.Account.Gifts.ToList();
+            var giftOffset = 0;
             while (gifts.Count > 0 && giftChestPosition.Count > 0)
             {
                 var c = Math.Min(8, gifts.Count);
                 var items = gifts.GetRange(0, c);
+                var records = giftRecords.GetRange(0, c);
+                var indexes = Enumerable.Range(giftOffset, c).ToArray();
                 gifts.RemoveRange(0, c);
+                giftRecords.RemoveRange(0, c);
+                giftOffset += c;
                 if (c < 8)
+                {
                     items.AddRange(Enumerable.Repeat(ushort.MaxValue, 8 - c));
+                    records.AddRange(Enumerable.Repeat<RInventory.ItemInstanceRecord>(null, 8 - c));
+                }
 
                 var con = new GiftChest(_client.Manager, 0x0744, null, false);
                 con.BagOwners = new int[] { _client.Account.AccountId };
                 con.Inventory.SetItems(items);
+                con.RuntimeItemInstances = records.ToArray();
+                con.GiftIndexes = indexes;
                 con.Move(giftChestPosition[0].X + 0.5f, giftChestPosition[0].Y + 0.5f);
                 EnterWorld(con);
                 giftChestPosition.RemoveAt(0);

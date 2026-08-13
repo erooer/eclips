@@ -61,20 +61,6 @@ namespace wServer.networking.handlers
             
             var item = con.Inventory[slot.SlotId];
 
-            // if item is from gift chest, remove from user's gift chest list
-            if (con is GiftChest)
-            {
-                var trans = player.Manager.Database.Conn.CreateTransaction();
-                player.Manager.Database.RemoveGift(player.Client.Account, item.ObjectType, trans);
-                if (!trans.Execute())
-                {
-                    player.Client.SendPacket(new InvResult() { Result = 1 });
-                    return;
-                }
-            }
-
-            con.Inventory[slot.SlotId] = null;
-
             // create new container for item to be placed in
             Container container;
             var lifetime = player.Owner.Id == wServer.realm.worlds.World.Nexus
@@ -93,10 +79,26 @@ namespace wServer.networking.handlers
                 
             // init container
             container.Inventory[0] = item;
+            if (con is GiftChest)
+            {
+                if (!ItemInstanceTransferService.TryDropGift(player, (GiftChest)con, slot.SlotId, container))
+                {
+                    container.Inventory[0] = null;
+                    player.Client.SendPacket(new InvResult() { Result = 1 });
+                    return;
+                }
+                container.Move(player.X + (float)((InvRand.NextDouble() * 2 - 1) * 0.5),
+                               player.Y + (float)((InvRand.NextDouble() * 2 - 1) * 0.5));
+                container.SetDefaultSize(75);
+                player.Owner.EnterWorld(container);
+                player.Client.SendPacket(new InvResult() { Result = 0 });
+                return;
+            }
+            con.Inventory[slot.SlotId] = null;
             if (!ItemInstanceTransferService.Swap(player, slot.SlotId, container, 0))
             {
                 container.Inventory[0] = null;
-                con.Inventory[slot.SlotId] = item;
+                if (!(con is GiftChest)) con.Inventory[slot.SlotId] = item;
                 player.Client.SendPacket(new InvResult() { Result = 1 });
                 return;
             }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using System.Collections.Generic;
 using common;
 using Newtonsoft.Json;
 using StackExchange.Redis;
@@ -93,10 +94,168 @@ namespace wServer.realm
             catch { return false; }
         }
 
+        // Gift chests are account-backed rather than RInventory-backed. This is a
+        // single Redis transaction covering the legacy gift types, parallel gift
+        // records, destination character types, and destination records. Nothing
+        // in the client protocol changes.
+        public static bool TryWithdrawGift(Player player, GiftChest chest, int giftSlot, int destinationSlot)
+        {
+            if (player == null || chest == null || player.DbLink == null || chest.GiftIndexes == null ||
+                giftSlot < 0 || giftSlot >= chest.Inventory.Length || destinationSlot < 0 || destinationSlot >= player.Inventory.Length ||
+                destinationSlot < 4 || chest.Inventory[giftSlot] == null || player.Inventory[destinationSlot] != null || giftSlot >= chest.GiftIndexes.Length)
+                return false;
+            var account = player.Client.Account;
+            var expected = chest.RuntimeItemInstances == null ? null : chest.RuntimeItemInstances[giftSlot];
+            var globalIndex = chest.GiftIndexes[giftSlot];
+            try
+            {
+                var database = account.Database;
+                account.Reload("gifts"); account.Reload("giftInstances");
+                var gifts = account.Gifts.ToList();
+                var giftRecords = account.GiftItemInstances.ToList();
+                if (globalIndex < 0 || globalIndex >= gifts.Count || globalIndex >= giftRecords.Count ||
+                    gifts[globalIndex] != chest.Inventory[giftSlot].ObjectType || giftRecords[globalIndex] == null ||
+                    (expected != null && giftRecords[globalIndex].Id != expected.Id)) return false;
+                var record = giftRecords[globalIndex];
+                if (record.ObjectType != gifts[globalIndex] || string.IsNullOrWhiteSpace(record.Id)) return false;
+                var charTypes = player.Inventory.GetItemTypes();
+                var charRecords = player.DbLink.ItemInstances;
+                if (charRecords.Length != charTypes.Length || charTypes[destinationSlot] != 0xffff || charRecords[destinationSlot] != null) return false;
+                charTypes[destinationSlot] = record.ObjectType; charRecords[destinationSlot] = record;
+                gifts.RemoveAt(globalIndex); giftRecords.RemoveAt(globalIndex);
+                var all = charRecords.Concat(giftRecords).Where(x => x != null).Select(x => x.Id).ToArray();
+                if (all.Distinct().Count() != all.Length) return false;
+                var tx = database.CreateTransaction();
+                var oldGifts = database.HashGet(account.Key, "gifts");
+                var oldGiftRecords = database.HashGet(account.Key, "giftInstances");
+                var oldCharTypes = database.HashGet(player.DbLink.Key, player.DbLink.Field);
+                var oldCharRecords = database.HashGet(player.DbLink.Key, player.DbLink.Field + ".instances");
+                tx.AddCondition(Condition.HashEqual(account.Key, "gifts", oldGifts));
+                tx.AddCondition(Condition.HashEqual(account.Key, "giftInstances", oldGiftRecords));
+                tx.AddCondition(Condition.HashEqual(player.DbLink.Key, player.DbLink.Field, oldCharTypes));
+                tx.AddCondition(Condition.HashEqual(player.DbLink.Key, player.DbLink.Field + ".instances", oldCharRecords));
+                tx.HashSetAsync(account.Key, "gifts", GiftBytes(gifts));
+                tx.HashSetAsync(account.Key, "giftInstances", JsonConvert.SerializeObject(giftRecords));
+                tx.HashSetAsync(player.DbLink.Key, player.DbLink.Field, UshortBytes(charTypes));
+                tx.HashSetAsync(player.DbLink.Key, player.DbLink.Field + ".instances", JsonConvert.SerializeObject(charRecords));
+                if (!tx.Execute()) return false;
+                account.Reload("gifts"); account.Reload("giftInstances");
+                player.DbLink.Reload(player.DbLink.Field); player.DbLink.Reload(player.DbLink.Field + ".instances");
+                player.Inventory[destinationSlot] = chest.Inventory[giftSlot];
+                chest.Inventory[giftSlot] = null; chest.RuntimeItemInstances[giftSlot] = null; chest.GiftIndexes[giftSlot] = -1;
+                player.Client.Character.Items = charTypes;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        // A Gift Chest is intentionally withdrawal-only. Consumable use and
+        // stacking destroy (or transform) the exact visible gift entry rather
+        // than removing the first matching object type from the account list.
+        public static bool TryConsumeGift(Player player, GiftChest chest, int giftSlot, common.resources.Item original, common.resources.Item successor)
+        {
+            if (player == null || chest == null || original == null || chest.GiftIndexes == null ||
+                giftSlot < 0 || giftSlot >= chest.GiftIndexes.Length || chest.RuntimeItemInstances == null ||
+                giftSlot >= chest.RuntimeItemInstances.Length)
+                return false;
+            var account = player.Client.Account;
+            var expected = chest.RuntimeItemInstances[giftSlot];
+            var globalIndex = chest.GiftIndexes[giftSlot];
+            try
+            {
+                var database = account.Database;
+                account.Reload("gifts"); account.Reload("giftInstances");
+                var gifts = account.Gifts.ToList();
+                var records = account.GiftItemInstances.ToList();
+                if (globalIndex < 0 || globalIndex >= gifts.Count || globalIndex >= records.Count ||
+                    gifts[globalIndex] != original.ObjectType || records[globalIndex] == null ||
+                    records[globalIndex].ObjectType != original.ObjectType || string.IsNullOrWhiteSpace(records[globalIndex].Id) ||
+                    (expected != null && records[globalIndex].Id != expected.Id))
+                    return false;
+
+                if (successor == null)
+                {
+                    gifts.RemoveAt(globalIndex);
+                    records.RemoveAt(globalIndex);
+                }
+                else
+                {
+                    gifts[globalIndex] = successor.ObjectType;
+                    records[globalIndex].ObjectType = successor.ObjectType;
+                }
+                var ids = records.Where(x => x != null).Select(x => x.Id).ToArray();
+                if (ids.Distinct().Count() != ids.Length) return false;
+
+                var tx = database.CreateTransaction();
+                var oldGifts = database.HashGet(account.Key, "gifts");
+                var oldRecords = database.HashGet(account.Key, "giftInstances");
+                tx.AddCondition(Condition.HashEqual(account.Key, "gifts", oldGifts));
+                tx.AddCondition(Condition.HashEqual(account.Key, "giftInstances", oldRecords));
+                tx.HashSetAsync(account.Key, "gifts", GiftBytes(gifts));
+                tx.HashSetAsync(account.Key, "giftInstances", JsonConvert.SerializeObject(records));
+                if (!tx.Execute()) return false;
+
+                account.Reload("gifts"); account.Reload("giftInstances");
+                chest.RuntimeItemInstances[giftSlot] = successor == null ? null : records[globalIndex];
+                if (successor == null) chest.GiftIndexes[giftSlot] = -1;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        // Transfers a gift directly to a temporary ground container while
+        // retaining its record. The target is a fresh, empty bag, so the Redis
+        // transaction only needs to remove the account-owned source first.
+        public static bool TryDropGift(Player player, GiftChest chest, int giftSlot, Container bag)
+        {
+            if (player == null || chest == null || bag == null || bag.Inventory[0] == null || chest.GiftIndexes == null ||
+                giftSlot < 0 || giftSlot >= chest.Inventory.Length || giftSlot >= chest.GiftIndexes.Length || chest.Inventory[giftSlot] == null)
+                return false;
+            var expected = chest.RuntimeItemInstances == null ? null : chest.RuntimeItemInstances[giftSlot];
+            var account = player.Client.Account;
+            var globalIndex = chest.GiftIndexes[giftSlot];
+            try
+            {
+                var database = account.Database;
+                account.Reload("gifts"); account.Reload("giftInstances");
+                var gifts = account.Gifts.ToList(); var records = account.GiftItemInstances.ToList();
+                if (globalIndex < 0 || globalIndex >= gifts.Count || globalIndex >= records.Count || records[globalIndex] == null ||
+                    gifts[globalIndex] != chest.Inventory[giftSlot].ObjectType || records[globalIndex].ObjectType != gifts[globalIndex] ||
+                    (expected != null && records[globalIndex].Id != expected.Id)) return false;
+                var record = records[globalIndex];
+                gifts.RemoveAt(globalIndex); records.RemoveAt(globalIndex);
+                var ids = records.Where(x => x != null).Select(x => x.Id).ToArray();
+                if (ids.Distinct().Count() != ids.Length) return false;
+                var tx = database.CreateTransaction();
+                var oldGifts = database.HashGet(account.Key, "gifts"); var oldRecords = database.HashGet(account.Key, "giftInstances");
+                tx.AddCondition(Condition.HashEqual(account.Key, "gifts", oldGifts));
+                tx.AddCondition(Condition.HashEqual(account.Key, "giftInstances", oldRecords));
+                tx.HashSetAsync(account.Key, "gifts", GiftBytes(gifts));
+                tx.HashSetAsync(account.Key, "giftInstances", JsonConvert.SerializeObject(records));
+                if (!tx.Execute()) return false;
+                account.Reload("gifts"); account.Reload("giftInstances");
+                bag.RuntimeItemInstances[0] = record;
+                chest.Inventory[giftSlot] = null; chest.RuntimeItemInstances[giftSlot] = null; chest.GiftIndexes[giftSlot] = -1;
+                return true;
+            }
+            catch { return false; }
+        }
+
         static byte[] ItemBytes(common.resources.Item[] items)
         {
             var types = items.Select(x => x == null ? (ushort)0xffff : x.ObjectType).ToArray();
             var bytes = new byte[types.Length * 2]; Buffer.BlockCopy(types, 0, bytes, 0, bytes.Length); return bytes;
+        }
+
+        static byte[] UshortBytes(IEnumerable<ushort> types)
+        {
+            var array = types.ToArray(); var bytes = new byte[array.Length * 2]; Buffer.BlockCopy(array, 0, bytes, 0, bytes.Length); return bytes;
+        }
+
+        static byte[] GiftBytes(IEnumerable<ushort> types)
+        {
+            var values = types.ToArray();
+            return values.Length == 0 ? null : UshortBytes(values);
         }
 
         static RInventory.ItemInstanceRecord New(common.resources.Item item) { return new RInventory.ItemInstanceRecord { Id = Guid.NewGuid().ToString("N"), ObjectType = item.ObjectType, Metadata = "" }; }
