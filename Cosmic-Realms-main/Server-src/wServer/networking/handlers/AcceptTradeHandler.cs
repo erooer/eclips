@@ -79,6 +79,12 @@ namespace wServer.networking.handlers
                 Fail(player, tradeTarget, "The inventory changed before the trade could be completed.");
                 return;
             }
+            if (!ItemInstanceTransferService.ApplyTransactions(pInvTrans, tInvTrans))
+            {
+                Inventory.Revert(pInvTrans, tInvTrans);
+                Fail(player, tradeTarget, "The item identity transfer could not be committed.");
+                return;
+            }
             // Persist both character snapshots immediately after the single in-memory
             // transaction.  This matches the normal save path and closes the window
             // where a disconnect could reload a pre-trade inventory.

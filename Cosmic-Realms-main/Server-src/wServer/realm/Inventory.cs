@@ -34,6 +34,9 @@ namespace wServer.realm
         private readonly Item[] _changedItems;
 
         public int Length => _originalItems.Length;
+        public IContainer Parent => _parent;
+        public Item[] OriginalItems => (Item[])_originalItems.Clone();
+        public Item[] ChangedItems => (Item[])_changedItems.Clone();
 
         public InventoryTransaction(IContainer parent)
         {

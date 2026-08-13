@@ -1290,6 +1290,14 @@ namespace common
             }
         }
 
+        public void SetItemInstances(ItemInstanceRecord[] records)
+        {
+            if (records == null || records.Length != Items.Length) throw new ArgumentException("Invalid item instance record array.");
+            var ids = records.Where(x => x != null).Select(x => x.Id).ToArray();
+            if (ids.Any(string.IsNullOrWhiteSpace) || ids.Distinct().Count() != ids.Length) throw new InvalidOperationException("Duplicate item instance ID rejected.");
+            SetValue<ItemInstanceRecord[]>(Field + ".instances", records);
+        }
+
         // Preserves an existing ID when a type is moved inside the same owner;
         // creates an ID only for a legacy/new type with no available identity.
         private ItemInstanceRecord[] ReconcileInstances(ushort[] items)

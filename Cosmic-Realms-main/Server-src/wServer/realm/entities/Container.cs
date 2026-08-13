@@ -27,6 +27,7 @@ namespace wServer.realm.entities
             Inventory = new Inventory(this);
             BagOwners = new int[0];
             DbLink = dbLink;
+            RuntimeItemInstances = dbLink == null ? new RInventory.ItemInstanceRecord[BagSize] : dbLink.ItemInstances;
 
             var node = Manager.Resources.GameData.ObjectTypeToElement[ObjectType];
             SlotTypes = Utils.ResizeArray(node.Element("SlotTypes").Value.CommaToArray<int>(), BagSize);
@@ -49,6 +50,7 @@ namespace wServer.realm.entities
         }
 
         public RInventory DbLink { get; private set; }
+        public RInventory.ItemInstanceRecord[] RuntimeItemInstances { get; set; }
         public int[] SlotTypes { get; private set; }
         public Inventory Inventory { get; private set; }
         public int[] BagOwners { get; set; }

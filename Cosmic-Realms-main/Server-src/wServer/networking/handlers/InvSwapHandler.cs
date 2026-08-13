@@ -162,11 +162,7 @@ namespace wServer.networking.handlers
             // swap items
             if (Inventory.Execute(conATrans, conBTrans))
             {
-                // Persistent containers (character inventory and vault chests)
-                // additionally exchange their existing instance records. Ground
-                // bags/gift chests remain legacy ushort-only containers for now.
-                if (conA.DbLink != null && conB.DbLink != null &&
-                    !RInventory.SwapInstances(conA.DbLink, slotA, conB.DbLink, slotB))
+                if (!ItemInstanceTransferService.Swap(conA, slotA, conB, slotB))
                 {
                     Inventory.Revert(conATrans, conBTrans);
                     a.ForceUpdate(slotA); b.ForceUpdate(slotB);

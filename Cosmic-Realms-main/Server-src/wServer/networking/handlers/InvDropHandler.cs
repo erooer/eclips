@@ -93,6 +93,13 @@ namespace wServer.networking.handlers
                 
             // init container
             container.Inventory[0] = item;
+            if (!ItemInstanceTransferService.Swap(player, slot.SlotId, container, 0))
+            {
+                container.Inventory[0] = null;
+                con.Inventory[slot.SlotId] = item;
+                player.Client.SendPacket(new InvResult() { Result = 1 });
+                return;
+            }
             container.Move(player.X + (float)((InvRand.NextDouble() * 2 - 1) * 0.5),
                             player.Y + (float)((InvRand.NextDouble() * 2 - 1) * 0.5));
             container.SetDefaultSize(75);
