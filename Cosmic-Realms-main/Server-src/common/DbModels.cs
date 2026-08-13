@@ -1593,6 +1593,13 @@ namespace common
             get { return GetValue<string>("board") ?? ""; }
             set { SetValue<string>("board", value); }
         }
+
+        // Kept separate from the player-editable guild board/MOTD.
+        public string EclipseProgressState
+        {
+            get { return GetValue<string>("eclipseProgressState") ?? ""; }
+            set { SetValue<string>("eclipseProgressState", value); }
+        }
     }
 
     public class DbIpInfo

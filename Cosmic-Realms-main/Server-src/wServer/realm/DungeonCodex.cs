@@ -141,10 +141,14 @@ namespace wServer.realm
                 entry.Discovered = true;
                 entry.Completions++;
                 AccountProgressionService.Award(account, "clear:" + definition.Key);
-                EclipseLeaderboards.Record("weekly-clears", account.AccountId, entry.Completions);
-                if (definition.Key == "OminousBelow" || definition.Key == "StarfallObservatory") EclipseLeaderboards.Record(definition.Key + (solo ? "-solo" : "-party"), account.AccountId, elapsedMs);
+                var effectiveSolo = solo && !PartyService.IsParty(account);
+                var completionEvent = "world:" + world.Id + ":account:" + account.AccountId;
+                EclipseLeaderboards.Record(account, "weekly-clears", entry.Completions, completionEvent);
+                if (definition.Key == "OminousBelow" || definition.Key == "StarfallObservatory")
+                    EclipseLeaderboards.Record(account, definition.Key + (effectiveSolo ? "-solo" : "-party"), elapsedMs, completionEvent, true);
+                GuildProgressionService.RecordDungeonCompletion(account, definition.Key, completionEvent);
                 FeaturedDungeonService.RecordCompletion(account, definition);
-                solo = solo && !PartyService.IsParty(account);
+                solo = effectiveSolo;
                 if (solo && elapsedMs > 0 && (entry.BestSoloClearMs == 0 || elapsedMs < entry.BestSoloClearMs))
                     entry.BestSoloClearMs = elapsedMs;
                 if (!solo && elapsedMs > 0 && (entry.BestPartyClearMs == 0 || elapsedMs < entry.BestPartyClearMs)) entry.BestPartyClearMs = elapsedMs;
