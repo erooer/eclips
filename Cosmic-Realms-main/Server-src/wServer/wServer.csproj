@@ -334,6 +334,7 @@
     <Compile Include="realm\MaterialVault.cs" />
     <Compile Include="realm\DungeonSigils.cs" />
     <Compile Include="realm\ForgeV1.cs" />
+    <Compile Include="realm\EclipseImprints.cs" />
     <Compile Include="realm\FeaturedDungeon.cs" />
     <Compile Include="realm\RealmThreatController.cs" />
     <Compile Include="logic\behaviors\AnnounceOnDeath.cs" />

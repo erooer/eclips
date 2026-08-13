@@ -2230,6 +2230,21 @@ namespace wServer.realm.commands
             player.SendInfo("Usage: /forge | /forge preview <recipe> | /forge salvage <bag-slot> | /forge craft <recipe>"); return false;
         }
     }
+    class EclipseImprintCommand : Command
+    {
+        public EclipseImprintCommand() : base("imprint") { }
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            var words = (args ?? "").Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) { player.SendInfo(EclipseImprintService.Describe()); return true; }
+            int slot;
+            if (words[0].Equals("inspect", StringComparison.OrdinalIgnoreCase) && words.Length == 2 && int.TryParse(words[1], out slot)) { player.SendInfo(EclipseImprintService.Inspect(player, slot)); return true; }
+            if (words[0].Equals("preview", StringComparison.OrdinalIgnoreCase) && words.Length == 3 && int.TryParse(words[1], out slot)) { player.SendInfo(EclipseImprintService.Preview(player, slot, words[2])); return true; }
+            if (words[0].Equals("apply", StringComparison.OrdinalIgnoreCase) && words.Length == 3 && int.TryParse(words[1], out slot)) { player.SendInfo(EclipseImprintService.Apply(player, slot, words[2])); return true; }
+            player.SendInfo("Usage: /imprint | /imprint inspect <bag-slot> | /imprint preview <bag-slot> <swift|bulwark|focused|hunter> | /imprint apply <bag-slot> <imprint>");
+            return false;
+        }
+    }
     class FeaturedCommand : Command
     {
         public FeaturedCommand() : base("featured", alias: "feature") { }

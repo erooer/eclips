@@ -198,6 +198,11 @@ namespace wServer.networking.handlers
                     player.Client.SendPacket(new InvResult() { Result = 1 });
                     return;
                 }
+                // Inventory.Execute recalculates equipment stats before the
+                // server-only instance records are swapped. Recalculate once
+                // more after the ledger commit so an equipped Imprint takes
+                // effect immediately and the prior slot loses its boost.
+                player.Stats.ReCalculateValues();
                 // remove gift if from gift chest
                 var db = player.Manager.Database;
                 var trans = db.Conn.CreateTransaction();

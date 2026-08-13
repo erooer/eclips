@@ -88,6 +88,9 @@ namespace wServer.realm
                 foreach (var b in _player.Inventory[i].StatsBoost)
                     IncrementBoost((StatsType)b.Key, b.Value);
 
+                foreach (var imprintBoost in EclipseImprintService.EffectsFor(_player, i, _player.Inventory[i]))
+                    IncrementBoost(imprintBoost.Key, imprintBoost.Value);
+
             }
         }
 

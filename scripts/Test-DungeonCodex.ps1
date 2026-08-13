@@ -14,5 +14,7 @@ if ($models -notmatch 'DungeonCodexState' -or $models -notmatch 'dungeonCodexSta
 if ($world -notmatch 'RecordDiscovery' -or $world -notmatch 'OnCodexCompletionBossDeath' -or $world -notmatch '_codexCompletionRecorded') { throw 'World entry/completion must use the authoritative deduplicated Codex path.' }
 if ($player -notmatch 'DungeonCodexService\.RecordDeath') { throw 'Permanent player deaths in supported dungeons must be recorded.' }
 if ($commands -notmatch 'class DungeonCodexCommand' -or $commands -notmatch 'base\("codex"') { throw 'Command-backed Codex V1 is unavailable.' }
-if ($codex -match 'PotionStorage|Forge|MaterialVault') { throw 'Codex must not modify Potion Storage, Forge, or Material Vault.' }
+# Match implementation references, not ordinary reward text such as the valid
+# "Sunforged Plate" unique entry.
+if ($codex -match 'PotionStorage|ForgeV1Service|MaterialVaultService') { throw 'Codex must not modify Potion Storage, Forge, or Material Vault.' }
 Write-Host 'PASS: Dungeon Codex data, additive persistence, source-aware Ominous entry, and exactly-once completion hooks are present.'
