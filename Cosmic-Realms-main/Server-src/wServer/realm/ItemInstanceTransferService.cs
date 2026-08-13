@@ -1,6 +1,9 @@
 using System;
 using System.Linq;
+using System.Text;
 using common;
+using Newtonsoft.Json;
+using StackExchange.Redis;
 using wServer.realm.entities;
 
 namespace wServer.realm
@@ -64,8 +67,36 @@ namespace wServer.realm
                     }
             var ids = contexts.SelectMany(c => c.Next).Where(x => x != null).Select(x => x.Id).ToArray();
             if (ids.Distinct().Count() != ids.Length) return false;
-            try { foreach (var c in contexts) Save(c.T.Parent, c.Next); return true; }
+            try
+            {
+                var database = contexts[0].T.Parent.DbLink.Database;
+                if (contexts.Any(c => c.T.Parent.DbLink.Database != database)) return false;
+                var transaction = database.CreateTransaction();
+                foreach (var c in contexts)
+                {
+                    var link = c.T.Parent.DbLink;
+                    var oldItems = link.Database.HashGet(link.Key, link.Field);
+                    var oldRecords = link.Database.HashGet(link.Key, link.Field + ".instances");
+                    transaction.AddCondition(Condition.HashEqual(link.Key, link.Field, oldItems));
+                    transaction.AddCondition(Condition.HashEqual(link.Key, link.Field + ".instances", oldRecords));
+                    transaction.HashSetAsync(link.Key, link.Field, ItemBytes(c.T.ChangedItems));
+                    transaction.HashSetAsync(link.Key, link.Field + ".instances", JsonConvert.SerializeObject(c.Next));
+                }
+                if (!transaction.Execute()) return false;
+                foreach (var c in contexts)
+                {
+                    c.T.Parent.DbLink.Items = c.T.ChangedItems.Select(x => x == null ? (ushort)0xffff : x.ObjectType).ToArray();
+                    c.T.Parent.DbLink.SetItemInstances(c.Next);
+                }
+                return true;
+            }
             catch { return false; }
+        }
+
+        static byte[] ItemBytes(common.resources.Item[] items)
+        {
+            var types = items.Select(x => x == null ? (ushort)0xffff : x.ObjectType).ToArray();
+            var bytes = new byte[types.Length * 2]; Buffer.BlockCopy(types, 0, bytes, 0, bytes.Length); return bytes;
         }
 
         static RInventory.ItemInstanceRecord New(common.resources.Item item) { return new RInventory.ItemInstanceRecord { Id = Guid.NewGuid().ToString("N"), ObjectType = item.ObjectType, Metadata = "" }; }

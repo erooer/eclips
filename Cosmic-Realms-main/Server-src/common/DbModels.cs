@@ -97,6 +97,9 @@ namespace common
                 return (T) (object) ret;
             }
 
+            if (typeof(T) == typeof(RInventory.ItemInstanceRecord[]))
+                return (T)(object)(JsonConvert.DeserializeObject<RInventory.ItemInstanceRecord[]>(Encoding.UTF8.GetString(val.Key)) ?? new RInventory.ItemInstanceRecord[0]);
+
             if (typeof (T) == typeof (int[]) ||
                 typeof (T) == typeof (uint[]))
             {
@@ -133,6 +136,9 @@ namespace common
                 buff = new byte[v.Length*2];
                 Buffer.BlockCopy(v, 0, buff, 0, buff.Length);
             }
+
+            else if (typeof(T) == typeof(RInventory.ItemInstanceRecord[]))
+                buff = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject((RInventory.ItemInstanceRecord[])(object)val));
 
             else if (typeof (T) == typeof (int[]) ||
                      typeof (T) == typeof (uint[]))
