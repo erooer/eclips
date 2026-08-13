@@ -215,5 +215,15 @@ namespace wServer.realm
             player.Reconnect(world); // Uses the ordinary server-authorized reconnect handoff.
             return "Joining " + target.Account.Name + ".";
         }
+
+        // A Sigil portal remains one ordinary Nexus portal. This is only a party
+        // readout/marker, never a second portal or a bypass around its normal use.
+        public static void AnnounceSigilPortal(Player opener, Portal portal, string dungeon, bool ready)
+        {
+            if (opener == null || portal == null || opener.Owner == null || opener.Owner.Id != World.Nexus) return;
+            var state = ready ? "is ready" : "is forming";
+            foreach (var client in opener.Manager.Clients.Keys.Where(c => c.Player != null && c.Player.Owner == opener.Owner && SameParty(opener.Client.Account, c.Account)).ToArray())
+                client.Player.SendInfo("[Party] " + opener.Name + "'s Sigil portal to " + dungeon + " " + state + " at (" + (int)portal.X + "," + (int)portal.Y + ").");
+        }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using common;
 using wServer.realm.entities;
 using wServer.realm.worlds;
@@ -99,6 +100,7 @@ namespace wServer.realm
                 portal.WorldInstanceSet += (sender, destination) => FinalizeOpen(player.Owner, portal, account, definition, operation);
                 portal.Move(player.X + 2, player.Y);
                 player.Owner.EnterWorld(portal);
+                PartyService.AnnounceSigilPortal(player, portal, definition.DisplayName, false);
                 // Dynamic portals report readiness asynchronously. No fragment is
                 // consumed until the destination has registered successfully.
                 player.Owner.Timers.Add(new WorldTimer(30000, (world, time) =>
@@ -128,6 +130,8 @@ namespace wServer.realm
                 return;
             }
             ClearPending(account, definition.Key, operation, true);
+            var opener = sourceWorld.Players.Values.FirstOrDefault(p => p.Client != null && p.Client.Account != null && p.Client.Account.AccountId == account.AccountId);
+            if (opener != null) PartyService.AnnounceSigilPortal(opener, portal, definition.DisplayName, true);
         }
 
         private static void ClearPending(DbAccount account, string dungeonKey, string operation, bool opened)
