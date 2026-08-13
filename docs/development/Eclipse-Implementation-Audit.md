@@ -1,55 +1,57 @@
 # Eclipse Implementation-Depth Audit
 
-Audited against `main` on 2026-08-11. Status describes runtime code, not prior reports.
+Audited from the current `main` working tree on 2026-08-13. This document classifies only code paths that have a server runtime entry point; it does not treat XML, a command declaration, or a source-text test as proof of playable behavior.
 
 ## Phase 0–4
 
-| Phase / commit | Runtime entry points and persistence | Tests | Status / gaps |
+| Phase / commits | Runtime wiring and persistence | Tests actually run | Status |
 |---|---|---|---|
-| 0 `6c4f563` | Documentation baseline only. | None. | **STATIC/FOUNDATION ONLY**. |
-| 1–3 `47a255f`, `0b3d88d`, `170aa0a`, `143344f` | Haunted Omen has `GuaranteedPortalOnDeath`; Ominous mark XML uses `LegendaryMarks`; Ominous world callbacks are in `OminousBelow.cs`. | Existing Ominous scripts are source-text checks plus build validation. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION**. Manual test: portal, mark consumption, all gates. |
-| 4 `143344f` | Ominous-specific polish only. | Static map/behavior script. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION**. |
+| 0 `6c4f563` | Baseline documentation. | None. | **STATIC/FOUNDATION ONLY** |
+| 1–3 `47a255f`, `0b3d88d`, `170aa0a` | Haunted Omen’s death behavior opens the Ominous portal; Ominous mark uses the existing consumable LegendaryMarks flow. | Static validators. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 4 `143344f` | Ominous world/behavior polish. | Static map/behavior validation. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
 
 ## Phase 5–10
 
-| Phase / commit | Runtime entry points and persistence | Tests truly verify | Status / gaps |
+| Phase / commits | Runtime wiring and persistence | Remaining limits | Status |
 |---|---|---|---|
-| 5 `69e3524` Contracts | `/contracts`; `ContractState`; mark call in `Player.UseItem`. | Text presence, not request replay/persistence. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION**. |
-| 6 `9d71976` Codex | `/codex`; `DungeonCodexState`; `World` completion/death hooks. | Text presence. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION**; completion depends on actual world terminal callback. |
-| 7 `7e1a7d5` Materials | `/materials`; `MaterialVaultState`; service has idempotency ledger. | Text/static checks. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION**. |
-| 8 `ceed000` Sigils | `/sigils`; `DungeonSigilState`; Nexus portal create. | Text/static checks. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION**; manual portal/reconnect validation needed. |
-| 9 `2652edc` Forge | `/forge`; `ForgeState`; Material Vault spend. | Text/static checks. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION**; no per-item lock/instance semantics. |
-| 10 `5adb885` Threats/Featured | Realm calls `AddActivity`; `/featured`; `FeaturedDungeonState`. | Text checks only. | **INCOMPLETE**: threat encounters are generic existing enemies; Featured XP/rare/Echo values are readout constants, not connected to XP/loot/salvage. |
+| 5 `69e3524` Contracts | `/contracts`; account `ContractState`; mark-consumption hook in `Player.UseItem`. | Command/replay behavior has no executable integration test. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 6 `9d71976` Codex | `/codex`; `DungeonCodexState`; completion/death callbacks from `World`; party-time fields are updated by party state. | Requires manual boss-clear verification. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 7 `7e1a7d5` Materials | `/materials`; account `MaterialVaultState`; server idempotency ledger. | No live request test. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 8 `ceed000` Sigils, `10cd948` | `/sigils`; account `DungeonSigilState`; one temporary Nexus portal is created and charged only on readiness; party receives a same-Nexus marker/readout. | Party/Sigil test is source-level; portal/reconnect needs manual testing. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 9 `2652edc` Forge | `/forge`; account `ForgeState`; Material Vault spend. | Uses legacy type inventory; Imprint metadata remains disabled. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 10 `5adb885`, `c3015c9`, `01d4673` | Realm activity/threshold hooks; featured date rotation; XP multiplier in `Player.Leveling`; rare-loot multiplier in `Loots`; first clear awards from `FeaturedDungeonService`. | Threat encounters remain reused/generic and need live validation. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
 
-## Phase 11–15 dungeons
+## Phase 11–15 dungeon/runtime content
 
-| Phase / commit | Runtime entry points and persistence | Tests truly verify | Status / gaps |
+| Phase / commits | Runtime wiring and persistence | Placeholder/minimal pieces | Status |
 |---|---|---|---|
-| 11 `9d09391` Sunken Reliquary | `.jw`, XML portal, world class, BehaviorDb, Codex. | Names/tags exist. | **DEAD/UNREACHABLE**: `.jw` has `maps: []`; no map places Guardian/Custodian/Pearls/Warden. Natural drop source absent. Boss/loot/mark cannot occur naturally. Placeholder `chars16x16dEncounters2`/`lofiObj5`. |
-| 12 `6fa24ef` Anomalies | Only `SunkenReliquary` attaches in constructor; in-memory dictionary. | Text checks. | **STATIC/FOUNDATION ONLY**: no natural portal roll interception, no modifier application to enemy stats/loot, no portal/readout command. |
-| 13 `9a7071f`, `93c9a30` Parties | `/party`, `/p`; `PartyState`; in-memory party dictionary. | Text checks. | **INCOMPLETE**: parties do not reconstruct membership after restart, no disconnect cleanup, no join-world implementation, no Sigil sharing/markers. |
-| 14 `4439497` Ashen Foundry | `.jw`, XML, world class, BehaviorDb, Codex. | Names/tags exist. | **DEAD/UNREACHABLE**: empty map and no spawn/natural portal source. Placeholder textures. |
-| 15 `12e79d8` Starfall Observatory | `.jw`, XML, world class, BehaviorDb, Codex. | Names/tags exist. | **DEAD/UNREACHABLE**: empty map and no wing seals/boss spawn; selected wings are not used to alter Parallax behavior. Placeholder textures. |
+| 11 `9d09391`, `5ba192c`, `25bd07f` Sunken Reliquary | Natural portal drop; dynamic world constructor spawns Reliquary entities/pearls/Nacre Warden; Codex completion and mark paths use shared systems; Anomaly attach. | Uses shared `SP_Horde.jm`, scripted spawn positions, and reused textures rather than a bespoke three-cluster map. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 12 `6fa24ef`, `25bd07f` Anomalies | Runtime anomaly state attaches to supported new worlds; HP modifier applies at spawn and state is cleaned at world completion. | No interception of all legacy natural portals; modifier/reward pool remains narrow. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 13 `9a7071f`, `93c9a30`, `485b3f0`, `10cd948` Parties | `/party`, `/p`; persisted `PartyState`, roster, invite expiry; reconstructs on create/load; safe `/party join` invokes normal reconnect; same-Nexus Sigil marker. | Disconnect intentionally preserves party for reconnect; no client party panel. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 14 `4439497`, `5ba192c` Ashen Foundry | Natural portal drop; constructor spawns guards, Overseer, three vents, Iron Sun; shared Codex/mark/reward hooks. | Shared map and scripted locations; no final forge art/room layout. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 15 `12e79d8`, `5ba192c` Starfall Observatory | Natural portal drop; deterministic two-wing selection, wing/seal spawns, Parallax spawn and a small selected-wing HP influence; shared progression hooks. | Shared map; Parallax influence is minimal rather than a rich mechanic set. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
 
 ## Phase 16–18B
 
-| Phase / commit | Runtime entry points and persistence | Tests truly verify | Status / gaps |
+| Phase / commits | Runtime wiring and persistence | Remaining limits | Status |
 |---|---|---|---|
-| 16 `a50c7f8` History/Mastery/Guild/Boards | `/mastery`, `/history`, `/leaderboard`; `EclipseProgressState`; Codex calls Mastery/boards. | Text checks. | **INCOMPLETE**: death recording has no permanent-death hook; guild progression absent; leaderboards are in-memory, not weekly/persistent; rewards do not provide titles/frames. |
-| 17 `7e5cf81` Audit | Documentation/script only. | Text checks. | **STATIC/FOUNDATION ONLY**. Correctly identifies partial custom stats; no fixes. |
-| 18A `c2c9151` | `RInventory.Field.instances` additive record ledger. | Text checks. | **STATIC/FOUNDATION ONLY**: legacy migration exists, but only type-matching reconciliation is ambiguous for duplicate types and no handlers use records. |
-| 18B `6f329d1` | `RInventory.TransferInstance` primitive. | Text checks. | **INCOMPLETE**: Vault, InvSwap, trade, drop/pickup, and Gift Chest handlers do not call it; no atomic Redis transaction/rollback implementation. Imprints remain unsafe. |
+| 16 `a50c7f8`, `ba54507`, `31f3490` History/Mastery/Guild/Boards | Permanent death calls `RecordDeath`; bounded account recap/Mastery state; weekly Redis sorted-set boards with per-account idempotency; guild `EclipseProgressState` stores trophy and weekly-clear state; `/mastery`, `/history`, `/leaderboard`, `/guildprogress`. | Leaderboard display uses account IDs; cosmetic title/frame presentation is not implemented. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 17 `7e5cf81` Custom Stat Audit | Documentation/static audit only. | No new stat system was enabled, intentionally. | **STATIC/FOUNDATION ONLY** |
+| 18A `c2c9151`, `57a9b09` Item records | Additive `RInventory` record ledger, legacy migration, persisted inventory/vault swap hooks. | Duplicate identical object types have deterministic but not client-visible instance selection. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
+| 18B `6f329d1`, `f8ec5cf` Transfers | INVSWAP covers character/vault/ground containers; InvDrop moves identity into a transient bag; pickup returns it; trade maps existing records before snapshots save. Gift Chest has no persistent record array in its native gift schema, so legacy gift entries mint an identity on first withdrawal rather than retaining a pre-existing one. | No distributed Redis transaction across two account hashes; failed second persistent write is logged/rejected but is not a true multi-key atomic rollback. Imprints remain disabled. | **FUNCTIONAL V1 / MINIMAL IMPLEMENTATION** |
 
-## Persistence and reachability conclusions
+## Tests and validation evidence
 
-All added account fields use `DbAccount` getters/setters and are additive, so they can serialize when explicitly flushed. That does **not** prove every producer/consumer is runtime-wired. All Phase 11/14/15 dungeon `.jw` files have empty map arrays, proving their claimed room structures, enemies, bosses, drops, marks, and completion callbacks are unreachable without additional world population/spawn logic.
+The server project builds with **0 errors**. `Test-Parties.ps1`, `Test-AccountProgression.ps1`, and `Test-ItemInstances.ps1` currently validate wiring and invariants by source inspection. The resource validator has **0 errors** and pre-existing legacy warnings. These are static checks, not substitute gameplay tests.
 
-The phase test scripts are predominantly single-line source-string assertions. They prove declarations exist, not packet flow, Redis transactions, map population, behavior execution, or reconnect persistence. They should not be treated as runtime/integration tests.
+## Explicit manual validation still required
 
-## Explicit placeholders
+1. Portal accessibility, gates, boss progression, drops, and marks for Sunken Reliquary, Ashen Foundry, and Starfall Observatory.
+2. Sigil readiness, party marker visibility, and party join across a real reconnect handoff.
+3. Weekly leaderboard rollover and guild trophy persistence after a Redis/server restart.
+4. Vault swap, trade, drop/pickup, and Gift Chest withdrawal identity persistence—including forced write failure cases.
+5. Contract/Codex/Forge/Material replay behavior and Realm Threat/Featured reward math.
 
-Sunken Reliquary, Ashen Foundry, and Starfall Observatory use `lofiObj5` and `chars16x16dEncounters2`; their maps are empty. No final assets/maps were added.
+## Phase 19 gate
 
-## Required manual/runtime validation after corrective work
-
-Portal accessibility and world spawning; each boss gate and reward; mark consumption/chest grant; transfer identity across all containers; reconnect persistence; party lifecycle; Contracts/Codex/Sigil/Forge request replay; Threat/Featured reward math; and permanent-death recaps/leaderboard reset behavior.
+Phase 19 should not rely on Imprint data until cross-key item-transfer atomicity and persistent Gift Chest identity are implemented and verified. The current code is suitable for further non-Imprint content work, but it is not an honest foundation for enabling per-item Imprints.
