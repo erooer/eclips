@@ -31,7 +31,11 @@ namespace wServer.realm
             0xF921, // Judgement
             0xF938, // Nacre Talisman
             0xF947, // Sunforged Plate
-            0xF956  // Parallax Bulwark
+            0xF956, // Parallax Bulwark
+            0xF96B, // Crownrender
+            0xF96C, // Eclipse Aegis
+            0xF96D, // Zenithal Ring
+            0xF970  // Lightless Staff
         };
 
         private static readonly Dictionary<string, EclipseImprintDefinition> Definitions =

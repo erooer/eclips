@@ -39,6 +39,23 @@ namespace wServer.realm
                 var op = "threat:" + realm.Id + ":" + enemy.Id + ":" + p.Client.Account.AccountId;
                 MaterialVaultService.TryDeposit(p.Client.Account, "threat_fragment", 1, op);
             }
+            // The final per-Realm threat completion is an additional public
+            // Citadel access path. It is instance-local and uses the normal
+            // Portal/reconnect path, not a direct world transfer.
+            if (Threat >= 100 && Triggered.Contains(100))
+            {
+                var portal = Entity.Resolve(realm.Manager, "Eclipse Citadel Portal");
+                if (portal != null)
+                {
+                    portal.Move(enemy.X, enemy.Y);
+                    realm.EnterWorld(portal);
+                    realm.Timers.Add(new WorldTimer(180000, (world, time) =>
+                    {
+                        if (portal.Owner == world) world.LeaveWorld(portal);
+                    }));
+                    foreach (var p in realm.Players.Values) p.SendInfo("[Threat] The Eclipse Citadel portal has opened for 3 minutes.");
+                }
+            }
         }
         public void Reset() { Threat = 0; Triggered.Clear(); ActiveThreatEntities.Clear(); }
     }

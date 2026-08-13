@@ -59,6 +59,7 @@ namespace wServer.realm
                 { "SunkenReliquary", Def("SunkenReliquary", "Sunken Reliquary", 6, "Midgame", new[] { "Reliquary Custodian", "Nacre Warden" }, new[] { "Potion of Wisdom", "Potion of Vitality" }, new[] { "Nacre Talisman" }, "Reliquary Mark", "Grand Master Chest", "Realm sea-god encounters, Reliquary keys, and Dungeon Sigils") },
                 { "AshenFoundry", Def("AshenFoundry", "Ashen Foundry", 7, "Upper midgame", new[] { "Furnace Overseer", "The Iron Sun" }, new[] { "Potion of Attack", "Potion of Defense" }, new[] { "Sunforged Plate" }, "Foundry Mark", "Grand Master Chest", "Realm fire encounters, Foundry keys, and Dungeon Sigils") },
                 { "StarfallObservatory", Def("StarfallObservatory", "Starfall Observatory", 8, "High endgame", new[] { "The Parallax" }, new[] { "Potion of Attack", "Potion of Defense" }, new[] { "Parallax Bulwark" }, "Astral Mark", "Grand Champion Chest", "Realm celestial encounters, Observatory keys, and Dungeon Sigils") },
+                { "EclipseCitadel", Def("EclipseCitadel", "Eclipse Citadel", 10, "Pinnacle / 1-10 players", new[] { "The Hollow Regent", "The Zenith Warden", "The Umbra Enginekeeper", "The Crowned Eclipse" }, new[] { "Potion of Attack", "Potion of Defense", "Potion of Vitality" }, new[] { "Crownrender", "Eclipse Aegis", "Zenithal Ring", "Lightless Staff" }, "Citadel Mark", "Citadel Completion Chest", "Starfall Observatory — rare portal; Realm Threat high-end access; 25 citadel_fragment in Nexus") },
                 { "OminousBelow", Def("OminousBelow", "The Ominous Below", 8, "Advanced / endgame", new[] { "The Faceless Ferryman", "Veyra, Warden of Chains", "The Ominous One" }, new[] { "Potion of Attack", "Potion of Defense" }, new[] { "Eye of the Ominous", "Mantle of the Below", "Judgement" }, "Ominous Below Mark (Legendary)", "Grand Champion Chest", "Haunted Omen — Guaranteed Portal") }
             };
 
@@ -144,7 +145,7 @@ namespace wServer.realm
                 var effectiveSolo = solo && !PartyService.IsParty(account);
                 var completionEvent = "world:" + world.Id + ":account:" + account.AccountId;
                 EclipseLeaderboards.Record(account, "weekly-clears", entry.Completions, completionEvent);
-                if (definition.Key == "OminousBelow" || definition.Key == "StarfallObservatory")
+                if (definition.Key == "OminousBelow" || definition.Key == "StarfallObservatory" || definition.Key == "EclipseCitadel")
                     EclipseLeaderboards.Record(account, definition.Key + (effectiveSolo ? "-solo" : "-party"), elapsedMs, completionEvent, true);
                 GuildProgressionService.RecordDungeonCompletion(account, definition.Key, completionEvent);
                 FeaturedDungeonService.RecordCompletion(account, definition);

@@ -1,0 +1,5 @@
+{
+  "name": "EclipseCitadel", "sbName": "Eclipse Citadel", "isLimbo": false,
+  "persist": false, "difficulty": 10, "background": 0, "showDisplays": true,
+  "portals": [ 0xF960 ], "maps": [ "EclipseCitadel.jm" ]
+}

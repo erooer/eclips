@@ -2250,6 +2250,17 @@ namespace wServer.realm.commands
         public FeaturedCommand() : base("featured", alias: "feature") { }
         protected override bool Process(Player player, RealmTime time, string args) { player.SendInfo(FeaturedDungeonService.Describe()); return true; }
     }
+    class EclipseCitadelCommand : Command
+    {
+        public EclipseCitadelCommand() : base("citadel") { }
+        protected override bool Process(Player player, RealmTime time, string args)
+        {
+            if (string.Equals((args ?? "").Trim(), "open", StringComparison.OrdinalIgnoreCase))
+                player.SendInfo(EclipseCitadelAccessService.Open(player));
+            else player.SendInfo(EclipseCitadelAccessService.Describe(player.Client.Account));
+            return true;
+        }
+    }
     class PartyCommand : Command
     {
         public PartyCommand() : base("party") { }
