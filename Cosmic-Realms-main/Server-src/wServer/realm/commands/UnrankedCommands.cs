@@ -2241,13 +2241,14 @@ namespace wServer.realm.commands
         protected override bool Process(Player player, RealmTime time, string args)
         {
             var w=(args??"").Trim().Split(new[]{' '},StringSplitOptions.RemoveEmptyEntries); var a=player.Client.Account;
-            if(w.Length==0){player.SendInfo(PartyService.Status(a));return true;}
-            if(w[0].Equals("create",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Create(a));
-            else if(w[0].Equals("accept",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Accept(a));
-            else if(w[0].Equals("leave",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Leave(a));
+            if(w.Length==0){player.SendInfo(PartyService.Status(a,player.Manager.Database));return true;}
+            if(w[0].Equals("create",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Create(a,player.Manager.Database));
+            else if(w[0].Equals("accept",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Accept(a,player.Manager.Database));
+            else if(w[0].Equals("leave",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Leave(a,player.Manager.Database));
             else if(w[0].Equals("gather",StringComparison.OrdinalIgnoreCase))player.SendInfo(PartyService.Gather(player));
-            else if((w[0].Equals("invite",StringComparison.OrdinalIgnoreCase)||w[0].Equals("kick",StringComparison.OrdinalIgnoreCase))&&w.Length==2){var t=player.Owner.Players.Values.FirstOrDefault(x=>x.Name.Equals(w[1],StringComparison.OrdinalIgnoreCase));if(t==null)player.SendInfo("Player must be in this world.");else player.SendInfo(w[0].Equals("invite",StringComparison.OrdinalIgnoreCase)?PartyService.Invite(a,t.Client.Account):PartyService.Kick(a,t.Client.Account));}
-            else player.SendInfo("Usage: /party create|invite <name>|accept|leave|kick <name>|gather"); return true;
+            else if(w[0].Equals("join",StringComparison.OrdinalIgnoreCase)&&w.Length==2)player.SendInfo(PartyService.Join(player,w[1]));
+            else if((w[0].Equals("invite",StringComparison.OrdinalIgnoreCase)||w[0].Equals("kick",StringComparison.OrdinalIgnoreCase))&&w.Length==2){var t=player.Manager.Clients.Keys.FirstOrDefault(x=>x.Account!=null&&x.Account.Name.Equals(w[1],StringComparison.OrdinalIgnoreCase));if(t==null)player.SendInfo("Player must be online.");else player.SendInfo(w[0].Equals("invite",StringComparison.OrdinalIgnoreCase)?PartyService.Invite(a,t.Account,player.Manager.Database):PartyService.Kick(a,t.Account,player.Manager.Database));}
+            else player.SendInfo("Usage: /party create|invite <name>|accept|leave|kick <name>|gather|join <name>"); return true;
         }
     }
     class PartyChatCommand : Command { public PartyChatCommand() : base("p") { } protected override bool Process(Player p,RealmTime t,string a){PartyService.Chat(p,a);return true;} }

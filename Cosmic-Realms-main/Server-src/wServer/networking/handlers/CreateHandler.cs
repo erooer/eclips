@@ -56,6 +56,7 @@ namespace wServer.networking.handlers
         private void CreatePlayer(Client client, DbChar character)
         {
             client.Character = character;
+            PartyService.Reconstruct(client.Account, client.Manager.Database);
 
             var target = client.Manager.GetWorld(client.TargetWorld);
             if (target == null || target.Deleted)

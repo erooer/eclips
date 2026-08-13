@@ -38,6 +38,8 @@ namespace wServer.networking.handlers
                 return;
             }
 
+            PartyService.Reconstruct(client.Account, client.Manager.Database);
+
             var target = client.Manager.GetWorld(client.TargetWorld);
             if (target == null || target.Deleted)
             {

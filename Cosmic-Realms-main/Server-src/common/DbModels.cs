@@ -616,8 +616,11 @@ namespace common
             get { return GetValue<string>("featuredDungeonState") ?? ""; }
             set { SetValue<string>("featuredDungeonState", value); }
         }
-        // Additive party identity; membership is resolved server-side after reconnect.
+        // Additive party identity.  The roster is deliberately stored separately so
+        // legacy accounts which only have partyState remain readable.
         public string PartyState { get { return GetValue<string>("partyState") ?? ""; } set { SetValue<string>("partyState", value); } }
+        public string PartyRosterState { get { return GetValue<string>("partyRosterState") ?? ""; } set { SetValue<string>("partyRosterState", value); } }
+        public string PartyInviteState { get { return GetValue<string>("partyInviteState") ?? ""; } set { SetValue<string>("partyInviteState", value); } }
         public string EclipseProgressState { get { return GetValue<string>("eclipseProgressState") ?? ""; } set { SetValue<string>("eclipseProgressState", value); } }
 
         public ushort[] Skins

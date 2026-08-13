@@ -593,6 +593,7 @@ namespace wServer.realm
 
         public void Disconnect(Client client)
         {
+            PartyService.OnDisconnected(client?.Account);
             var player = client.Player;
             player?.Owner?.LeaveWorld(player);
 
