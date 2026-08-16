@@ -464,6 +464,10 @@ namespace wServer.realm
         {
             Log.Info("Starting Realm Manager...");
 
+            // Registration and health are infrastructure concerns and must not
+            // depend on the gameplay loop advancing its simulation clock.
+            InterServer.Run();
+
             // start server logic management
             Logic = new FLLogicTicker(this);
             // Static hubs are initialized before the logic ticker exists. Warm

@@ -102,7 +102,6 @@ namespace wServer.realm
                 long dc = watch.ElapsedMilliseconds - c;
                 
                 TickWorlds2(t);
-                _manager.InterServer.Tick(t.ElaspedMsDelta);
 
                 Thread.Sleep(Math.Max(0, MsPT - (int)dc));
                 dt += Math.Max(0, watch.ElapsedMilliseconds - b - MsPT);

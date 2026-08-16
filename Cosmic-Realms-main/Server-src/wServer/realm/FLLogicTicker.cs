@@ -167,7 +167,6 @@ namespace wServer.realm
 
             _manager.ConMan.Tick(t);
             _manager.Monitor.Tick(t);
-            _manager.InterServer.Tick(t.ElaspedMsDelta);
 
             //(TaskScheduler as LogicThreadTaskScheduler)?.RunPendingTasks();
 

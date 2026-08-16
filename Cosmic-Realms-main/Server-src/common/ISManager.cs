@@ -13,6 +13,8 @@ namespace common
         private const int PingPeriod = 2000;
         private const int ServerTimeout = 30000;
         private long _lastPing;
+        private bool _running;
+        private volatile bool _disposed;
         
         private readonly ServerConfig _settings;
 
@@ -51,14 +53,31 @@ namespace common
         
         public void Run()
         {
-            _tmr.Elapsed += (sender, e) => Tick(PingPeriod);
-            _tmr.Start();
+            lock (_tmr)
+            {
+                if (_disposed)
+                    throw new ObjectDisposedException(nameof(ISManager));
+                if (_running)
+                    return;
+
+                _tmr.Elapsed += OnTimerElapsed;
+                _tmr.Start();
+                _running = true;
+            }
+        }
+
+        private void OnTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            Tick(PingPeriod);
         }
 
         public void Tick(int elapsedMs)
         {
             using (TimedLock.Lock(_dicLock))
             {
+                if (_disposed)
+                    return;
+
                 // update running time
                 _lastPing += elapsedMs;
                 foreach (var s in _lastUpdateTime.Keys.ToArray())
@@ -97,11 +116,29 @@ namespace common
 
         public void Dispose()
         {
-            Publish(Channel.Network, new NetworkMsg()
+            lock (_tmr)
             {
-                Code = NetworkCode.Quit,
-                Info = _settings.serverInfo
-            });
+                if (_disposed)
+                    return;
+
+                _disposed = true;
+                if (_running)
+                {
+                    _tmr.Stop();
+                    _tmr.Elapsed -= OnTimerElapsed;
+                    _running = false;
+                }
+            }
+
+            using (TimedLock.Lock(_dicLock))
+            {
+                Publish(Channel.Network, new NetworkMsg()
+                {
+                    Code = NetworkCode.Quit,
+                    Info = _settings.serverInfo
+                });
+            }
+            _tmr.Dispose();
         }
 
         private void HandleNetwork(object sender, InterServerEventArgs<NetworkMsg> e)
@@ -197,4 +234,3 @@ namespace common
         }
     }
 }
-
