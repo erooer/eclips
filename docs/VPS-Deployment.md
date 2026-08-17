@@ -31,22 +31,29 @@ Copy and verify files without stopping or restarting the live stack:
 
 ## What is deployed
 
-After pulling, the deployment script creates a disposable detached Git worktree
-at the exact new `HEAD`, runs `Build-Everything.ps1` there, and validates the
-resulting commit-bound SHA-256 manifest. This entire build happens before the
-live stack is stopped. A missing compiler, failed validation, failed server or
-client build, mismatched SWF copy, or stale manifest therefore leaves the live
-services untouched.
+After pulling, the deployment script validates the checked-in production
+artifact bundle. It does not compile code and does not require Java, Flex,
+PlayerGlobal, MSBuild, Visual Studio, or .NET targeting packs on the VPS.
+Manifest identity, the complete artifact inventory, SHA-256 hashes, protocol
+compatibility, and compiled Type ID resources are checked before backup or
+service stop. Any failure therefore leaves the live services untouched.
 
-The checksum-verified Flex SDK is cached outside the disposable worktree at
-`C:\Eclipse-Git\eclips\tools\flex-sdk-4.9.1`. It is ignored by Git and can be
-pre-provisioned with `scripts\Provision-FlexSdk.ps1`.
-
-`Start-All.ps1` uses `Cosmic-Realms-main\Server-src\bin` as its input. The deployment script therefore copies only the isolated current-HEAD build's `Cosmic-Realms-main\Server-src\bin` executables, DLLs/PDBs, and resources into the live `Server-src\bin` before restarting. It also copies that build's `build\client-unchanged.swf` and refreshes the live runtime web root from the same freshly built resource set.
+`Start-All.ps1` uses `Cosmic-Realms-main\Server-src\bin` as its input. The deployment script therefore copies only the verified current-HEAD bundle's `Cosmic-Realms-main\Server-src\bin` executables, DLLs/PDBs, and resources into the live `Server-src\bin` before restarting. It also copies that bundle's `build\client-unchanged.swf` and refreshes the live runtime web root from the same verified resource set.
 
 `runtime` is deliberately not used as a deployment source: it is a generated execution directory which `Start-All.ps1` refreshes from `Server-src\bin` each time the stack starts.
 
-Every copied file is SHA-256 checked. The server executable, world executable, `common.dll`, all three client SWF copies, and `EmbeddedData_EquipCXML.dat` are bound to current `HEAD` in the manifest and explicitly verified before restart. Building in a disposable worktree also prevents tracked generated artifacts from dirtying the primary VPS checkout and blocking the next pull.
+Every deployable server DLL/PDB and compiled resource, plus `server.exe`,
+`wServer.exe`, and the client SWF, is tracked and SHA-256 checked. The manifest's
+source commit must be the exact parent of current HEAD, current HEAD may contain
+only the manifest and allowlisted artifacts, and the build/server web SWFs must
+match. This prevents partial or stale server, world, client, and resource sets.
+
+The complete workflow is:
+
+```text
+PC:  commit source -> Build-Everything.ps1 -> validate -> commit artifact bundle -> push
+VPS: git pull -> Deploy-VPS.ps1
+```
 
 For compatibility with a checkout dirtied by the old in-place build, the
 deployer may restore tracked changes only under its explicit generated-output

@@ -24,9 +24,33 @@ both `runtime/resources/web/rotmg.swf` and the deployable
 their hashes differ. Server projects build from `Cosmic-Realms-main/Server-src`.
 No shipped SWF or compatibility stack is used.
 
-`Build-Everything.ps1` finishes by writing the ignored
-`build/deployment-manifest.json`. It binds the required server/client artifact
-hashes to the Git commit used for the build.
+`Build-Everything.ps1` finishes by writing the tracked
+`build/deployment-manifest.json`. It inventories every file the deployer can
+copy: the client SWF, `server.exe`, `wServer.exe`, every top-level server
+DLL/PDB, and every compiled resource. Each entry has a SHA-256 hash and the
+manifest records the exact source commit used for the build.
+
+Because a Git commit cannot contain its own hash, production artifacts use a
+two-commit bundle. First commit the source change, run `Build-Everything.ps1`
+from that clean source commit, then commit only the generated manifest and its
+allowlisted artifacts. The VPS verifies that the artifact commit's parent is
+the manifest's source commit and that the artifact commit contains no source
+changes. A later source-only commit therefore invalidates the bundle.
+
+PC release workflow:
+
+```powershell
+git add <source files>
+git commit -m "Describe source change"
+.\scripts\Build-Everything.ps1
+.\scripts\Test-PortableBuildPipeline.ps1
+git add -- build/deployment-manifest.json build/client-unchanged.swf Cosmic-Realms-main/Server-src/bin
+git commit -m "Publish deployment artifacts"
+git push
+```
+
+Do not edit or regenerate an artifact after the artifact commit. The manifest
+validator will reject any byte change or missing file.
 
 The server build resolves MSBuild in this order: `ECLIPSE_MSBUILD_PATH`,
 Visual Studio/Build Tools via `vswhere`, `msbuild` on `PATH`, then the newest

@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Production deployment artifacts are SHA-256 verified across Windows hosts.
+bin/** -text

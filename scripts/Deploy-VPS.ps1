@@ -31,12 +31,11 @@ $BackupCreated = $false
 $ServicesStopped = $false
 $TranscriptStarted = $false
 $DeploymentPhase = 'initialization'
-$BuildWorktreeCreated = $false
-$BuildRoot = $null
+$ArtifactRoot = $GitRoot
 $SourceClientSwf = $null
 $SourceServerBin = $null
-$SourceManifest = $null
 $GeneratedCheckoutChanges = @()
+Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
 
 function Test-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -80,75 +79,13 @@ function Copy-VerifiedDirectory([string]$SourceDirectory, [string]$DestinationDi
     }
 }
 
-function Test-CurrentHeadBuild([string]$ExpectedCommit) {
-    Assert-Path $script:SourceManifest 'current-HEAD build manifest'
-    $manifest = Get-Content -LiteralPath $script:SourceManifest -Raw | ConvertFrom-Json
-    if ($manifest.schemaVersion -ne 1) { throw "Unsupported build manifest schema: $($manifest.schemaVersion)" }
-    if ($manifest.sourceCommit -ne $ExpectedCommit) {
-        throw "Stale build manifest: artifacts are for $($manifest.sourceCommit), expected current HEAD $ExpectedCommit."
-    }
-    $required = @(
-        'build/client-unchanged.swf',
-        'runtime/resources/web/rotmg.swf',
-        'Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf',
-        'Cosmic-Realms-main/Server-src/bin/server.exe',
-        'Cosmic-Realms-main/Server-src/bin/wServer.exe',
-        'Cosmic-Realms-main/Server-src/bin/common.dll',
-        'Cosmic-Realms-main/Server-src/bin/resources/xmls/EmbeddedData_EquipCXML.dat'
-    )
-    foreach ($relative in $required) {
-        $property = $manifest.artifacts.PSObject.Properties[$relative]
-        if (!$property) { throw "Build manifest is missing required artifact: $relative" }
-        $absolute = [System.IO.Path]::GetFullPath((Join-Path $script:BuildRoot $relative.Replace('/', '\')))
-        if (!$absolute.StartsWith($script:BuildRoot + '\', [System.StringComparison]::OrdinalIgnoreCase)) { throw "Unsafe path in build manifest: $relative" }
-        Assert-Path $absolute 'current-HEAD build artifact'
-        $actual = Get-Sha256 $absolute
-        if ($actual -ne $property.Value) { throw "Build artifact changed after manifest creation: $relative" }
-    }
-    $clientHash = Get-Sha256 (Join-Path $script:BuildRoot 'build\client-unchanged.swf')
-    foreach ($relative in @('runtime\resources\web\rotmg.swf', 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf')) {
-        if ((Get-Sha256 (Join-Path $script:BuildRoot $relative)) -ne $clientHash) { throw "Stale SWF copy detected after build: $relative" }
-    }
-    Write-Step "VERIFIED build manifest sourceCommit=$ExpectedCommit and all required artifact hashes."
-}
-
-function New-CurrentHeadBuild([string]$Commit) {
-    $shortCommit = $Commit.Substring(0, 12)
-    $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
-    $script:BuildRoot = Join-Path $tempBase "EclipseDeployBuild-$Timestamp-$shortCommit"
-    if (Test-Path -LiteralPath $script:BuildRoot) { throw "Refusing to reuse existing deployment build workspace: $($script:BuildRoot)" }
-    Write-Step "Creating isolated build worktree for current HEAD $Commit at $($script:BuildRoot)"
-    & git -C $GitRoot worktree add --detach $script:BuildRoot $Commit
-    if ($LASTEXITCODE -ne 0) { throw "git worktree add failed with exit code $LASTEXITCODE" }
-    $script:BuildWorktreeCreated = $true
-
-    $previousSdkHome = $env:ECLIPSE_FLEX_SDK_HOME
-    try {
-        $env:ECLIPSE_FLEX_SDK_HOME = Join-Path $GitRoot 'tools\flex-sdk-4.9.1'
-        & (Join-Path $script:BuildRoot 'scripts\Build-Everything.ps1')
-        if ($LASTEXITCODE -ne 0) { throw "Current-HEAD build failed with exit code $LASTEXITCODE" }
-    } finally {
-        $env:ECLIPSE_FLEX_SDK_HOME = $previousSdkHome
-    }
-    $builtCommit = (& git -C $script:BuildRoot rev-parse HEAD).Trim()
-    if ($builtCommit -ne $Commit) { throw "Build worktree moved from expected commit $Commit to $builtCommit." }
-    $script:SourceClientSwf = Join-Path $script:BuildRoot 'build\client-unchanged.swf'
-    $script:SourceServerBin = Join-Path $script:BuildRoot 'Cosmic-Realms-main\Server-src\bin'
-    $script:SourceManifest = Join-Path $script:BuildRoot 'build\deployment-manifest.json'
-    Test-CurrentHeadBuild $Commit
-}
-
-function Remove-BuildWorktree {
-    if (!$script:BuildWorktreeCreated) { return }
-    $resolvedRoot = [System.IO.Path]::GetFullPath($script:BuildRoot)
-    $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
-    if (!$resolvedRoot.StartsWith($tempBase, [System.StringComparison]::OrdinalIgnoreCase) -or (Split-Path -Leaf $resolvedRoot) -notlike 'EclipseDeployBuild-*') {
-        throw "Refusing unsafe build-worktree cleanup path: $resolvedRoot"
-    }
-    & git -C $GitRoot worktree remove --force $resolvedRoot
-    if ($LASTEXITCODE -ne 0) { throw "git worktree remove failed for $resolvedRoot" }
-    $script:BuildWorktreeCreated = $false
-    Write-Step "Removed isolated build worktree $resolvedRoot"
+function Test-CheckedInArtifacts([string]$ExpectedHead) {
+    $verified = Test-DeploymentManifest -RepositoryRoot $GitRoot -ExpectedHead $ExpectedHead -RequireArtifactBundleCommit
+    $script:SourceClientSwf = Join-Path $GitRoot 'build\client-unchanged.swf'
+    $script:SourceServerBin = Join-Path $GitRoot 'Cosmic-Realms-main\Server-src\bin'
+    & (Join-Path $GitRoot 'scripts\Test-ClientHandshakeProtocol.ps1') -WorldServerPath (Join-Path $script:SourceServerBin 'wServer.exe')
+    & (Join-Path $GitRoot 'scripts\Test-TypeIdCollisions.ps1') -IncludeCompiled -CompiledXmlRoot (Join-Path $script:SourceServerBin 'resources\xmls')
+    Write-Step "VERIFIED artifact bundle HEAD=$ExpectedHead sourceCommit=$($verified.SourceCommit) artifacts=$($verified.ArtifactPaths.Count)."
 }
 
 function Get-GeneratedCheckoutChanges([string[]]$StatusLines) {
@@ -307,7 +244,7 @@ function Start-AndVerify {
         throw 'Redis did not return PONG on 127.0.0.1:6379 within 30 seconds.'
     }
     Write-Step 'HEALTH Redis PING = PONG'
-    foreach ($port in @(80, 2050)) {
+    foreach ($port in @(80, 2050, 843)) {
         if (!(Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue)) { throw "Port $port is not listening." }
     }
     $runtimeProcesses = @(Get-CimInstance Win32_Process | Where-Object {
@@ -335,7 +272,7 @@ try {
     }
     foreach ($entry in @(
         @($GitRoot, 'Git root'), @($GitProject, 'Git source project'), @($LiveRoot, 'live root'),
-        @((Join-Path $GitRoot 'scripts\Build-Everything.ps1'), 'Git build entry point'),
+        @((Join-Path $GitRoot 'scripts\DeploymentArtifacts.psm1'), 'deployment artifact validator'),
         @((Join-Path $LiveRoot 'scripts\Start-All.ps1'), 'live Start-All.ps1'), @((Join-Path $LiveRoot 'scripts\Stop-All.ps1'), 'live Stop-All.ps1'),
         @($LiveServerBin, 'live Server-src bin'), @($LiveClientSwf, 'live client SWF'),
         @((Join-Path $LiveRuntime 'redis-data'), 'live protected Redis data directory'), @((Join-Path $LiveRuntime 'redis-backups'), 'live protected Redis backup directory')
@@ -350,7 +287,7 @@ try {
     Pop-Location
 
     if ($WhatIfPreference) {
-        Write-Step "WHATIF: commit=$oldCommit; would clear only $($GeneratedCheckoutChanges.Count) tracked generated-output changes, pull, build current HEAD in an isolated worktree, verify its manifest, then create backup $BackupRoot, stop only Eclipse-owned processes, copy verified artifacts, and restart unless -NoRestart."
+        Write-Step "WHATIF: commit=$oldCommit; would clear only $($GeneratedCheckoutChanges.Count) tracked generated-output changes, pull, verify the checked-in artifact bundle and manifest, then create backup $BackupRoot, stop only Eclipse-owned processes, copy verified artifacts, and restart unless -NoRestart."
         return
     }
 
@@ -374,10 +311,10 @@ try {
         if ($answer -notmatch '^(Y|y|Yes|yes)$') { Write-Step 'Deployment cancelled: no new commits.'; return }
     }
 
-    # Build and freshness validation happen before backup/stop so a missing SDK,
-    # compiler error, or stale artifact cannot interrupt the live stack.
-    $DeploymentPhase = 'build and validate current HEAD'
-    New-CurrentHeadBuild $newCommit
+    # Checked-in artifact and compatibility validation happens before backup/stop.
+    # The VPS intentionally needs no compiler, Flex SDK, Java, or MSBuild.
+    $DeploymentPhase = 'validate checked-in artifacts'
+    Test-CheckedInArtifacts $newCommit
 
     $DeploymentPhase = 'backup'
     New-DeploymentBackup
@@ -386,7 +323,7 @@ try {
     # expected connection refusal during a reboot deployment.
     $DeploymentPhase = 'stop infrastructure update'
     foreach ($scriptName in @('Redis-Helpers.ps1', 'Stop-All.ps1')) {
-        Copy-VerifiedFile (Join-Path $BuildRoot "scripts\$scriptName") (Join-Path $LiveRoot "scripts\$scriptName")
+        Copy-VerifiedFile (Join-Path $ArtifactRoot "scripts\$scriptName") (Join-Path $LiveRoot "scripts\$scriptName")
     }
     $DeploymentPhase = 'stop'
     if (!$NoRestart) { Stop-EclipseServices }
@@ -404,7 +341,7 @@ try {
     # These scripts are deployment infrastructure, not VPS configuration. No server JSON,
     # Redis configuration, Redis data, logs, or air client configuration is copied from Git.
     foreach ($scriptName in @('Redis-Helpers.ps1', 'Start-All.ps1', 'Stop-All.ps1', 'Health-Check.ps1')) {
-        $source = Join-Path $BuildRoot "scripts\$scriptName"
+        $source = Join-Path $ArtifactRoot "scripts\$scriptName"
         if (Test-Path -LiteralPath $source) { Copy-VerifiedFile $source (Join-Path $LiveRoot "scripts\$scriptName") }
     }
 
@@ -448,8 +385,5 @@ catch {
 }
 finally {
     if (Get-Location | ForEach-Object { $_.Path -eq $GitRoot }) { Pop-Location }
-    if ($BuildWorktreeCreated) {
-        try { Remove-BuildWorktree } catch { Write-Warning "Failed to remove isolated build worktree: $($_.Exception.Message)" }
-    }
     if ($TranscriptStarted) { Stop-Transcript | Out-Null }
 }
