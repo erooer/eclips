@@ -94,6 +94,8 @@ tools/flex-air-32.0/
 tools/flex-sdk-4.9.1/
 tools/AdobeAIRSDK_Flex_15.0_Win.zip
 tools/*.zip
+tools/.downloads/
+build/deployment-manifest.json
 tools/air-sdk-32.0/
 tools/flex-air-32.0/
 tools/flex-sdk-4.9.1/

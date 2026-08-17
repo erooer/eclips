@@ -20,9 +20,7 @@ $LiveRoot = $LiveRootPath
 $LiveProject = Join-Path $LiveRoot 'Cosmic-Realms-main'
 $GitProject = Join-Path $GitRoot 'Cosmic-Realms-main'
 $LiveRuntime = Join-Path $LiveRoot 'runtime'
-$GitClientSwf = Join-Path $GitRoot 'build\client-unchanged.swf'
 $LiveClientSwf = Join-Path $LiveRoot 'build\client-unchanged.swf'
-$GitServerBin = Join-Path $GitProject 'Server-src\bin'
 $LiveServerBin = Join-Path $LiveProject 'Server-src\bin'
 $DeploymentLogs = $DeploymentLogRoot
 $RedisHelpers = Join-Path $PSScriptRoot 'Redis-Helpers.ps1'
@@ -33,6 +31,12 @@ $BackupCreated = $false
 $ServicesStopped = $false
 $TranscriptStarted = $false
 $DeploymentPhase = 'initialization'
+$BuildWorktreeCreated = $false
+$BuildRoot = $null
+$SourceClientSwf = $null
+$SourceServerBin = $null
+$SourceManifest = $null
+$GeneratedCheckoutChanges = @()
 
 function Test-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -74,6 +78,108 @@ function Copy-VerifiedDirectory([string]$SourceDirectory, [string]$DestinationDi
         $relative = $_.FullName.Substring($SourceDirectory.Length).TrimStart('\')
         Copy-VerifiedFile $_.FullName (Join-Path $DestinationDirectory $relative)
     }
+}
+
+function Test-CurrentHeadBuild([string]$ExpectedCommit) {
+    Assert-Path $script:SourceManifest 'current-HEAD build manifest'
+    $manifest = Get-Content -LiteralPath $script:SourceManifest -Raw | ConvertFrom-Json
+    if ($manifest.schemaVersion -ne 1) { throw "Unsupported build manifest schema: $($manifest.schemaVersion)" }
+    if ($manifest.sourceCommit -ne $ExpectedCommit) {
+        throw "Stale build manifest: artifacts are for $($manifest.sourceCommit), expected current HEAD $ExpectedCommit."
+    }
+    $required = @(
+        'build/client-unchanged.swf',
+        'runtime/resources/web/rotmg.swf',
+        'Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf',
+        'Cosmic-Realms-main/Server-src/bin/server.exe',
+        'Cosmic-Realms-main/Server-src/bin/wServer.exe',
+        'Cosmic-Realms-main/Server-src/bin/common.dll',
+        'Cosmic-Realms-main/Server-src/bin/resources/xmls/EmbeddedData_EquipCXML.dat'
+    )
+    foreach ($relative in $required) {
+        $property = $manifest.artifacts.PSObject.Properties[$relative]
+        if (!$property) { throw "Build manifest is missing required artifact: $relative" }
+        $absolute = [System.IO.Path]::GetFullPath((Join-Path $script:BuildRoot $relative.Replace('/', '\')))
+        if (!$absolute.StartsWith($script:BuildRoot + '\', [System.StringComparison]::OrdinalIgnoreCase)) { throw "Unsafe path in build manifest: $relative" }
+        Assert-Path $absolute 'current-HEAD build artifact'
+        $actual = Get-Sha256 $absolute
+        if ($actual -ne $property.Value) { throw "Build artifact changed after manifest creation: $relative" }
+    }
+    $clientHash = Get-Sha256 (Join-Path $script:BuildRoot 'build\client-unchanged.swf')
+    foreach ($relative in @('runtime\resources\web\rotmg.swf', 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf')) {
+        if ((Get-Sha256 (Join-Path $script:BuildRoot $relative)) -ne $clientHash) { throw "Stale SWF copy detected after build: $relative" }
+    }
+    Write-Step "VERIFIED build manifest sourceCommit=$ExpectedCommit and all required artifact hashes."
+}
+
+function New-CurrentHeadBuild([string]$Commit) {
+    $shortCommit = $Commit.Substring(0, 12)
+    $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+    $script:BuildRoot = Join-Path $tempBase "EclipseDeployBuild-$Timestamp-$shortCommit"
+    if (Test-Path -LiteralPath $script:BuildRoot) { throw "Refusing to reuse existing deployment build workspace: $($script:BuildRoot)" }
+    Write-Step "Creating isolated build worktree for current HEAD $Commit at $($script:BuildRoot)"
+    & git -C $GitRoot worktree add --detach $script:BuildRoot $Commit
+    if ($LASTEXITCODE -ne 0) { throw "git worktree add failed with exit code $LASTEXITCODE" }
+    $script:BuildWorktreeCreated = $true
+
+    $previousSdkHome = $env:ECLIPSE_FLEX_SDK_HOME
+    try {
+        $env:ECLIPSE_FLEX_SDK_HOME = Join-Path $GitRoot 'tools\flex-sdk-4.9.1'
+        & (Join-Path $script:BuildRoot 'scripts\Build-Everything.ps1')
+        if ($LASTEXITCODE -ne 0) { throw "Current-HEAD build failed with exit code $LASTEXITCODE" }
+    } finally {
+        $env:ECLIPSE_FLEX_SDK_HOME = $previousSdkHome
+    }
+    $builtCommit = (& git -C $script:BuildRoot rev-parse HEAD).Trim()
+    if ($builtCommit -ne $Commit) { throw "Build worktree moved from expected commit $Commit to $builtCommit." }
+    $script:SourceClientSwf = Join-Path $script:BuildRoot 'build\client-unchanged.swf'
+    $script:SourceServerBin = Join-Path $script:BuildRoot 'Cosmic-Realms-main\Server-src\bin'
+    $script:SourceManifest = Join-Path $script:BuildRoot 'build\deployment-manifest.json'
+    Test-CurrentHeadBuild $Commit
+}
+
+function Remove-BuildWorktree {
+    if (!$script:BuildWorktreeCreated) { return }
+    $resolvedRoot = [System.IO.Path]::GetFullPath($script:BuildRoot)
+    $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+    if (!$resolvedRoot.StartsWith($tempBase, [System.StringComparison]::OrdinalIgnoreCase) -or (Split-Path -Leaf $resolvedRoot) -notlike 'EclipseDeployBuild-*') {
+        throw "Refusing unsafe build-worktree cleanup path: $resolvedRoot"
+    }
+    & git -C $GitRoot worktree remove --force $resolvedRoot
+    if ($LASTEXITCODE -ne 0) { throw "git worktree remove failed for $resolvedRoot" }
+    $script:BuildWorktreeCreated = $false
+    Write-Step "Removed isolated build worktree $resolvedRoot"
+}
+
+function Get-GeneratedCheckoutChanges([string[]]$StatusLines) {
+    $generated = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in $StatusLines) {
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
+        if ($line.Length -lt 4) { throw "Unrecognized Git status entry: $line" }
+        $state = $line.Substring(0, 2)
+        $path = $line.Substring(3).Trim('"').Replace('\', '/')
+        # Never discard staged changes or untracked files, even under a generated
+        # directory. Only old build output modifications are migration-safe.
+        if ($state[0] -ne ' ' -or $state -eq '??') { throw "Refusing to deploy with staged/untracked change: $line" }
+        $isGenerated =
+            $path.StartsWith('Cosmic-Realms-main/Server-src/bin/', [StringComparison]::OrdinalIgnoreCase) -or
+            $path.StartsWith('docs/reports/', [StringComparison]::OrdinalIgnoreCase) -or
+            $path.StartsWith('runtime/resources/', [StringComparison]::OrdinalIgnoreCase) -or
+            $path -match '^runtime/(server|wServer)\.exe$' -or
+            $path -match '^runtime/[^/]+\.(dll|pdb)$' -or
+            $path -eq 'build/client-unchanged.swf'
+        if (!$isGenerated) { throw "Refusing to deploy with non-generated local change: $line" }
+        $generated.Add($path)
+    }
+    return @($generated | Select-Object -Unique)
+}
+
+function Clear-GeneratedCheckoutChanges {
+    if ($script:GeneratedCheckoutChanges.Count -eq 0) { return }
+    Write-Step "Removing $($script:GeneratedCheckoutChanges.Count) tracked generated-output changes left by the legacy in-place build."
+    & git -C $GitRoot restore --worktree -- $script:GeneratedCheckoutChanges
+    if ($LASTEXITCODE -ne 0) { throw "git restore of generated outputs failed with exit code $LASTEXITCODE" }
+    if (& git -C $GitRoot status --porcelain) { throw 'Git checkout is still dirty after generated-output cleanup.' }
 }
 
 function Get-EclipseProcesses {
@@ -228,23 +334,23 @@ try {
         else { throw 'Administrator privileges are required.' }
     }
     foreach ($entry in @(
-        @($GitRoot, 'Git root'), @($GitProject, 'Git compiled project'), @($LiveRoot, 'live root'), @($GitClientSwf, 'Git client SWF'),
+        @($GitRoot, 'Git root'), @($GitProject, 'Git source project'), @($LiveRoot, 'live root'),
+        @((Join-Path $GitRoot 'scripts\Build-Everything.ps1'), 'Git build entry point'),
         @((Join-Path $LiveRoot 'scripts\Start-All.ps1'), 'live Start-All.ps1'), @((Join-Path $LiveRoot 'scripts\Stop-All.ps1'), 'live Stop-All.ps1'),
         @($LiveServerBin, 'live Server-src bin'), @($LiveClientSwf, 'live client SWF'),
-        @((Join-Path $LiveRuntime 'redis-data'), 'live protected Redis data directory'), @((Join-Path $LiveRuntime 'redis-backups'), 'live protected Redis backup directory'),
-        @($GitServerBin, 'Git compiled Server-src bin'), @((Join-Path $GitServerBin 'resources'), 'Git compiled server resources'), @((Join-Path $GitServerBin 'resources\web'), 'Git compiled hosted web resources'),
-        @((Join-Path $GitServerBin 'server.exe'), 'Git compiled server.exe'), @((Join-Path $GitServerBin 'wServer.exe'), 'Git compiled wServer.exe'), @((Join-Path $GitServerBin 'common.dll'), 'Git compiled common.dll')
+        @((Join-Path $LiveRuntime 'redis-data'), 'live protected Redis data directory'), @((Join-Path $LiveRuntime 'redis-backups'), 'live protected Redis backup directory')
     )) { Assert-Path $entry[0] $entry[1] }
 
     Push-Location $GitRoot
     $branch = (& git branch --show-current).Trim()
     if ($branch -ne 'main') { throw "Refusing to deploy from branch '$branch'; expected 'main'." }
-    if (& git status --porcelain) { throw 'Refusing to deploy: the Git checkout has uncommitted local changes.' }
+    $checkoutStatus = @(& git status --porcelain)
+    $script:GeneratedCheckoutChanges = @(Get-GeneratedCheckoutChanges $checkoutStatus)
     $oldCommit = (& git rev-parse HEAD).Trim()
     Pop-Location
 
     if ($WhatIfPreference) {
-        Write-Step "WHATIF: commit=$oldCommit; would create backup $BackupRoot, stop only Eclipse-owned processes, copy verified compiled Server-src\\bin artifacts/resources and SWF, then restart unless -NoRestart."
+        Write-Step "WHATIF: commit=$oldCommit; would clear only $($GeneratedCheckoutChanges.Count) tracked generated-output changes, pull, build current HEAD in an isolated worktree, verify its manifest, then create backup $BackupRoot, stop only Eclipse-owned processes, copy verified artifacts, and restart unless -NoRestart."
         return
     }
 
@@ -254,6 +360,7 @@ try {
     $TranscriptStarted = $true
     Write-Step "Git commit before deployment: $oldCommit"
 
+    Clear-GeneratedCheckoutChanges
     Push-Location $GitRoot
     if (!$SkipPull) {
         & git fetch --prune
@@ -267,6 +374,11 @@ try {
         if ($answer -notmatch '^(Y|y|Yes|yes)$') { Write-Step 'Deployment cancelled: no new commits.'; return }
     }
 
+    # Build and freshness validation happen before backup/stop so a missing SDK,
+    # compiler error, or stale artifact cannot interrupt the live stack.
+    $DeploymentPhase = 'build and validate current HEAD'
+    New-CurrentHeadBuild $newCommit
+
     $DeploymentPhase = 'backup'
     New-DeploymentBackup
     # Stop-All.ps1 is used before the main artifact-copy phase. Refresh only the
@@ -274,35 +386,35 @@ try {
     # expected connection refusal during a reboot deployment.
     $DeploymentPhase = 'stop infrastructure update'
     foreach ($scriptName in @('Redis-Helpers.ps1', 'Stop-All.ps1')) {
-        Copy-VerifiedFile (Join-Path $PSScriptRoot $scriptName) (Join-Path $LiveRoot "scripts\$scriptName")
+        Copy-VerifiedFile (Join-Path $BuildRoot "scripts\$scriptName") (Join-Path $LiveRoot "scripts\$scriptName")
     }
     $DeploymentPhase = 'stop'
     if (!$NoRestart) { Stop-EclipseServices }
 
     $DeploymentPhase = 'copy'
     # Server binaries used by Start-All.ps1 as its source of truth.
-    foreach ($file in @('server.exe', 'wServer.exe')) { Copy-VerifiedFile (Join-Path $GitServerBin $file) (Join-Path $LiveServerBin $file) }
-    Get-ChildItem -LiteralPath $GitServerBin -File | Where-Object { $_.Extension -in @('.dll', '.pdb') } | ForEach-Object { Copy-VerifiedFile $_.FullName (Join-Path $LiveServerBin $_.Name) }
-    Copy-VerifiedDirectory (Join-Path $GitServerBin 'resources') (Join-Path $LiveServerBin 'resources')
-    Copy-VerifiedFile $GitClientSwf $LiveClientSwf
+    foreach ($file in @('server.exe', 'wServer.exe')) { Copy-VerifiedFile (Join-Path $SourceServerBin $file) (Join-Path $LiveServerBin $file) }
+    Get-ChildItem -LiteralPath $SourceServerBin -File | Where-Object { $_.Extension -in @('.dll', '.pdb') } | ForEach-Object { Copy-VerifiedFile $_.FullName (Join-Path $LiveServerBin $_.Name) }
+    Copy-VerifiedDirectory (Join-Path $SourceServerBin 'resources') (Join-Path $LiveServerBin 'resources')
+    Copy-VerifiedFile $SourceClientSwf $LiveClientSwf
     # Start-All runs from runtime, so refresh its hosted web root from the same
     # compiled Server-src\\bin resource set. Runtime is never a deployment source.
-    Copy-VerifiedDirectory (Join-Path $GitServerBin 'resources\web') (Join-Path $LiveRuntime 'resources\web')
+    Copy-VerifiedDirectory (Join-Path $SourceServerBin 'resources\web') (Join-Path $LiveRuntime 'resources\web')
 
     # These scripts are deployment infrastructure, not VPS configuration. No server JSON,
     # Redis configuration, Redis data, logs, or air client configuration is copied from Git.
     foreach ($scriptName in @('Redis-Helpers.ps1', 'Start-All.ps1', 'Stop-All.ps1', 'Health-Check.ps1')) {
-        $source = Join-Path $GitRoot "scripts\$scriptName"
+        $source = Join-Path $BuildRoot "scripts\$scriptName"
         if (Test-Path -LiteralPath $source) { Copy-VerifiedFile $source (Join-Path $LiveRoot "scripts\$scriptName") }
     }
 
     $DeploymentPhase = 'hash verification'
     foreach ($pair in @(
-        @((Join-Path $GitServerBin 'wServer.exe'), (Join-Path $LiveServerBin 'wServer.exe')),
-        @((Join-Path $GitServerBin 'server.exe'), (Join-Path $LiveServerBin 'server.exe')),
-        @((Join-Path $GitServerBin 'common.dll'), (Join-Path $LiveServerBin 'common.dll')),
-        @($GitClientSwf, $LiveClientSwf),
-        @((Join-Path $GitServerBin 'resources\xmls\EmbeddedData_EquipCXML.dat'), (Join-Path $LiveServerBin 'resources\xmls\EmbeddedData_EquipCXML.dat'))
+        @((Join-Path $SourceServerBin 'wServer.exe'), (Join-Path $LiveServerBin 'wServer.exe')),
+        @((Join-Path $SourceServerBin 'server.exe'), (Join-Path $LiveServerBin 'server.exe')),
+        @((Join-Path $SourceServerBin 'common.dll'), (Join-Path $LiveServerBin 'common.dll')),
+        @($SourceClientSwf, $LiveClientSwf),
+        @((Join-Path $SourceServerBin 'resources\xmls\EmbeddedData_EquipCXML.dat'), (Join-Path $LiveServerBin 'resources\xmls\EmbeddedData_EquipCXML.dat'))
     )) {
         if ((Get-Sha256 $pair[0]) -ne (Get-Sha256 $pair[1])) { throw "Required deployment hash verification failed: $($pair[0])" }
         Write-Step "VERIFIED $($pair[1])"
@@ -336,5 +448,8 @@ catch {
 }
 finally {
     if (Get-Location | ForEach-Object { $_.Path -eq $GitRoot }) { Pop-Location }
+    if ($BuildWorktreeCreated) {
+        try { Remove-BuildWorktree } catch { Write-Warning "Failed to remove isolated build worktree: $($_.Exception.Message)" }
+    }
     if ($TranscriptStarted) { Stop-Transcript | Out-Null }
 }

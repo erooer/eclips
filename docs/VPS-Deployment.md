@@ -31,11 +31,27 @@ Copy and verify files without stopping or restarting the live stack:
 
 ## What is deployed
 
-`Start-All.ps1` uses `Cosmic-Realms-main\Server-src\bin` as its input. The deployment script therefore uses the Git checkout's compiled `Cosmic-Realms-main\Server-src\bin` as its only server-artifact source, then copies its executables, DLLs/PDBs, and resources into the live `Server-src\bin` before restarting. It also copies `build\client-unchanged.swf` and refreshes the live runtime web root from that same compiled resource set.
+After pulling, the deployment script creates a disposable detached Git worktree
+at the exact new `HEAD`, runs `Build-Everything.ps1` there, and validates the
+resulting commit-bound SHA-256 manifest. This entire build happens before the
+live stack is stopped. A missing compiler, failed validation, failed server or
+client build, mismatched SWF copy, or stale manifest therefore leaves the live
+services untouched.
+
+The checksum-verified Flex SDK is cached outside the disposable worktree at
+`C:\Eclipse-Git\eclips\tools\flex-sdk-4.9.1`. It is ignored by Git and can be
+pre-provisioned with `scripts\Provision-FlexSdk.ps1`.
+
+`Start-All.ps1` uses `Cosmic-Realms-main\Server-src\bin` as its input. The deployment script therefore copies only the isolated current-HEAD build's `Cosmic-Realms-main\Server-src\bin` executables, DLLs/PDBs, and resources into the live `Server-src\bin` before restarting. It also copies that build's `build\client-unchanged.swf` and refreshes the live runtime web root from the same freshly built resource set.
 
 `runtime` is deliberately not used as a deployment source: it is a generated execution directory which `Start-All.ps1` refreshes from `Server-src\bin` each time the stack starts.
 
-Every copied file is SHA-256 checked. The server executable, world executable, `common.dll`, client SWF, and `EmbeddedData_EquipCXML.dat` are explicitly verified before restart.
+Every copied file is SHA-256 checked. The server executable, world executable, `common.dll`, all three client SWF copies, and `EmbeddedData_EquipCXML.dat` are bound to current `HEAD` in the manifest and explicitly verified before restart. Building in a disposable worktree also prevents tracked generated artifacts from dirtying the primary VPS checkout and blocking the next pull.
+
+For compatibility with a checkout dirtied by the old in-place build, the
+deployer may restore tracked changes only under its explicit generated-output
+allowlist before the first pull. It refuses staged changes, untracked files,
+source changes, and runtime configuration changes; those are never discarded.
 
 ## Preserved VPS data and configuration
 
