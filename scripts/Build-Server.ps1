@@ -18,6 +18,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "account-server rebuild failed with exit code $LASTEXITCODE" }
     & $msbuild wServer\wServer.csproj /t:Rebuild /p:Configuration=Release /m
     if ($LASTEXITCODE -ne 0) { throw "world-server rebuild failed with exit code $LASTEXITCODE" }
+    # Reflection loads lock .NET Framework executables for the lifetime of the
+    # process. Run the compiled-artifact check out of process so a later rebuild
+    # in this same shell can still replace wServer.exe.
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Test-ClientHandshakeProtocol.ps1') -WorldServerPath (Join-Path $compiledBin 'wServer.exe')
+    if ($LASTEXITCODE -ne 0) { throw "compiled world-server protocol validation failed with exit code $LASTEXITCODE" }
 
     # Server-src\bin is the only compiled server-artifact source. Keep the local
     # runtime executable payload derived from it; runtime must never become a

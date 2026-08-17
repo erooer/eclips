@@ -31,7 +31,7 @@ public class GameServerConnection {
     public static const USEITEM:int = 1;
     public static const SHOWEFFECT:int = 38;
     public static const HELLO:int = 183;
-    public static const GOTO:int = 9;
+    public static const GOTO:int = 30;
     public static const INVDROP:int = 18;
     public static const INVRESULT:int = 63;
     public static const RECONNECT:int = 14;
@@ -44,8 +44,8 @@ public class GameServerConnection {
     public static const TELEPORT:int = 45;
     public static const USEPORTAL:int = 6;
     public static const DEATH:int = 83;
-    public static const BUY:int = 93;
-    public static const BUYRESULT:int = 50;
+    public static const BUY:int = 50;
+    public static const BUYRESULT:int = 93;
     public static const AOE:int = 89;
     public static const GROUNDDAMAGE:int = 98;
     public static const PLAYERHIT:int = 10;
