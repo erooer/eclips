@@ -27,3 +27,12 @@ No shipped SWF or compatibility stack is used.
 `Build-Everything.ps1` finishes by writing the ignored
 `build/deployment-manifest.json`. It binds the required server/client artifact
 hashes to the Git commit used for the build.
+
+The server build resolves MSBuild in this order: `ECLIPSE_MSBUILD_PATH`,
+Visual Studio/Build Tools via `vswhere`, `msbuild` on `PATH`, then the newest
+installed stable dotnet SDK's `MSBuild.exe` or `MSBuild.dll`. Every candidate is
+version-probed and requires the .NET Framework 4.6 and 4.7.2 targeting packs.
+The selected SDK's
+`Microsoft\Microsoft.NET.Build.Extensions\net461\lib` directory is supplied as
+the `netstandard` compatibility reference path. Resolution fails with an
+inventory of every searched source when no usable toolchain exists.

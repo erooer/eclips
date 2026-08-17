@@ -4,7 +4,9 @@ $server = Join-Path $here 'Cosmic-Realms-main\Server-src'
 $compiledBin = Join-Path $server 'bin'
 $runtime = Join-Path $here 'runtime'
 $nuget = Join-Path $here 'tools\nuget.exe'
-$msbuild = 'C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe'
+Import-Module (Join-Path $PSScriptRoot 'MSBuild.psm1') -Force
+$msbuild = Resolve-MSBuild
+Write-Host "Using $($msbuild.Kind) MSBuild $($msbuild.Version): $($msbuild.MSBuildPath)"
 & (Join-Path $PSScriptRoot 'Validate-Preflight.ps1')
 Push-Location $server
 try {
@@ -12,11 +14,12 @@ try {
     if (!(Test-Path 'packages\Microsoft.Tpl.Dataflow.4.5.23')) {
         & $nuget install Microsoft.Tpl.Dataflow -Version 4.5.23 -OutputDirectory packages -NonInteractive
     }
-    & $msbuild common\common.csproj /t:Rebuild /p:Configuration=Release /m
+    $referenceArgument = "/p:ReferencePath=$($msbuild.NetStandardReferencePath)"
+    & $msbuild.Executable @($msbuild.ArgumentPrefix) common\common.csproj /t:Rebuild /p:Configuration=Release $referenceArgument /m
     if ($LASTEXITCODE -ne 0) { throw "common rebuild failed with exit code $LASTEXITCODE" }
-    & $msbuild server\server.csproj /t:Rebuild /p:Configuration=Release /m
+    & $msbuild.Executable @($msbuild.ArgumentPrefix) server\server.csproj /t:Rebuild /p:Configuration=Release $referenceArgument /m
     if ($LASTEXITCODE -ne 0) { throw "account-server rebuild failed with exit code $LASTEXITCODE" }
-    & $msbuild wServer\wServer.csproj /t:Rebuild /p:Configuration=Release /m
+    & $msbuild.Executable @($msbuild.ArgumentPrefix) wServer\wServer.csproj /t:Rebuild /p:Configuration=Release $referenceArgument /m
     if ($LASTEXITCODE -ne 0) { throw "world-server rebuild failed with exit code $LASTEXITCODE" }
     # Reflection loads lock .NET Framework executables for the lifetime of the
     # process. Run the compiled-artifact check out of process so a later rebuild

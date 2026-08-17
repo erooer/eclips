@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 & (Join-Path $PSScriptRoot 'Test-FlexSdkResolution.ps1')
+& (Join-Path $PSScriptRoot 'Test-MSBuildResolution.ps1')
 & (Join-Path $PSScriptRoot 'Test-TypeIdCollisionValidator.ps1')
 
 $deploy = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Deploy-VPS.ps1') -Raw
