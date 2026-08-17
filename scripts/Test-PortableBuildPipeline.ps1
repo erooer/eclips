@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 & (Join-Path $PSScriptRoot 'Test-FlexSdkResolution.ps1')
+& (Join-Path $PSScriptRoot 'Test-TypeIdCollisionValidator.ps1')
 
 $deploy = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Deploy-VPS.ps1') -Raw
 $buildClient = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Build-Client.ps1') -Raw
@@ -8,7 +9,8 @@ $buildEverything = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Build-Ever
 
 $buildPosition = $deploy.IndexOf('New-CurrentHeadBuild $newCommit', [StringComparison]::Ordinal)
 $backupPosition = $deploy.IndexOf("`$DeploymentPhase = 'backup'", [StringComparison]::Ordinal)
-if ($buildPosition -lt 0 -or $backupPosition -lt 0 -or $buildPosition -gt $backupPosition) {
+$stopPosition = $deploy.IndexOf("`$DeploymentPhase = 'stop'", [StringComparison]::Ordinal)
+if ($buildPosition -lt 0 -or $backupPosition -lt 0 -or $stopPosition -lt 0 -or $buildPosition -gt $backupPosition -or $buildPosition -gt $stopPosition) {
     throw 'Deploy-VPS.ps1 must build and validate current HEAD before backup/service stop.'
 }
 foreach ($required in @('$SourceServerBin', '$SourceClientSwf', 'Test-CurrentHeadBuild', 'Get-GeneratedCheckoutChanges', 'git -C $GitRoot restore --worktree')) {

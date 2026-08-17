@@ -5,19 +5,28 @@ $xmlRoot = Join-Path $root 'Cosmic-Realms-main\Server-src\common\resources\xmls'
 $missing = @()
 
 Get-ChildItem -LiteralPath $xmlRoot -Filter '*.dat' -File | ForEach-Object {
+    $file = $_
     try {
-        [xml]$document = Get-Content -LiteralPath $_.FullName -Raw
+        [xml]$document = Get-Content -LiteralPath $file.FullName -Raw
     }
     catch {
-        throw "Invalid XML resource '$($_.FullName)': $($_.Exception.Message)"
+        throw "Invalid XML resource '$($file.FullName)': $($_.Exception.Message)"
     }
 
-    # XmlData.AddObjects creates Item only for an Object whose direct Class is
-    # Equipment or Dye. Nested <Equipment> slot arrays are not item definitions.
-    foreach ($object in @($document.Objects.Object)) {
-        if ([string]$object.Class -in @('Equipment', 'Dye')) {
-            if ($null -eq $object.Description) {
-                $missing += "$($_.Name): type $($object.type), id '$($object.id)'"
+    # This directory also contains GroundTypes, EquipmentSets, Regions, and
+    # Tutorial roots. DOM inspection is strict-mode safe and keeps the check on
+    # direct Object/Class and Object/Description children used by XmlData.
+    $documentRoot = $document.DocumentElement
+    if ($null -ne $documentRoot -and $documentRoot.LocalName -eq 'Objects') {
+        foreach ($object in $documentRoot.ChildNodes) {
+            if ($object.NodeType -eq [System.Xml.XmlNodeType]::Element -and $object.LocalName -eq 'Object') {
+                $classNode = @($object.ChildNodes | Where-Object { $_.NodeType -eq [System.Xml.XmlNodeType]::Element -and $_.LocalName -eq 'Class' } | Select-Object -First 1)
+                if ($classNode.Count -eq 1 -and $classNode[0].InnerText -in @('Equipment', 'Dye')) {
+                    $description = @($object.ChildNodes | Where-Object { $_.NodeType -eq [System.Xml.XmlNodeType]::Element -and $_.LocalName -eq 'Description' } | Select-Object -First 1)
+                    if ($description.Count -eq 0) {
+                        $missing += "$($file.Name): type $($object.GetAttribute('type')), id '$($object.GetAttribute('id'))'"
+                    }
+                }
             }
         }
     }

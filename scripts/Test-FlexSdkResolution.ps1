@@ -2,7 +2,11 @@ $ErrorActionPreference = 'Stop'
 $module = Join-Path $PSScriptRoot 'FlexSdk.psm1'
 Import-Module $module -Force
 $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "eclipse-flex-resolution-$([guid]::NewGuid().ToString('N'))"
+$previousSdkHome = $env:ECLIPSE_FLEX_SDK_HOME
 try {
+    # Deployment exports its shared, verified SDK cache before invoking the
+    # build. Isolate the resolver fixtures from that intentional override.
+    Remove-Item Env:ECLIPSE_FLEX_SDK_HOME -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Path $testRoot | Out-Null
     $missingRoot = Join-Path $testRoot 'missing-repository'
     New-Item -ItemType Directory -Path $missingRoot | Out-Null
@@ -35,6 +39,8 @@ try {
     if ($resolved.Mxmlc -ne (Join-Path ([System.IO.Path]::GetFullPath($sdk)) 'bin\mxmlc.bat')) { throw 'Portable mxmlc resolution returned the wrong launcher.' }
     Write-Host 'PASS: missing Flex toolchain fails clearly and a repo-relative compiler resolves successfully.'
 } finally {
+    if ($null -eq $previousSdkHome) { Remove-Item Env:ECLIPSE_FLEX_SDK_HOME -ErrorAction SilentlyContinue }
+    else { $env:ECLIPSE_FLEX_SDK_HOME = $previousSdkHome }
     $resolvedTestRoot = [System.IO.Path]::GetFullPath($testRoot)
     $resolvedTemp = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
     if (!$resolvedTestRoot.StartsWith($resolvedTemp, [StringComparison]::OrdinalIgnoreCase)) { throw "Refusing unsafe test cleanup path: $resolvedTestRoot" }
