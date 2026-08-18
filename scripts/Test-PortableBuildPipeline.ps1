@@ -16,8 +16,11 @@ $stopPosition = $deploy.IndexOf("`$DeploymentPhase = 'stop'", [StringComparison]
 if ($validationPosition -lt 0 -or $backupPosition -lt 0 -or $stopPosition -lt 0 -or $validationPosition -gt $backupPosition -or $validationPosition -gt $stopPosition) {
     throw 'Deploy-VPS.ps1 must validate checked-in artifacts before backup/service stop.'
 }
-foreach ($required in @('$SourceServerBin', '$SourceClientSwf', 'Test-DeploymentManifest', 'Get-GeneratedCheckoutChanges', 'git -C $GitRoot restore --worktree')) {
+foreach ($required in @('$SourceServerBin', '$SourceClientSwf', 'New-DeploymentArtifactStageFromGit', '$DeploymentArtifactStageRoot', 'Get-GeneratedCheckoutChanges', 'git -C $GitRoot restore --worktree')) {
     if (!$deploy.Contains($required)) { throw "Deploy-VPS.ps1 is missing current-HEAD artifact control: $required" }
+}
+if ($deploy.Contains('Restore-DeploymentArtifactsFromIndex') -or $deploy -match 'Join-Path \$GitRoot \$relative') {
+    throw 'Deploy-VPS.ps1 must not use checkout conversion or working-tree artifact files as deployment sources.'
 }
 foreach ($forbidden in @('Build-Everything.ps1', 'Resolve-FlexSdk', 'Resolve-MSBuild', 'ECLIPSE_FLEX_SDK_HOME', 'New-CurrentHeadBuild')) {
     if ($deploy.Contains($forbidden)) { throw "Deploy-VPS.ps1 must not require a build toolchain: $forbidden" }

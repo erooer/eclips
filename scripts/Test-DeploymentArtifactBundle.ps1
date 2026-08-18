@@ -43,12 +43,12 @@ try {
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\server.exe' ([byte[]](0, 69, 88, 69, 255))
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\wServer.exe' ([byte[]](0, 87, 79, 82, 76, 68, 255))
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf' $clientBytes
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\xmls\EmbeddedData_EquipCXML.dat' '<Objects />'
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\xmls\Extra.dat' '<Objects />'
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\template.txt' "first`r`nsecond`r`n"
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.xml' "<root>`r`n</root>`r`n"
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.json' "{`r`n  `"ok`": true`r`n}`r`n"
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\server.config' "key=value`r`nnext=value`r`n"
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\xmls\EmbeddedData_EquipCXML.dat' ([Text.Encoding]::ASCII.GetBytes("<Objects />`n"))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\xmls\Extra.dat' ([Text.Encoding]::ASCII.GetBytes("<Objects />`n"))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\data\template.txt' ([Text.Encoding]::ASCII.GetBytes("first`nsecond`n"))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.xml' ([Text.Encoding]::ASCII.GetBytes("<root>`n</root>`n"))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.json' ([Text.Encoding]::ASCII.GetBytes("{`n  `"ok`": true`n}`n"))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\data\server.config' ([Text.Encoding]::ASCII.GetBytes("key=value`nnext=value`n"))
     New-DeploymentManifest -RepositoryRoot $testRoot -SourceCommit $sourceCommit | Out-Null
 
     Assert-Rejected 'absent from the Git index' { Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null }
@@ -78,7 +78,13 @@ try {
     $textArtifact = Join-Path $testRoot 'Cosmic-Realms-main\Server-src\bin\resources\data\template.txt'
     [IO.File]::WriteAllText($textArtifact, "first`r`nsecond`r`n", [Text.Encoding]::ASCII)
     Assert-Rejected 'hash mismatch' { Test-DeploymentManifest -RepositoryRoot $testRoot | Out-Null }
-    Restore-DeploymentArtifactsFromIndex -RepositoryRoot $testRoot
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\common.dll' ([byte[]](255, 0, 1, 2, 3))
+    $materialized = New-DeploymentArtifactStageFromGit -RepositoryRoot $testRoot -Commit $head -DestinationRoot (Join-Path $testRoot 'blob-stage-altered-worktree')
+    if ($materialized.ArtifactPaths.Count -ne $verified.ArtifactPaths.Count) { throw 'Blob staging lost manifest artifacts.' }
+    $stagedText = Join-Path $materialized.ArtifactRoot 'Cosmic-Realms-main\Server-src\bin\resources\data\template.txt'
+    $manifestTextHash = [string]$materialized.Manifest.artifacts.PSObject.Properties['Cosmic-Realms-main/Server-src/bin/resources/data/template.txt'].Value
+    if ((Get-FileHash -LiteralPath $stagedText -Algorithm SHA256).Hash -ne $manifestTextHash) { throw 'Blob-staged TXT does not match its manifest hash.' }
+    Invoke-Git @('restore', '--', 'Cosmic-Realms-main/Server-src/bin/resources/data/template.txt', 'Cosmic-Realms-main/Server-src/bin/common.dll')
     Test-DeploymentManifest -RepositoryRoot $testRoot | Out-Null
     foreach ($autocrlf in @('true', 'false')) {
         $checkout = Join-Path $testRoot "checkout-$autocrlf"
@@ -87,10 +93,12 @@ try {
         $checkoutHead = (& git -C $checkout rev-parse HEAD).Trim()
         $checkoutVerified = Test-DeploymentManifest -RepositoryRoot $checkout -ExpectedHead $checkoutHead -RequireArtifactBundleCommit
         if ($checkoutVerified.ArtifactPaths.Count -ne $verified.ArtifactPaths.Count) { throw "Artifact count changed with core.autocrlf=$autocrlf." }
+        $checkoutStage = New-DeploymentArtifactStageFromGit -RepositoryRoot $checkout -Commit $checkoutHead -DestinationRoot (Join-Path $checkout 'blob-stage')
+        if ($checkoutStage.ArtifactPaths.Count -ne $verified.ArtifactPaths.Count) { throw "Blob artifact count changed with core.autocrlf=$autocrlf." }
     }
     $copyRoot = Join-Path $testRoot 'copy-simulation'
     foreach ($relative in $verified.ArtifactPaths) {
-        $source = Join-Path $testRoot $relative.Replace('/', '\')
+        $source = Join-Path $materialized.ArtifactRoot $relative.Replace('/', '\')
         $destination = Join-Path $copyRoot $relative.Replace('/', '\')
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
         Copy-Item -LiteralPath $source -Destination $destination
@@ -123,7 +131,8 @@ try {
     Assert-Rejected 'Stale deployment bundle' { Test-DeploymentManifest -RepositoryRoot $testRoot -ExpectedHead $head -RequireArtifactBundleCommit | Out-Null }
     Invoke-Git @('restore', '--', 'build/deployment-manifest.json')
 
-    Write-Host "PASS: publisher verifies Git blobs; CRLF-sensitive TXT/XML/JSON/CONFIG and binary DLL/PDB/SWF hashes survive core.autocrlf=true/false checkouts."
+    Write-Host "PASS: publisher verifies Git blobs; CRLF-sensitive TXT/XML/JSON/CONFIG/DAT and binary DLL/PDB/SWF materialize identically with core.autocrlf=true/false."
+    Write-Host "PASS: altered working-tree text/binary bytes are ignored; deployment copy simulation uses only the blob-exact staging tree."
     Write-Host "PASS: index omissions, unstaged bytes, stale DLL/PDB/server/world/SWF/resource, missing file, wrong commit, hashes, and copy integrity verified."
 } finally {
     if (Test-Path -LiteralPath $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force }

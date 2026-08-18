@@ -2,6 +2,12 @@ Set-StrictMode -Version Latest
 
 $script:ManifestRelativePath = 'build/deployment-manifest.json'
 
+function Get-GitExecutable {
+    $git = @(Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue) | Select-Object -First 1
+    if (!$git) { $git = @(Get-Command git -CommandType Application -ErrorAction Stop) | Select-Object -First 1 }
+    return $git.Path
+}
+
 function ConvertTo-ArtifactPath([string]$RepositoryRoot, [string]$AbsolutePath) {
     $root = [System.IO.Path]::GetFullPath($RepositoryRoot).TrimEnd('\') + '\'
     $path = [System.IO.Path]::GetFullPath($AbsolutePath)
@@ -13,11 +19,9 @@ function ConvertTo-ArtifactPath([string]$RepositoryRoot, [string]$AbsolutePath) 
 
 function Get-GitBlobSha256([string]$RepositoryRoot, [string]$ObjectId) {
     if ($ObjectId -notmatch '^[0-9a-f]{40,64}$') { throw "Invalid Git object ID: $ObjectId" }
-    $git = @(Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue) | Select-Object -First 1
-    if (!$git) { $git = @(Get-Command git -CommandType Application -ErrorAction Stop) | Select-Object -First 1 }
     $escapedRoot = [System.IO.Path]::GetFullPath($RepositoryRoot).Replace('"', '\"')
     $start = [Diagnostics.ProcessStartInfo]::new()
-    $start.FileName = $git.Path
+    $start.FileName = Get-GitExecutable
     $start.Arguments = "-C `"$escapedRoot`" cat-file blob $ObjectId"
     $start.UseShellExecute = $false
     $start.RedirectStandardOutput = $true
@@ -31,6 +35,45 @@ function Get-GitBlobSha256([string]$RepositoryRoot, [string]$ObjectId) {
         $process.WaitForExit()
         if ($process.ExitCode -ne 0) { throw "git cat-file failed for $ObjectId (exit $($process.ExitCode)): $errorText" }
         return ([BitConverter]::ToString($hash)).Replace('-', '')
+    } finally { $process.Dispose() }
+}
+
+function Get-GitCommitBlobId([string]$RepositoryRoot, [string]$Commit, [string]$RelativePath) {
+    if ($Commit -notmatch '^[0-9a-f]{40}$') { throw "Invalid deployment commit: $Commit" }
+    if ([System.IO.Path]::IsPathRooted($RelativePath) -or $RelativePath -match '(^|/)\.\.(/|$)') {
+        throw "Unsafe artifact path in deployment manifest: $RelativePath"
+    }
+    $entry = @(& git -C $RepositoryRoot ls-tree $Commit -- $RelativePath)
+    if ($LASTEXITCODE -ne 0 -or $entry.Count -ne 1 -or $entry[0] -notmatch '^100(?:644|755)\s+blob\s+([0-9a-f]+)\t') {
+        throw "Deployment artifact is not a regular Git blob at commit ${Commit}: $RelativePath"
+    }
+    return $Matches[1]
+}
+
+function Write-GitBlobToFile([string]$RepositoryRoot, [string]$ObjectId, [string]$Destination) {
+    if ($ObjectId -notmatch '^[0-9a-f]{40,64}$') { throw "Invalid Git object ID: $ObjectId" }
+    $directory = Split-Path -Parent $Destination
+    New-Item -ItemType Directory -Force -Path $directory | Out-Null
+    if (Test-Path -LiteralPath $Destination) { throw "Refusing to overwrite blob staging path: $Destination" }
+
+    $escapedRoot = [System.IO.Path]::GetFullPath($RepositoryRoot).Replace('"', '\"')
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = Get-GitExecutable
+    $start.Arguments = "-C `"$escapedRoot`" cat-file blob $ObjectId"
+    $start.UseShellExecute = $false
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $process = [Diagnostics.Process]::Start($start)
+    try {
+        $output = [IO.File]::Create($Destination)
+        try { $process.StandardOutput.BaseStream.CopyTo($output) }
+        finally { $output.Dispose() }
+        $errorText = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) {
+            Remove-Item -LiteralPath $Destination -Force -ErrorAction SilentlyContinue
+            throw "git cat-file failed for $ObjectId (exit $($process.ExitCode)): $errorText"
+        }
     } finally { $process.Dispose() }
 }
 
@@ -98,12 +141,15 @@ function Test-DeploymentManifest {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepositoryRoot,
+        [string]$ArtifactRoot,
         [string]$ExpectedHead,
         [switch]$RequireArtifactBundleCommit,
         [switch]$CheckForUnlistedArtifacts
     )
     $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
-    $manifestPath = Join-Path $root $script:ManifestRelativePath.Replace('/', '\')
+    if (!$ArtifactRoot) { $ArtifactRoot = $root }
+    $artifactRootPath = [System.IO.Path]::GetFullPath($ArtifactRoot)
+    $manifestPath = Join-Path $artifactRootPath $script:ManifestRelativePath.Replace('/', '\')
     if (!(Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Missing deployment manifest: $manifestPath" }
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     if ($manifest.schemaVersion -ne 2) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
@@ -123,8 +169,8 @@ function Test-DeploymentManifest {
     }
     foreach ($relative in $manifestPaths) {
         if ([System.IO.Path]::IsPathRooted($relative) -or $relative -match '(^|/)\.\.(/|$)') { throw "Unsafe artifact path in deployment manifest: $relative" }
-        $absolute = [System.IO.Path]::GetFullPath((Join-Path $root $relative.Replace('/', '\')))
-        if (!$absolute.StartsWith($root.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw "Unsafe artifact path in deployment manifest: $relative" }
+        $absolute = [System.IO.Path]::GetFullPath((Join-Path $artifactRootPath $relative.Replace('/', '\')))
+        if (!$absolute.StartsWith($artifactRootPath.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw "Unsafe artifact path in deployment manifest: $relative" }
         if (!(Test-Path -LiteralPath $absolute -PathType Leaf)) { throw "Missing deployment artifact: $relative" }
         $actual = (Get-FileHash -LiteralPath $absolute -Algorithm SHA256).Hash
         $expected = [string]$manifest.artifacts.PSObject.Properties[$relative].Value
@@ -132,7 +178,7 @@ function Test-DeploymentManifest {
     }
 
     if ($CheckForUnlistedArtifacts) {
-        $discoveredPaths = @(Get-DeploymentArtifactPaths -RepositoryRoot $root)
+        $discoveredPaths = @(Get-DeploymentArtifactPaths -RepositoryRoot $artifactRootPath)
         foreach ($relative in $discoveredPaths) {
             if ($relative -notin $manifestPaths) { throw "Deployable build output is omitted from the manifest: $relative" }
         }
@@ -141,8 +187,8 @@ function Test-DeploymentManifest {
         }
     }
 
-    $clientHash = (Get-FileHash -LiteralPath (Join-Path $root 'build\client-unchanged.swf') -Algorithm SHA256).Hash
-    $webHash = (Get-FileHash -LiteralPath (Join-Path $root 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf') -Algorithm SHA256).Hash
+    $clientHash = (Get-FileHash -LiteralPath (Join-Path $artifactRootPath 'build\client-unchanged.swf') -Algorithm SHA256).Hash
+    $webHash = (Get-FileHash -LiteralPath (Join-Path $artifactRootPath 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf') -Algorithm SHA256).Hash
     if ($clientHash -ne $webHash) { throw 'Stale SWF copy: build client and deployable server web client differ.' }
 
     if ($RequireArtifactBundleCommit) {
@@ -159,8 +205,7 @@ function Test-DeploymentManifest {
         }
         if ($script:ManifestRelativePath -notin $changed) { throw 'Current HEAD is not an artifact bundle commit: deployment manifest was not committed in HEAD.' }
         foreach ($relative in @($script:ManifestRelativePath) + $manifestPaths) {
-            $tracked = @(& git -C $root ls-files -- $relative)
-            if ($LASTEXITCODE -ne 0 -or $relative -notin $tracked) { throw "Deployment artifact is not tracked by Git: $relative" }
+            [void](Get-GitCommitBlobId -RepositoryRoot $root -Commit $ExpectedHead -RelativePath $relative)
         }
     }
     return [PSCustomObject]@{ Manifest = $manifest; ArtifactPaths = $manifestPaths; SourceCommit = [string]$manifest.sourceCommit }
@@ -197,27 +242,46 @@ function Test-DeploymentArtifactIndex {
     return $verified
 }
 
-function Restore-DeploymentArtifactsFromIndex {
+function New-DeploymentArtifactStageFromGit {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    param(
+        [Parameter(Mandatory)][string]$RepositoryRoot,
+        [Parameter(Mandatory)][string]$Commit,
+        [Parameter(Mandatory)][string]$DestinationRoot
+    )
     $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
-    $manifestPath = Join-Path $root $script:ManifestRelativePath.Replace('/', '\')
-    if (!(Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Missing deployment manifest: $manifestPath" }
+    $resolvedCommit = @(& git -C $root rev-parse --verify "$Commit`^{commit}")
+    if ($LASTEXITCODE -ne 0 -or $resolvedCommit.Count -ne 1 -or $resolvedCommit[0] -ne $Commit) {
+        throw "Unable to resolve exact deployment commit: $Commit"
+    }
+    $stage = [System.IO.Path]::GetFullPath($DestinationRoot)
+    if (Test-Path -LiteralPath $stage) { throw "Deployment artifact staging directory already exists: $stage" }
+    New-Item -ItemType Directory -Path $stage | Out-Null
+
+    $manifestObject = Get-GitCommitBlobId -RepositoryRoot $root -Commit $Commit -RelativePath $script:ManifestRelativePath
+    $manifestPath = Join-Path $stage $script:ManifestRelativePath.Replace('/', '\')
+    Write-GitBlobToFile -RepositoryRoot $root -ObjectId $manifestObject -Destination $manifestPath
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     if ($manifest.schemaVersion -ne 2) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
     $paths = @($manifest.artifacts.PSObject.Properties.Name)
     foreach ($relative in $paths) {
         if ([System.IO.Path]::IsPathRooted($relative) -or $relative -match '(^|/)\.\.(/|$)') { throw "Unsafe artifact path in deployment manifest: $relative" }
-        $tracked = @(& git -C $root ls-files -- $relative)
-        if ($LASTEXITCODE -ne 0 -or $relative -notin $tracked) { throw "Deployment artifact is not tracked by Git: $relative" }
+        $objectId = Get-GitCommitBlobId -RepositoryRoot $root -Commit $Commit -RelativePath $relative
+        $destination = [System.IO.Path]::GetFullPath((Join-Path $stage $relative.Replace('/', '\')))
+        if (!$destination.StartsWith($stage.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw "Unsafe artifact path in deployment manifest: $relative" }
+        Write-GitBlobToFile -RepositoryRoot $root -ObjectId $objectId -Destination $destination
+        $actual = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+        $expected = [string]$manifest.artifacts.PSObject.Properties[$relative].Value
+        if ($actual -ne $expected) { throw "Materialized Git blob hash mismatch: $relative" }
     }
-    for ($offset = 0; $offset -lt $paths.Count; $offset += 60) {
-        $last = [Math]::Min($offset + 59, $paths.Count - 1)
-        $batch = @($paths[$offset..$last])
-        & git -C $root checkout-index --force -- @batch
-        if ($LASTEXITCODE -ne 0) { throw "Failed to restore deployment artifact batch from Git index at offset $offset." }
+    $verified = Test-DeploymentManifest -RepositoryRoot $root -ArtifactRoot $stage -ExpectedHead $Commit -RequireArtifactBundleCommit
+    Write-Host "PASS: materialized and verified all $($verified.ArtifactPaths.Count) deployment artifacts from exact Git blobs at $Commit."
+    return [PSCustomObject]@{
+        Manifest = $verified.Manifest
+        ArtifactPaths = $verified.ArtifactPaths
+        SourceCommit = $verified.SourceCommit
+        ArtifactRoot = $stage
     }
-    Write-Host "PASS: restored all $($paths.Count) manifest artifacts byte-for-byte from the Git index."
 }
 
 function Add-DeploymentArtifactsToIndex {
@@ -244,4 +308,4 @@ function Add-DeploymentArtifactsToIndex {
     return $indexed
 }
 
-Export-ModuleMember -Function Get-DeploymentArtifactPaths, New-DeploymentManifest, Test-DeploymentManifest, Test-DeploymentArtifactIndex, Add-DeploymentArtifactsToIndex, Restore-DeploymentArtifactsFromIndex
+Export-ModuleMember -Function Get-DeploymentArtifactPaths, New-DeploymentManifest, Test-DeploymentManifest, Test-DeploymentArtifactIndex, Add-DeploymentArtifactsToIndex, New-DeploymentArtifactStageFromGit

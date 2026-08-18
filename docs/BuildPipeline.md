@@ -58,6 +58,12 @@ change or missing file. Deployment artifact paths are marked `-text` in
 `.gitattributes`, so Git never performs line-ending or other text conversion on
 manifest-managed TXT/XML/JSON/CONFIG/DAT resources or binary files.
 
+The VPS does not use those working-tree copies as deployment sources. It reads
+the manifest and every listed artifact directly from the current artifact
+commit with Git plumbing, streams each blob as bytes into an isolated temporary
+staging tree, and verifies the staged SHA-256 hashes before backup or service
+stop. Deployment copies come only from that verified staging tree.
+
 The server build resolves MSBuild in this order: `ECLIPSE_MSBUILD_PATH`,
 Visual Studio/Build Tools via `vswhere`, `msbuild` on `PATH`, then the newest
 installed stable dotnet SDK's `MSBuild.exe` or `MSBuild.dll`. Every candidate is

@@ -34,6 +34,7 @@ $DeploymentPhase = 'initialization'
 $ArtifactRoot = $GitRoot
 $SourceClientSwf = $null
 $SourceServerBin = $null
+$DeploymentArtifactStageRoot = $null
 $GeneratedCheckoutChanges = @()
 $DeploymentArtifactPaths = @()
 Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
@@ -81,13 +82,26 @@ function Copy-VerifiedDirectory([string]$SourceDirectory, [string]$DestinationDi
 }
 
 function Test-CheckedInArtifacts([string]$ExpectedHead) {
-    $verified = Test-DeploymentManifest -RepositoryRoot $GitRoot -ExpectedHead $ExpectedHead -RequireArtifactBundleCommit
+    $stageName = "EclipseDeployArtifacts-$($ExpectedHead.Substring(0, 12))-$([guid]::NewGuid().ToString('N'))"
+    $script:DeploymentArtifactStageRoot = Join-Path ([System.IO.Path]::GetTempPath()) $stageName
+    $verified = New-DeploymentArtifactStageFromGit -RepositoryRoot $GitRoot -Commit $ExpectedHead -DestinationRoot $script:DeploymentArtifactStageRoot
     $script:DeploymentArtifactPaths = @($verified.ArtifactPaths)
-    $script:SourceClientSwf = Join-Path $GitRoot 'build\client-unchanged.swf'
-    $script:SourceServerBin = Join-Path $GitRoot 'Cosmic-Realms-main\Server-src\bin'
+    $script:SourceClientSwf = Join-Path $verified.ArtifactRoot 'build\client-unchanged.swf'
+    $script:SourceServerBin = Join-Path $verified.ArtifactRoot 'Cosmic-Realms-main\Server-src\bin'
     & (Join-Path $GitRoot 'scripts\Test-ClientHandshakeProtocol.ps1') -WorldServerPath (Join-Path $script:SourceServerBin 'wServer.exe')
     & (Join-Path $GitRoot 'scripts\Test-TypeIdCollisions.ps1') -IncludeCompiled -CompiledXmlRoot (Join-Path $script:SourceServerBin 'resources\xmls')
     Write-Step "VERIFIED artifact bundle HEAD=$ExpectedHead sourceCommit=$($verified.SourceCommit) artifacts=$($verified.ArtifactPaths.Count)."
+}
+
+function Remove-DeploymentArtifactStage {
+    if (!$script:DeploymentArtifactStageRoot -or !(Test-Path -LiteralPath $script:DeploymentArtifactStageRoot)) { return }
+    $stage = [System.IO.Path]::GetFullPath($script:DeploymentArtifactStageRoot)
+    $temp = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\') + '\'
+    if (!$stage.StartsWith($temp + 'EclipseDeployArtifacts-', [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to remove unexpected deployment staging path: $stage"
+    }
+    Remove-Item -LiteralPath $stage -Recurse -Force
+    $script:DeploymentArtifactStageRoot = $null
 }
 
 function Sync-ManifestServerArtifacts {
@@ -114,7 +128,7 @@ function Sync-ManifestServerArtifacts {
 
     foreach ($relative in $binArtifacts) {
         $destinationRelative = $relative.Substring($binPrefix.Length).Replace('/', '\')
-        Copy-VerifiedFile (Join-Path $GitRoot $relative.Replace('/', '\')) (Join-Path $LiveServerBin $destinationRelative)
+        Copy-VerifiedFile (Join-Path $DeploymentArtifactStageRoot $relative.Replace('/', '\')) (Join-Path $LiveServerBin $destinationRelative)
     }
 
     $desiredRuntimeNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
@@ -355,10 +369,8 @@ try {
     # Checked-in artifact and compatibility validation happens before backup/stop.
     # The VPS intentionally needs no compiler, Flex SDK, Java, or MSBuild.
     $DeploymentPhase = 'validate checked-in artifacts'
-    # A pull that first introduces .gitattributes does not rewrite unchanged
-    # files left in an older checkout. Rehydrate manifest artifacts from Git's
-    # index so legacy CRLF copies cannot disagree with the committed blob.
-    Restore-DeploymentArtifactsFromIndex -RepositoryRoot $GitRoot
+    # Materialize committed blobs into an isolated tree. No manifest-managed
+    # deployment byte is read from the Windows working tree.
     Test-CheckedInArtifacts $newCommit
 
     $DeploymentPhase = 'backup'
@@ -430,4 +442,6 @@ catch {
 finally {
     if (Get-Location | ForEach-Object { $_.Path -eq $GitRoot }) { Pop-Location }
     if ($TranscriptStarted) { Stop-Transcript | Out-Null }
+    try { Remove-DeploymentArtifactStage }
+    catch { Write-Warning "Failed to remove temporary deployment artifact staging directory: $($_.Exception.Message)" }
 }
