@@ -11,6 +11,29 @@ function ConvertTo-ArtifactPath([string]$RepositoryRoot, [string]$AbsolutePath) 
     return $path.Substring($root.Length).Replace('\', '/')
 }
 
+function Get-GitBlobSha256([string]$RepositoryRoot, [string]$ObjectId) {
+    if ($ObjectId -notmatch '^[0-9a-f]{40,64}$') { throw "Invalid Git object ID: $ObjectId" }
+    $git = @(Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue) | Select-Object -First 1
+    if (!$git) { $git = @(Get-Command git -CommandType Application -ErrorAction Stop) | Select-Object -First 1 }
+    $escapedRoot = [System.IO.Path]::GetFullPath($RepositoryRoot).Replace('"', '\"')
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = $git.Path
+    $start.Arguments = "-C `"$escapedRoot`" cat-file blob $ObjectId"
+    $start.UseShellExecute = $false
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $process = [Diagnostics.Process]::Start($start)
+    try {
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try { $hash = $sha.ComputeHash($process.StandardOutput.BaseStream) }
+        finally { $sha.Dispose() }
+        $errorText = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { throw "git cat-file failed for $ObjectId (exit $($process.ExitCode)): $errorText" }
+        return ([BitConverter]::ToString($hash)).Replace('-', '')
+    } finally { $process.Dispose() }
+}
+
 function Get-DeploymentArtifactPaths {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$RepositoryRoot)
@@ -152,10 +175,18 @@ function Test-DeploymentArtifactIndex {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     $paths = @($script:ManifestRelativePath) + @($manifest.artifacts.PSObject.Properties.Name)
     foreach ($relative in $paths) {
-        $tracked = @(& git -C $root ls-files -- $relative)
-        if ($LASTEXITCODE -ne 0 -or $relative -notin $tracked) { throw "Manifest artifact is absent from the Git index: $relative" }
+        $indexEntry = @(& git -C $root ls-files --stage -- $relative)
+        if ($LASTEXITCODE -ne 0 -or $indexEntry.Count -ne 1 -or $indexEntry[0] -notmatch '^\d+\s+([0-9a-f]+)\s+\d+\s+') {
+            throw "Manifest artifact is absent from the Git index: $relative"
+        }
+        $objectId = $Matches[1]
         & git -C $root diff --quiet -- $relative
         if ($LASTEXITCODE -ne 0) { throw "Manifest artifact has unstaged bytes that differ from the Git index: $relative" }
+        if ($relative -ne $script:ManifestRelativePath) {
+            $expected = [string]$manifest.artifacts.PSObject.Properties[$relative].Value
+            $blobHash = Get-GitBlobSha256 -RepositoryRoot $root -ObjectId $objectId
+            if ($blobHash -ne $expected) { throw "Git index normalization changed manifest artifact bytes: $relative" }
+        }
     }
     $verified = Test-DeploymentManifest -RepositoryRoot $root -CheckForUnlistedArtifacts
     $staged = @(& git -C $root diff --cached --name-only | ForEach-Object { $_.Replace('\', '/') })
@@ -164,6 +195,29 @@ function Test-DeploymentArtifactIndex {
     }
     if ($script:ManifestRelativePath -notin $staged) { throw 'Deployment manifest is not staged for the artifact bundle commit.' }
     return $verified
+}
+
+function Restore-DeploymentArtifactsFromIndex {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
+    $manifestPath = Join-Path $root $script:ManifestRelativePath.Replace('/', '\')
+    if (!(Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Missing deployment manifest: $manifestPath" }
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    if ($manifest.schemaVersion -ne 2) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
+    $paths = @($manifest.artifacts.PSObject.Properties.Name)
+    foreach ($relative in $paths) {
+        if ([System.IO.Path]::IsPathRooted($relative) -or $relative -match '(^|/)\.\.(/|$)') { throw "Unsafe artifact path in deployment manifest: $relative" }
+        $tracked = @(& git -C $root ls-files -- $relative)
+        if ($LASTEXITCODE -ne 0 -or $relative -notin $tracked) { throw "Deployment artifact is not tracked by Git: $relative" }
+    }
+    for ($offset = 0; $offset -lt $paths.Count; $offset += 60) {
+        $last = [Math]::Min($offset + 59, $paths.Count - 1)
+        $batch = @($paths[$offset..$last])
+        & git -C $root checkout-index --force -- @batch
+        if ($LASTEXITCODE -ne 0) { throw "Failed to restore deployment artifact batch from Git index at offset $offset." }
+    }
+    Write-Host "PASS: restored all $($paths.Count) manifest artifacts byte-for-byte from the Git index."
 }
 
 function Add-DeploymentArtifactsToIndex {
@@ -190,4 +244,4 @@ function Add-DeploymentArtifactsToIndex {
     return $indexed
 }
 
-Export-ModuleMember -Function Get-DeploymentArtifactPaths, New-DeploymentManifest, Test-DeploymentManifest, Test-DeploymentArtifactIndex, Add-DeploymentArtifactsToIndex
+Export-ModuleMember -Function Get-DeploymentArtifactPaths, New-DeploymentManifest, Test-DeploymentManifest, Test-DeploymentArtifactIndex, Add-DeploymentArtifactsToIndex, Restore-DeploymentArtifactsFromIndex

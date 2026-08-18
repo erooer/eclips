@@ -49,11 +49,14 @@ git push
 ```
 
 The publisher stages every manifest entry with `git add -f`, including ignored
-DLL/PDB/resource outputs, verifies that the Git index contains the same bytes,
+DLL/PDB/resource outputs, hashes the exact Git blobs in the index (not only the
+PC working-tree files), verifies that those bytes match the manifest,
 rejects unlisted deployable output and unrelated staged files, creates the
 artifact commit, then validates the completed two-commit bundle. Do not edit or
 regenerate an artifact afterward; the manifest validator rejects any byte
-change or missing file.
+change or missing file. Deployment artifact paths are marked `-text` in
+`.gitattributes`, so Git never performs line-ending or other text conversion on
+manifest-managed TXT/XML/JSON/CONFIG/DAT resources or binary files.
 
 The server build resolves MSBuild in this order: `ECLIPSE_MSBUILD_PATH`,
 Visual Studio/Build Tools via `vswhere`, `msbuild` on `PATH`, then the newest

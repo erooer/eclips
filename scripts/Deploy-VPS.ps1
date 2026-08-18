@@ -355,6 +355,10 @@ try {
     # Checked-in artifact and compatibility validation happens before backup/stop.
     # The VPS intentionally needs no compiler, Flex SDK, Java, or MSBuild.
     $DeploymentPhase = 'validate checked-in artifacts'
+    # A pull that first introduces .gitattributes does not rewrite unchanged
+    # files left in an older checkout. Rehydrate manifest artifacts from Git's
+    # index so legacy CRLF copies cannot disagree with the committed blob.
+    Restore-DeploymentArtifactsFromIndex -RepositoryRoot $GitRoot
     Test-CheckedInArtifacts $newCommit
 
     $DeploymentPhase = 'backup'

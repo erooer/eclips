@@ -37,6 +37,11 @@ PlayerGlobal, MSBuild, Visual Studio, or .NET targeting packs on the VPS.
 Manifest identity, the complete artifact inventory, SHA-256 hashes, protocol
 compatibility, and compiled Type ID resources are checked before backup or
 service stop. Any failure therefore leaves the live services untouched.
+Before those checks, each manifest artifact is restored byte-for-byte from the
+checked-out Git index. This handles an older long-lived checkout where a pull
+introduced the artifact `-text` rules but Git left an otherwise unchanged CRLF
+working-tree copy in place; only manifest-owned generated artifacts are
+rehydrated, and source or live configuration files are not touched.
 
 `Start-All.ps1` uses `Cosmic-Realms-main\Server-src\bin` as its input. The deployment script therefore copies only the verified current-HEAD bundle's `Cosmic-Realms-main\Server-src\bin` executables, DLLs/PDBs, and resources into the live `Server-src\bin` before restarting. It also copies that bundle's `build\client-unchanged.swf` and refreshes the live runtime web root from the same verified resource set.
 

@@ -13,6 +13,12 @@ function Set-FixtureFile([string]$Relative, [string]$Value) {
     Set-Content -LiteralPath $path -Value $Value -Encoding ASCII
 }
 
+function Set-FixtureBytes([string]$Relative, [byte[]]$Value) {
+    $path = Join-Path $testRoot $Relative
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path) | Out-Null
+    [IO.File]::WriteAllBytes($path, $Value)
+}
+
 function Assert-Rejected([string]$Expected, [scriptblock]$Action) {
     try { & $Action; throw "Invalid artifact fixture unexpectedly passed: $Expected" }
     catch { if ($_.Exception.Message -notmatch [regex]::Escape($Expected)) { throw } }
@@ -25,21 +31,31 @@ try {
     Invoke-Git @('config', 'user.name', 'Artifact Test')
     Set-FixtureFile 'source.txt' 'source revision'
     Set-FixtureFile '.gitignore' 'Cosmic-Realms-main/Server-src/bin/'
-    Invoke-Git @('add', 'source.txt', '.gitignore')
+    Set-FixtureFile '.gitattributes' "build/client-unchanged.swf -text`nCosmic-Realms-main/Server-src/bin/** -text"
+    Invoke-Git @('add', 'source.txt', '.gitignore', '.gitattributes')
     Invoke-Git @('commit', '--quiet', '-m', 'source')
     $sourceCommit = (& git -C $testRoot rev-parse HEAD).Trim()
 
-    Set-FixtureFile 'build\client-unchanged.swf' 'client'
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\common.dll' 'common'
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\common.pdb' 'common symbols'
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\server.exe' 'server'
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\wServer.exe' 'world'
-    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf' 'client'
+    $clientBytes = [byte[]](0, 13, 10, 255, 83, 87, 70)
+    Set-FixtureBytes 'build\client-unchanged.swf' $clientBytes
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\common.dll' ([byte[]](0, 68, 76, 76, 255))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\common.pdb' ([byte[]](0, 80, 68, 66, 255))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\server.exe' ([byte[]](0, 69, 88, 69, 255))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\wServer.exe' ([byte[]](0, 87, 79, 82, 76, 68, 255))
+    Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf' $clientBytes
     Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\xmls\EmbeddedData_EquipCXML.dat' '<Objects />'
     Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\xmls\Extra.dat' '<Objects />'
+    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\template.txt' "first`r`nsecond`r`n"
+    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.xml' "<root>`r`n</root>`r`n"
+    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.json' "{`r`n  `"ok`": true`r`n}`r`n"
+    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\data\server.config' "key=value`r`nnext=value`r`n"
     New-DeploymentManifest -RepositoryRoot $testRoot -SourceCommit $sourceCommit | Out-Null
 
     Assert-Rejected 'absent from the Git index' { Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null }
+    Set-FixtureFile '.gitattributes' '* text=auto'
+    Assert-Rejected 'normalization changed' { Add-DeploymentArtifactsToIndex -RepositoryRoot $testRoot | Out-Null }
+    Invoke-Git @('reset', '--quiet', 'HEAD', '--', '.')
+    Invoke-Git @('restore', '--', '.gitattributes')
     Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\Unlisted.dll' 'unlisted'
     Assert-Rejected 'omitted from the manifest' { Add-DeploymentArtifactsToIndex -RepositoryRoot $testRoot | Out-Null }
     Remove-Item -LiteralPath (Join-Path $testRoot 'Cosmic-Realms-main\Server-src\bin\Unlisted.dll') -Force
@@ -59,6 +75,19 @@ try {
     $head = (& git -C $testRoot rev-parse HEAD).Trim()
 
     $verified = Test-DeploymentManifest -RepositoryRoot $testRoot -ExpectedHead $head -RequireArtifactBundleCommit
+    $textArtifact = Join-Path $testRoot 'Cosmic-Realms-main\Server-src\bin\resources\data\template.txt'
+    [IO.File]::WriteAllText($textArtifact, "first`r`nsecond`r`n", [Text.Encoding]::ASCII)
+    Assert-Rejected 'hash mismatch' { Test-DeploymentManifest -RepositoryRoot $testRoot | Out-Null }
+    Restore-DeploymentArtifactsFromIndex -RepositoryRoot $testRoot
+    Test-DeploymentManifest -RepositoryRoot $testRoot | Out-Null
+    foreach ($autocrlf in @('true', 'false')) {
+        $checkout = Join-Path $testRoot "checkout-$autocrlf"
+        & git -c "core.autocrlf=$autocrlf" clone --quiet --no-hardlinks $testRoot $checkout
+        if ($LASTEXITCODE -ne 0) { throw "Fixture clone failed with core.autocrlf=$autocrlf." }
+        $checkoutHead = (& git -C $checkout rev-parse HEAD).Trim()
+        $checkoutVerified = Test-DeploymentManifest -RepositoryRoot $checkout -ExpectedHead $checkoutHead -RequireArtifactBundleCommit
+        if ($checkoutVerified.ArtifactPaths.Count -ne $verified.ArtifactPaths.Count) { throw "Artifact count changed with core.autocrlf=$autocrlf." }
+    }
     $copyRoot = Join-Path $testRoot 'copy-simulation'
     foreach ($relative in $verified.ArtifactPaths) {
         $source = Join-Path $testRoot $relative.Replace('/', '\')
@@ -94,7 +123,8 @@ try {
     Assert-Rejected 'Stale deployment bundle' { Test-DeploymentManifest -RepositoryRoot $testRoot -ExpectedHead $head -RequireArtifactBundleCommit | Out-Null }
     Invoke-Git @('restore', '--', 'build/deployment-manifest.json')
 
-    Write-Host "PASS: publisher stages ignored manifest files; index omissions, unstaged bytes, stale DLL/PDB/server/world/SWF/resource, missing file, wrong commit, hashes, and copy integrity verified."
+    Write-Host "PASS: publisher verifies Git blobs; CRLF-sensitive TXT/XML/JSON/CONFIG and binary DLL/PDB/SWF hashes survive core.autocrlf=true/false checkouts."
+    Write-Host "PASS: index omissions, unstaged bytes, stale DLL/PDB/server/world/SWF/resource, missing file, wrong commit, hashes, and copy integrity verified."
 } finally {
     if (Test-Path -LiteralPath $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force }
 }
