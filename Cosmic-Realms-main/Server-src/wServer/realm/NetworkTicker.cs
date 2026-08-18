@@ -47,9 +47,16 @@ namespace wServer.realm
                     Log.ErrorFormat("Error processing packet ({0}, {1}, {2})\n{3}", 
                         (pending.Item1.Account != null) ? pending.Item1.Account.Name : "",
                         pending.Item1.IP, pending.Item2, e);
-                    
-                    pending.Item1.SendFailureDialog("Network Read Error", 
-                        "An error occurred while processing data from your client.");
+
+                    // A malformed/encryption-mismatched frame cannot safely share
+                    // the stream cipher state with subsequent packets.  Preserve
+                    // the fail-closed behavior, but retain the packet/state/cause
+                    // above instead of reducing every failure to EndOfStream.
+                    if (e is System.IO.InvalidDataException)
+                        pending.Item1.Disconnect("Inbound packet decoding failed.");
+                    else
+                        pending.Item1.SendFailureDialog("Network Read Error",
+                            "An error occurred while processing data from your client.");
                 }
             }
             Log.Info("Network loop stopped.");

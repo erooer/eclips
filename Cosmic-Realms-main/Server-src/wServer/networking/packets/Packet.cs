@@ -39,12 +39,15 @@ namespace wServer.networking.packets
         public void Read(Client client, byte[] body, int offset, int len)
         {
             Crypt(client, body, offset, len);
-            try { 
+            try
+            {
                 Read(new NReader(new MemoryStream(body)));
             }
-            catch
+            catch (Exception error)
             {
-                client.Disconnect("Packet Read: EndOfStreamException");
+                throw new InvalidDataException(
+                    string.Format("Unable to decode {0} ({1}) while client was {2}; payload length={3}.",
+                        ID, (byte)ID, client.State, len), error);
             }
         }
 

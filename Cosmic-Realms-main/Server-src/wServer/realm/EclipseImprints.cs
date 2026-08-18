@@ -143,8 +143,10 @@ namespace wServer.realm
             if (player == null || player.DbLink == null || item == null || slot < 0 || slot >= 4) return Enumerable.Empty<KeyValuePair<StatsType, int>>();
             var records = player.DbLink.ItemInstances;
             if (slot >= records.Length || records[slot] == null || records[slot].ObjectType != item.ObjectType) return Enumerable.Empty<KeyValuePair<StatsType, int>>();
+            var imprint = GetImprint(records[slot].Metadata);
+            if (string.IsNullOrEmpty(imprint)) return Enumerable.Empty<KeyValuePair<StatsType, int>>();
             EclipseImprintDefinition definition;
-            return Definitions.TryGetValue(GetImprint(records[slot].Metadata), out definition) ? definition.Effects : Enumerable.Empty<KeyValuePair<StatsType, int>>();
+            return Definitions.TryGetValue(imprint, out definition) ? definition.Effects : Enumerable.Empty<KeyValuePair<StatsType, int>>();
         }
 
         private static string ValidateBagItem(Player player, int slot, out common.resources.Item item, out RInventory.ItemInstanceRecord record)

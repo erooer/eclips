@@ -16,6 +16,9 @@ foreach ($required in @(
     'TryGetValue(operation', 'Only unequipped bag slots', 'SetImprint', 'EffectsFor')) {
     if ($service -notmatch [regex]::Escape($required)) { throw "Missing Eclipse Imprint contract: $required" }
 }
+if ($service -notmatch 'var imprint = GetImprint\(records\[slot\]\.Metadata\);\s*if \(string\.IsNullOrEmpty\(imprint\)\) return Enumerable\.Empty') {
+    throw 'Un-imprinted equipment must not perform a Dictionary lookup with a null key during Player construction.'
+}
 foreach ($forbidden in @('StatsType.Luck', 'StatsType.CriticalHit', 'StatsType.CriticalDmg', 'mark', 'LegendaryMarks', 'Fame')) {
     if ($service -match [regex]::Escape($forbidden)) { throw "Forbidden Imprint dependency found: $forbidden" }
 }

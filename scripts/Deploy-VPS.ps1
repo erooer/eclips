@@ -88,7 +88,9 @@ function Test-CheckedInArtifacts([string]$ExpectedHead) {
     $script:DeploymentArtifactPaths = @($verified.ArtifactPaths)
     $script:SourceClientSwf = Join-Path $verified.ArtifactRoot 'build\client-unchanged.swf'
     $script:SourceServerBin = Join-Path $verified.ArtifactRoot 'Cosmic-Realms-main\Server-src\bin'
-    & (Join-Path $GitRoot 'scripts\Test-ClientHandshakeProtocol.ps1') -WorldServerPath (Join-Path $script:SourceServerBin 'wServer.exe')
+    & (Join-Path $GitRoot 'scripts\Test-ClientHandshakeProtocol.ps1') `
+        -WorldServerPath (Join-Path $script:SourceServerBin 'wServer.exe') `
+        -ClientSwfPath $script:SourceClientSwf
     & (Join-Path $GitRoot 'scripts\Test-TypeIdCollisions.ps1') -IncludeCompiled -CompiledXmlRoot (Join-Path $script:SourceServerBin 'resources\xmls')
     Write-Step "VERIFIED artifact bundle HEAD=$ExpectedHead sourceCommit=$($verified.SourceCommit) artifacts=$($verified.ArtifactPaths.Count)."
 }

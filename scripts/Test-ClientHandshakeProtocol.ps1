@@ -1,4 +1,8 @@
-param([string]$WorldServerPath)
+param(
+    [string]$WorldServerPath,
+    [string]$ClientSwfPath,
+    [switch]$RequireSwfBytecode
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -97,8 +101,10 @@ if ($helloHandler -notmatch 'VerifyConnection\(client, packet, client\.Account\)
 }
 if ($connections -notmatch 'if \(gameId != World\.Test\)\s*gameId = World\.Nexus' -or
     $connections -notmatch 'client\.SendPacket\(new MapInfo\(\)' -or
+    $connections -notmatch 'Music\s*=\s*!string\.IsNullOrEmpty\(world\.Music\)' -or
+    $connections -match 'Music2\s*=\s*world\.Music' -or
     $connections -notmatch 'client\.State = ProtocolState\.Handshaked') {
-    throw 'Initial HELLO no longer selects Nexus and completes MAPINFO handshaking.'
+    throw 'Initial HELLO no longer selects Nexus and emits the client-compatible MAPINFO payload.'
 }
 foreach ($handler in @($loadHandler, $createHandler)) {
     if ($handler -notmatch 'client\.State != ProtocolState\.Handshaked' -or
@@ -133,6 +139,25 @@ if ($WorldServerPath) {
         }
     }
     Write-Host "PASS: compiled wServer packet contract verified at $resolvedWorldServer"
+}
+
+if ($ClientSwfPath) {
+    $resolvedClientSwf = (Resolve-Path -LiteralPath $ClientSwfPath).Path
+    $swfDump = Join-Path $root 'tools\flex-sdk-4.9.1\bin\swfdump.bat'
+    if (Test-Path -LiteralPath $swfDump) {
+        $dump = (& $swfDump -abc $resolvedClientSwf 2>&1 | Out-String)
+        foreach ($signature in @(
+            '(?s)findproperty\s+:HELLO.*?pushshort\s+183.*?initproperty\s+:HELLO',
+            '(?s)findproperty\s+:GOTO.*?pushbyte\s+30.*?initproperty\s+:GOTO',
+            '(?s)findproperty\s+:BUY.*?pushbyte\s+50.*?initproperty\s+:BUY',
+            '(?s)findproperty\s+:BUYRESULT.*?pushbyte\s+93.*?initproperty\s+:BUYRESULT')) {
+            if ($dump -notmatch $signature) { throw "Compiled client SWF bytecode failed protocol signature: $signature" }
+        }
+        Write-Host "PASS: compiled Flash bytecode packet contract verified at $resolvedClientSwf"
+    } elseif ($RequireSwfBytecode) {
+        throw "Compiled SWF bytecode validation requires Apache Flex swfdump: $swfDump"
+    }
+    Write-Host "PASS: compiled client SWF protocol material verified; SHA-256=$((Get-FileHash -LiteralPath $resolvedClientSwf -Algorithm SHA256).Hash)"
 }
 
 Write-Host 'PASS: client/server IDs, RC4/RSA, HELLO serialization, Nexus selection, MAPINFO, and LOAD/CREATE readiness contracts verified.'

@@ -438,18 +438,24 @@ namespace wServer.realm
                 Weather = world.Weather,
                 CurrentDateTime = client.Manager.CurrentDatetime,
 
-                Music2 = world.Music.Length != 0 ? world.Music2 :
-                new string[1] { client.Manager.CurrentDatetime >= 48000 ? "night" : "day" },
+                // The Flash MAPINFO contract contains one UTF music value.  The
+                // old initializer populated the unused Music2 property, leaving
+                // Music null in the packet that is actually serialized.
+                Music = !string.IsNullOrEmpty(world.Music)
+                    ? world.Music
+                    : (client.Manager.CurrentDatetime >= 48000 ? "night" : "day"),
 
                 ClientXML = Empty<string>.Array,//client.Manager.Resources.GameData.AdditionXml,
                 ExtraXML = world.ExtraXML
             });
 
             // send out account lock/ignore list
+            var lockList = client.Account.LockList ?? Empty<int>.Array;
+            var ignoreList = client.Account.IgnoreList ?? Empty<int>.Array;
             client.SendPacket(new AccountList()
             {
                 AccountListId = 0, // locked list
-                AccountIds = client.Account.LockList
+                AccountIds = lockList
                     .Select(i => i.ToString())
                     .ToArray(),
                 LockAction = 1
@@ -457,7 +463,7 @@ namespace wServer.realm
             client.SendPacket(new AccountList()
             {
                 AccountListId = 1, // ignore list
-                AccountIds = client.Account.IgnoreList
+                AccountIds = ignoreList
                     .Select(i => i.ToString())
                     .ToArray()
             });
