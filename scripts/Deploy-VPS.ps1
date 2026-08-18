@@ -35,6 +35,7 @@ $ArtifactRoot = $GitRoot
 $SourceClientSwf = $null
 $SourceServerBin = $null
 $GeneratedCheckoutChanges = @()
+$DeploymentArtifactPaths = @()
 Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
 
 function Test-Administrator {
@@ -81,11 +82,51 @@ function Copy-VerifiedDirectory([string]$SourceDirectory, [string]$DestinationDi
 
 function Test-CheckedInArtifacts([string]$ExpectedHead) {
     $verified = Test-DeploymentManifest -RepositoryRoot $GitRoot -ExpectedHead $ExpectedHead -RequireArtifactBundleCommit
+    $script:DeploymentArtifactPaths = @($verified.ArtifactPaths)
     $script:SourceClientSwf = Join-Path $GitRoot 'build\client-unchanged.swf'
     $script:SourceServerBin = Join-Path $GitRoot 'Cosmic-Realms-main\Server-src\bin'
     & (Join-Path $GitRoot 'scripts\Test-ClientHandshakeProtocol.ps1') -WorldServerPath (Join-Path $script:SourceServerBin 'wServer.exe')
     & (Join-Path $GitRoot 'scripts\Test-TypeIdCollisions.ps1') -IncludeCompiled -CompiledXmlRoot (Join-Path $script:SourceServerBin 'resources\xmls')
     Write-Step "VERIFIED artifact bundle HEAD=$ExpectedHead sourceCommit=$($verified.SourceCommit) artifacts=$($verified.ArtifactPaths.Count)."
+}
+
+function Sync-ManifestServerArtifacts {
+    $binPrefix = 'Cosmic-Realms-main/Server-src/bin/'
+    $binArtifacts = @($script:DeploymentArtifactPaths | Where-Object { $_.StartsWith($binPrefix, [StringComparison]::OrdinalIgnoreCase) })
+    $desired = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($relative in $binArtifacts) {
+        $destinationRelative = $relative.Substring($binPrefix.Length).Replace('/', '\')
+        [void]$desired.Add([System.IO.Path]::GetFullPath((Join-Path $LiveServerBin $destinationRelative)))
+    }
+
+    $managedExisting = @()
+    if (Test-Path -LiteralPath $LiveServerBin) {
+        $managedExisting += @(Get-ChildItem -LiteralPath $LiveServerBin -File | Where-Object { $_.Name -in @('server.exe', 'wServer.exe') -or $_.Extension -in @('.dll', '.pdb') })
+        $liveResources = Join-Path $LiveServerBin 'resources'
+        if (Test-Path -LiteralPath $liveResources) { $managedExisting += @(Get-ChildItem -LiteralPath $liveResources -File -Recurse) }
+    }
+    foreach ($file in $managedExisting) {
+        if (!$desired.Contains([System.IO.Path]::GetFullPath($file.FullName))) {
+            Remove-Item -LiteralPath $file.FullName -Force
+            Write-Step "REMOVED stale deployment artifact $($file.FullName)"
+        }
+    }
+
+    foreach ($relative in $binArtifacts) {
+        $destinationRelative = $relative.Substring($binPrefix.Length).Replace('/', '\')
+        Copy-VerifiedFile (Join-Path $GitRoot $relative.Replace('/', '\')) (Join-Path $LiveServerBin $destinationRelative)
+    }
+
+    $desiredRuntimeNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($relative in $binArtifacts | Where-Object { $_ -notmatch '/resources/' }) {
+        [void]$desiredRuntimeNames.Add((Split-Path -Leaf $relative))
+    }
+    Get-ChildItem -LiteralPath $LiveRuntime -File | Where-Object {
+        ($_.Name -in @('server.exe', 'wServer.exe') -or $_.Extension -in @('.dll', '.pdb')) -and !$desiredRuntimeNames.Contains($_.Name)
+    } | ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Force
+        Write-Step "REMOVED stale runtime artifact $($_.FullName)"
+    }
 }
 
 function Get-GeneratedCheckoutChanges([string[]]$StatusLines) {
@@ -329,14 +370,13 @@ try {
     if (!$NoRestart) { Stop-EclipseServices }
 
     $DeploymentPhase = 'copy'
-    # Server binaries used by Start-All.ps1 as its source of truth.
-    foreach ($file in @('server.exe', 'wServer.exe')) { Copy-VerifiedFile (Join-Path $SourceServerBin $file) (Join-Path $LiveServerBin $file) }
-    Get-ChildItem -LiteralPath $SourceServerBin -File | Where-Object { $_.Extension -in @('.dll', '.pdb') } | ForEach-Object { Copy-VerifiedFile $_.FullName (Join-Path $LiveServerBin $_.Name) }
-    Copy-VerifiedDirectory (Join-Path $SourceServerBin 'resources') (Join-Path $LiveServerBin 'resources')
+    # The manifest is authoritative: copy only listed server artifacts and
+    # remove stale managed files that survived older ignored-bin workflows.
+    Sync-ManifestServerArtifacts
     Copy-VerifiedFile $SourceClientSwf $LiveClientSwf
     # Start-All runs from runtime, so refresh its hosted web root from the same
     # compiled Server-src\\bin resource set. Runtime is never a deployment source.
-    Copy-VerifiedDirectory (Join-Path $SourceServerBin 'resources\web') (Join-Path $LiveRuntime 'resources\web')
+    Copy-VerifiedFile $SourceClientSwf (Join-Path $LiveRuntime 'resources\web\rotmg.swf')
 
     # These scripts are deployment infrastructure, not VPS configuration. No server JSON,
     # Redis configuration, Redis data, logs, or air client configuration is copied from Git.

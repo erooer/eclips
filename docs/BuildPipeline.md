@@ -44,13 +44,16 @@ git add <source files>
 git commit -m "Describe source change"
 .\scripts\Build-Everything.ps1
 .\scripts\Test-PortableBuildPipeline.ps1
-git add -- build/deployment-manifest.json build/client-unchanged.swf Cosmic-Realms-main/Server-src/bin
-git commit -m "Publish deployment artifacts"
+.\scripts\Publish-DeploymentArtifacts.ps1
 git push
 ```
 
-Do not edit or regenerate an artifact after the artifact commit. The manifest
-validator will reject any byte change or missing file.
+The publisher stages every manifest entry with `git add -f`, including ignored
+DLL/PDB/resource outputs, verifies that the Git index contains the same bytes,
+rejects unlisted deployable output and unrelated staged files, creates the
+artifact commit, then validates the completed two-commit bundle. Do not edit or
+regenerate an artifact afterward; the manifest validator rejects any byte
+change or missing file.
 
 The server build resolves MSBuild in this order: `ECLIPSE_MSBUILD_PATH`,
 Visual Studio/Build Tools via `vswhere`, `msbuild` on `PATH`, then the newest

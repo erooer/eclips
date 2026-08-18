@@ -76,7 +76,8 @@ function Test-DeploymentManifest {
     param(
         [Parameter(Mandatory)][string]$RepositoryRoot,
         [string]$ExpectedHead,
-        [switch]$RequireArtifactBundleCommit
+        [switch]$RequireArtifactBundleCommit,
+        [switch]$CheckForUnlistedArtifacts
     )
     $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
     $manifestPath = Join-Path $root $script:ManifestRelativePath.Replace('/', '\')
@@ -85,13 +86,19 @@ function Test-DeploymentManifest {
     if ($manifest.schemaVersion -ne 2) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
     if ($manifest.sourceCommit -notmatch '^[0-9a-f]{40}$') { throw 'Deployment manifest contains an invalid source commit.' }
 
-    $expectedPaths = @(Get-DeploymentArtifactPaths -RepositoryRoot $root)
     $manifestPaths = @($manifest.artifacts.PSObject.Properties.Name | Sort-Object -Unique)
-    foreach ($relative in $expectedPaths) {
-        if ($relative -notin $manifestPaths) { throw "Deployment manifest is missing required artifact: $relative" }
+    $requiredPaths = @(
+        'build/client-unchanged.swf',
+        'Cosmic-Realms-main/Server-src/bin/common.dll',
+        'Cosmic-Realms-main/Server-src/bin/server.exe',
+        'Cosmic-Realms-main/Server-src/bin/wServer.exe',
+        'Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf',
+        'Cosmic-Realms-main/Server-src/bin/resources/xmls/EmbeddedData_EquipCXML.dat'
+    )
+    foreach ($relative in $requiredPaths) {
+        if ($relative -notin $manifestPaths) { throw "Deployment manifest is missing core artifact: $relative" }
     }
     foreach ($relative in $manifestPaths) {
-        if ($relative -notin $expectedPaths) { throw "Deployment manifest contains an unexpected artifact: $relative" }
         if ([System.IO.Path]::IsPathRooted($relative) -or $relative -match '(^|/)\.\.(/|$)') { throw "Unsafe artifact path in deployment manifest: $relative" }
         $absolute = [System.IO.Path]::GetFullPath((Join-Path $root $relative.Replace('/', '\')))
         if (!$absolute.StartsWith($root.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw "Unsafe artifact path in deployment manifest: $relative" }
@@ -99,6 +106,16 @@ function Test-DeploymentManifest {
         $actual = (Get-FileHash -LiteralPath $absolute -Algorithm SHA256).Hash
         $expected = [string]$manifest.artifacts.PSObject.Properties[$relative].Value
         if ($actual -ne $expected) { throw "Deployment artifact hash mismatch: $relative" }
+    }
+
+    if ($CheckForUnlistedArtifacts) {
+        $discoveredPaths = @(Get-DeploymentArtifactPaths -RepositoryRoot $root)
+        foreach ($relative in $discoveredPaths) {
+            if ($relative -notin $manifestPaths) { throw "Deployable build output is omitted from the manifest: $relative" }
+        }
+        foreach ($relative in $manifestPaths) {
+            if ($relative -notin $discoveredPaths) { throw "Deployment manifest contains a file outside the build artifact set: $relative" }
+        }
     }
 
     $clientHash = (Get-FileHash -LiteralPath (Join-Path $root 'build\client-unchanged.swf') -Algorithm SHA256).Hash
@@ -113,17 +130,64 @@ function Test-DeploymentManifest {
             throw "Stale deployment bundle: manifest was built from $($manifest.sourceCommit), but current HEAD $ExpectedHead has parent $parent."
         }
         $changed = @(& git -C $root diff-tree --no-commit-id --name-only -r $ExpectedHead | ForEach-Object { $_.Replace('\', '/') })
-        $allowed = @($expectedPaths + $script:ManifestRelativePath)
+        $allowed = @($manifestPaths + $script:ManifestRelativePath)
         foreach ($relative in $changed) {
             if ($relative -notin $allowed) { throw "Artifact bundle commit contains a non-artifact change: $relative" }
         }
         if ($script:ManifestRelativePath -notin $changed) { throw 'Current HEAD is not an artifact bundle commit: deployment manifest was not committed in HEAD.' }
-        foreach ($relative in @($script:ManifestRelativePath) + $expectedPaths) {
-            & git -C $root ls-files --error-unmatch -- $relative 2>$null | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "Deployment artifact is not tracked by Git: $relative" }
+        foreach ($relative in @($script:ManifestRelativePath) + $manifestPaths) {
+            $tracked = @(& git -C $root ls-files -- $relative)
+            if ($LASTEXITCODE -ne 0 -or $relative -notin $tracked) { throw "Deployment artifact is not tracked by Git: $relative" }
         }
     }
-    return [PSCustomObject]@{ Manifest = $manifest; ArtifactPaths = $expectedPaths; SourceCommit = [string]$manifest.sourceCommit }
+    return [PSCustomObject]@{ Manifest = $manifest; ArtifactPaths = $manifestPaths; SourceCommit = [string]$manifest.sourceCommit }
 }
 
-Export-ModuleMember -Function Get-DeploymentArtifactPaths, New-DeploymentManifest, Test-DeploymentManifest
+function Test-DeploymentArtifactIndex {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
+    $manifestPath = Join-Path $root $script:ManifestRelativePath.Replace('/', '\')
+    if (!(Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Missing deployment manifest: $manifestPath" }
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    $paths = @($script:ManifestRelativePath) + @($manifest.artifacts.PSObject.Properties.Name)
+    foreach ($relative in $paths) {
+        $tracked = @(& git -C $root ls-files -- $relative)
+        if ($LASTEXITCODE -ne 0 -or $relative -notin $tracked) { throw "Manifest artifact is absent from the Git index: $relative" }
+        & git -C $root diff --quiet -- $relative
+        if ($LASTEXITCODE -ne 0) { throw "Manifest artifact has unstaged bytes that differ from the Git index: $relative" }
+    }
+    $verified = Test-DeploymentManifest -RepositoryRoot $root -CheckForUnlistedArtifacts
+    $staged = @(& git -C $root diff --cached --name-only | ForEach-Object { $_.Replace('\', '/') })
+    foreach ($relative in $staged) {
+        if ($relative -notin $paths) { throw "Non-artifact path is staged for the artifact bundle: $relative" }
+    }
+    if ($script:ManifestRelativePath -notin $staged) { throw 'Deployment manifest is not staged for the artifact bundle commit.' }
+    return $verified
+}
+
+function Add-DeploymentArtifactsToIndex {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
+    $verified = Test-DeploymentManifest -RepositoryRoot $root -CheckForUnlistedArtifacts
+    $head = (& git -C $root rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or $head -ne $verified.SourceCommit) {
+        throw "Artifact publishing must run at manifest source commit $($verified.SourceCommit); current HEAD is $head."
+    }
+    $alreadyStaged = @(& git -C $root diff --cached --name-only)
+    if ($alreadyStaged.Count -ne 0) { throw "Refusing artifact publishing with pre-existing staged changes: $($alreadyStaged -join ', ')" }
+
+    $paths = @($script:ManifestRelativePath) + @($verified.ArtifactPaths)
+    for ($offset = 0; $offset -lt $paths.Count; $offset += 60) {
+        $last = [Math]::Min($offset + 59, $paths.Count - 1)
+        $batch = @($paths[$offset..$last])
+        & git -C $root add -f -- @batch
+        if ($LASTEXITCODE -ne 0) { throw "Failed to stage deployment artifact batch beginning at index $offset." }
+    }
+    $indexed = Test-DeploymentArtifactIndex -RepositoryRoot $root
+    Write-Host "PASS: staged and index-verified all $($indexed.ArtifactPaths.Count) manifest artifacts."
+    return $indexed
+}
+
+Export-ModuleMember -Function Get-DeploymentArtifactPaths, New-DeploymentManifest, Test-DeploymentManifest, Test-DeploymentArtifactIndex, Add-DeploymentArtifactsToIndex

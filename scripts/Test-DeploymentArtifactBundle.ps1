@@ -24,7 +24,8 @@ try {
     Invoke-Git @('config', 'user.email', 'artifact-test@example.invalid')
     Invoke-Git @('config', 'user.name', 'Artifact Test')
     Set-FixtureFile 'source.txt' 'source revision'
-    Invoke-Git @('add', 'source.txt')
+    Set-FixtureFile '.gitignore' 'Cosmic-Realms-main/Server-src/bin/'
+    Invoke-Git @('add', 'source.txt', '.gitignore')
     Invoke-Git @('commit', '--quiet', '-m', 'source')
     $sourceCommit = (& git -C $testRoot rev-parse HEAD).Trim()
 
@@ -37,7 +38,23 @@ try {
     Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\xmls\EmbeddedData_EquipCXML.dat' '<Objects />'
     Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\resources\xmls\Extra.dat' '<Objects />'
     New-DeploymentManifest -RepositoryRoot $testRoot -SourceCommit $sourceCommit | Out-Null
-    Invoke-Git @('add', 'build', 'Cosmic-Realms-main/Server-src/bin')
+
+    Assert-Rejected 'absent from the Git index' { Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null }
+    Set-FixtureFile 'Cosmic-Realms-main\Server-src\bin\Unlisted.dll' 'unlisted'
+    Assert-Rejected 'omitted from the manifest' { Add-DeploymentArtifactsToIndex -RepositoryRoot $testRoot | Out-Null }
+    Remove-Item -LiteralPath (Join-Path $testRoot 'Cosmic-Realms-main\Server-src\bin\Unlisted.dll') -Force
+
+    Add-DeploymentArtifactsToIndex -RepositoryRoot $testRoot | Out-Null
+    Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null
+    Add-Content -LiteralPath (Join-Path $testRoot 'Cosmic-Realms-main\Server-src\bin\common.pdb') -Value 'unstaged'
+    Assert-Rejected 'unstaged bytes' { Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null }
+    Invoke-Git @('restore', '--', 'Cosmic-Realms-main/Server-src/bin/common.pdb')
+    & git -C $testRoot rm --cached --quiet -- 'Cosmic-Realms-main/Server-src/bin/common.pdb'
+    if ($LASTEXITCODE -ne 0) { throw 'Fixture failed to remove the PDB from the Git index.' }
+    Assert-Rejected 'absent from the Git index' { Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null }
+    & git -C $testRoot add -f -- 'Cosmic-Realms-main/Server-src/bin/common.pdb'
+    if ($LASTEXITCODE -ne 0) { throw 'Fixture failed to restore the PDB to the Git index.' }
+    Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null
     Invoke-Git @('commit', '--quiet', '-m', 'deployment artifacts')
     $head = (& git -C $testRoot rev-parse HEAD).Trim()
 
@@ -56,6 +73,7 @@ try {
     foreach ($fixture in @(
         @{ Path = 'Cosmic-Realms-main\Server-src\bin\server.exe'; Error = 'server.exe' },
         @{ Path = 'Cosmic-Realms-main\Server-src\bin\wServer.exe'; Error = 'wServer.exe' },
+        @{ Path = 'Cosmic-Realms-main\Server-src\bin\common.pdb'; Error = 'common.pdb' },
         @{ Path = 'build\client-unchanged.swf'; Error = 'client-unchanged.swf' },
         @{ Path = 'Cosmic-Realms-main\Server-src\bin\resources\xmls\Extra.dat'; Error = 'Extra.dat' }
     )) {
@@ -76,7 +94,7 @@ try {
     Assert-Rejected 'Stale deployment bundle' { Test-DeploymentManifest -RepositoryRoot $testRoot -ExpectedHead $head -RequireArtifactBundleCommit | Out-Null }
     Invoke-Git @('restore', '--', 'build/deployment-manifest.json')
 
-    Write-Host "PASS: valid artifact bundle accepted; stale server, world, SWF, resource, missing file, wrong commit, hashes, and copy integrity verified."
+    Write-Host "PASS: publisher stages ignored manifest files; index omissions, unstaged bytes, stale DLL/PDB/server/world/SWF/resource, missing file, wrong commit, hashes, and copy integrity verified."
 } finally {
     if (Test-Path -LiteralPath $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force }
 }

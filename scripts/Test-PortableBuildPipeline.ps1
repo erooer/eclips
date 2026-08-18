@@ -8,6 +8,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $deploy = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Deploy-VPS.ps1') -Raw
 $buildClient = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Build-Client.ps1') -Raw
 $buildEverything = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Build-Everything.ps1') -Raw
+$publisher = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Publish-DeploymentArtifacts.ps1') -Raw
 
 $validationPosition = $deploy.IndexOf('Test-CheckedInArtifacts $newCommit', [StringComparison]::Ordinal)
 $backupPosition = $deploy.IndexOf("`$DeploymentPhase = 'backup'", [StringComparison]::Ordinal)
@@ -26,6 +27,9 @@ if ($buildClient -notmatch 'deployableSwf' -or $buildClient -notmatch 'deployabl
 }
 if ($buildEverything -notmatch 'New-BuildManifest\.ps1') {
     throw 'Build-Everything.ps1 must generate the commit-bound artifact manifest.'
+}
+foreach ($required in @('Add-DeploymentArtifactsToIndex', 'Test-DeploymentManifest', 'RequireArtifactBundleCommit')) {
+    if (!$publisher.Contains($required)) { throw "Artifact publisher is missing guarded publishing behavior: $required" }
 }
 
 & (Join-Path $PSScriptRoot 'Test-ClientHandshakeProtocol.ps1')
