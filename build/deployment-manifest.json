@@ -1,16 +1,16 @@
 ﻿{
     "schemaVersion":  3,
-    "sourceCommit":  "4683438ae029077b604e8680888f25a79c100650",
-    "builtAtUtc":  "2026-08-19T22:43:47.7114122Z",
+    "sourceCommit":  "9b99a9f923c72a7027a280d33c179e3b745d6499",
+    "builtAtUtc":  "2026-08-19T23:36:33.9528859Z",
     "protocolValidation":  {
                                "schemaVersion":  1,
-                               "sourceCommit":  "4683438ae029077b604e8680888f25a79c100650",
+                               "sourceCommit":  "9b99a9f923c72a7027a280d33c179e3b745d6499",
                                "validator":  "scripts/Test-ClientHandshakeProtocol.ps1",
                                "artifacts":  {
-                                                 "clientSwfSha256":  "27DE57AD62F4A18D3D0A999EB53EB65AD209C51FF1102C033485BA8C363D5C2C",
-                                                 "deployedClientSwfSha256":  "27DE57AD62F4A18D3D0A999EB53EB65AD209C51FF1102C033485BA8C363D5C2C",
-                                                 "worldServerSha256":  "E634FAD94E8BE865D69225ED1ABBE3AB81A073F5291801162649C48EF5749255",
-                                                 "accountServerSha256":  "8F318CF0A5E0C1BA5B409B0BA0ED2FBB887180689C73831E05ACDA91D16D9A4C"
+                                                 "clientSwfSha256":  "0A955772BE68F59A83795F23E34DA6A0A16EC380CBC34997E3D7243CB9D1E1C8",
+                                                 "deployedClientSwfSha256":  "0A955772BE68F59A83795F23E34DA6A0A16EC380CBC34997E3D7243CB9D1E1C8",
+                                                 "worldServerSha256":  "CFBE35200541ECF94A9D45B14FECCAA19B1EB011AF726E6641214857AA7E0138",
+                                                 "accountServerSha256":  "DCBE3E6B86F34878B8A4815EF38BF2EA10ED815054ED299A7C54E63B7BB983E0"
                                              },
                                "packetIds":  {
                                                  "HELLO":  183,
@@ -30,15 +30,20 @@
                                                  "helloSerialization":  true,
                                                  "nexusMapInfo":  true,
                                                  "createLoadReady":  true,
-                                                 "encryptedHandshakeProbe":  true
-                                             }
+                                                 "encryptedHandshakeProbe":  true,
+                                                 "runtimeClientBuildIdentity":  true
+                                             },
+                               "clientBuildIdentity":  {
+                                                           "sourceCommit":  "9b99a9f923c72a7027a280d33c179e3b745d6499",
+                                                           "label":  "Eclipse client 9b99a9f923c7"
+                                                       }
                            },
     "artifacts":  {
-                      "build/client-unchanged.swf":  "27DE57AD62F4A18D3D0A999EB53EB65AD209C51FF1102C033485BA8C363D5C2C",
+                      "build/client-unchanged.swf":  "0A955772BE68F59A83795F23E34DA6A0A16EC380CBC34997E3D7243CB9D1E1C8",
                       "Cosmic-Realms-main/Server-src/bin/Anna.dll":  "389973A82CA3CE874F9DE897766F2C85FAFF8BB55012005EF24287D043CD185A",
                       "Cosmic-Realms-main/Server-src/bin/BouncyCastle.Crypto.dll":  "0BD5FDC4F438FFA4EAD4CC8B3A0D32C02A43F0855A75724B242CF35476503ACE",
-                      "Cosmic-Realms-main/Server-src/bin/common.dll":  "C20D9731DC09651BC15997F42D34CC7D0FA06FA62238567684AAE0E7ED7F8A72",
-                      "Cosmic-Realms-main/Server-src/bin/common.pdb":  "D7771FB937B2877B15C7937B4AF151C42A5BDC8028EFFC534CB67CC9568327DD",
+                      "Cosmic-Realms-main/Server-src/bin/common.dll":  "4E2AA21A82A720220B3B48C3AC944837AD49704A1B6C002A7F53EBDBAA2E5D09",
+                      "Cosmic-Realms-main/Server-src/bin/common.pdb":  "5783B8E6F5F6D10FF0835B01E57A07CFE3474C41D1398DD74907BA2E63F6F243",
                       "Cosmic-Realms-main/Server-src/bin/DiscordWebhook.dll":  "65ABDF55033D499D3E887C675DA679CBFFBF9AC54A4AD7934A936111CA568E9A",
                       "Cosmic-Realms-main/Server-src/bin/log4net.dll":  "896AB9CAC41E3977792BA2034EA8730610C2779FA51BAB6BED426094EA8D3ECD",
                       "Cosmic-Realms-main/Server-src/bin/netstandard.dll":  "8BE4A2270F8B2BEA40F33F79869FDCCA34E07BB764E63B81DED49D90D2B720DD",
@@ -63,7 +68,7 @@
                       "Cosmic-Realms-main/Server-src/bin/resources/web/favicon.ico":  "8B504B3F398691B257DB0E73BB5DBD7ED30792BB51231BC7C630C92CD5410075",
                       "Cosmic-Realms-main/Server-src/bin/resources/web/index.html":  "18C46298AF325C5191A1FF3CB059F5784A1E867B63AA21822CAD308F428755C9",
                       "Cosmic-Realms-main/Server-src/bin/resources/web/music/sorc.mp3":  "E279664082C3E63F4110901C87402273A569DF7EBF0A9E145A132344A6DB238E",
-                      "Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf":  "27DE57AD62F4A18D3D0A999EB53EB65AD209C51FF1102C033485BA8C363D5C2C",
+                      "Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf":  "0A955772BE68F59A83795F23E34DA6A0A16EC380CBC34997E3D7243CB9D1E1C8",
                       "Cosmic-Realms-main/Server-src/bin/resources/worlds/22222.jm":  "0FBC9731CB7DF28402E61F79495E40AA48818C1A2A9C80B8EC9AD673F8424E37",
                       "Cosmic-Realms-main/Server-src/bin/resources/worlds/abyss.wmap":  "B93913BB2028E472452572BFC1C9BE3A465796C3F0A7F4545BACE13C1C18EF7D",
                       "Cosmic-Realms-main/Server-src/bin/resources/worlds/abyss2.wmap":  "E80627010B4B3B14AC903B45857CFBB8BC0E3794E3FB2DB5F3CD1D8875E90DC9",
@@ -513,8 +518,8 @@
                       "Cosmic-Realms-main/Server-src/bin/SendGrid.CSharp.HTTP.Client.dll":  "523CCFE2ABAB3FE034FC8B84250195AE7491E2FCB7782A94F673C21FA03CE74B",
                       "Cosmic-Realms-main/Server-src/bin/SendGrid.dll":  "522F528AF4FC29FBCDCB5D97EB148A8FA38F3486611F48B3F2923CE0FCDEF9E6",
                       "Cosmic-Realms-main/Server-src/bin/SendGrid.SmtpApi.dll":  "4EBF0E367AE8787C98521FC898367DE691C476ACEC3EB7B8E353733992B19A3D",
-                      "Cosmic-Realms-main/Server-src/bin/server.exe":  "8F318CF0A5E0C1BA5B409B0BA0ED2FBB887180689C73831E05ACDA91D16D9A4C",
-                      "Cosmic-Realms-main/Server-src/bin/server.pdb":  "7323421F38F2AF5A816518F6A749C5D14AEB7B3205236CCFACC9DB551138AE4E",
+                      "Cosmic-Realms-main/Server-src/bin/server.exe":  "DCBE3E6B86F34878B8A4815EF38BF2EA10ED815054ED299A7C54E63B7BB983E0",
+                      "Cosmic-Realms-main/Server-src/bin/server.pdb":  "275CDB0F9B2F6E3104652CBC300574CE016CAC53B061A8F172FD37A06D603FB8",
                       "Cosmic-Realms-main/Server-src/bin/StackExchange.Redis.dll":  "A01BC59E9F9CCB84D5128886BE5A54878BEFF4C3E6F6E1D6B315E1A6214EC0F5",
                       "Cosmic-Realms-main/Server-src/bin/StackExchange.Redis.pdb":  "2206B976C6A4F5DCE90508367190F325B0EB540BDBEC92D42C81AA698D7B0973",
                       "Cosmic-Realms-main/Server-src/bin/System.IO.Compression.dll":  "DA18D61BB6B7D35C56CB4F392FAE0844CCA73F72A043A08994BECCB531FF3B77",
@@ -526,8 +531,8 @@
                       "Cosmic-Realms-main/Server-src/bin/System.Reactive.PlatformServices.dll":  "A8153DEA32562849E23E171609B145E11EC91AD78CD054C99514677C58130AD9",
                       "Cosmic-Realms-main/Server-src/bin/System.Threading.Tasks.Dataflow.dll":  "152174274AC12698E0497D2D09E1E2005E24CBB1265BAF6424E301B3C21CBA70",
                       "Cosmic-Realms-main/Server-src/bin/taglib-sharp.dll":  "8AE09579D02D85CAC75885B64547DC12940E9B9F2EE41D1C461F599084507188",
-                      "Cosmic-Realms-main/Server-src/bin/wServer.exe":  "E634FAD94E8BE865D69225ED1ABBE3AB81A073F5291801162649C48EF5749255",
-                      "Cosmic-Realms-main/Server-src/bin/wServer.pdb":  "00DDE41197C1627ED37957701C2F7C3881BE70E5D11F12B98E76B86E433A7EF6",
+                      "Cosmic-Realms-main/Server-src/bin/wServer.exe":  "CFBE35200541ECF94A9D45B14FECCAA19B1EB011AF726E6641214857AA7E0138",
+                      "Cosmic-Realms-main/Server-src/bin/wServer.pdb":  "83F8B38624EB89534FFAD1C5C12C3D5643B66C2DF672EBF61BE48099FAB2B3D2",
                       "Cosmic-Realms-main/Server-src/bin/Zlib.Portable.dll":  "FE84781BA35CA9CC5FF5F73FD08D2A66C59E5257B4573F5FE59743F30BF78E42"
                   }
 }
