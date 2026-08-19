@@ -46,8 +46,22 @@ function Test-JavaRuntime {
     if (!$java) {
         throw 'Java is required by Apache Flex mxmlc but java.exe was not found via JAVA_HOME or PATH.'
     }
-    & $java -version 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Java validation failed for $java (exit code $LASTEXITCODE)." }
+    # java -version intentionally writes its normal version banner to stderr.
+    # Invoke it without PowerShell's native stderr promotion so strict callers
+    # do not mistake a healthy runtime for a terminating error.
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = $java
+    $start.Arguments = '-version'
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $process = [Diagnostics.Process]::Start($start)
+    try {
+        $versionText = $process.StandardError.ReadToEnd() + $process.StandardOutput.ReadToEnd()
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { throw "Java validation failed for $java (exit code $($process.ExitCode)): $versionText" }
+    } finally { $process.Dispose() }
     return $java
 }
 

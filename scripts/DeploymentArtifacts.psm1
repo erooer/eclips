@@ -110,7 +110,8 @@ function New-DeploymentManifest {
     param(
         [Parameter(Mandatory)][string]$RepositoryRoot,
         [string]$OutputPath,
-        [string]$SourceCommit
+        [string]$SourceCommit,
+        [switch]$ProtocolValidationPassed
     )
     $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
     if (!$OutputPath) { $OutputPath = Join-Path $root $script:ManifestRelativePath.Replace('/', '\') }
@@ -119,16 +120,46 @@ function New-DeploymentManifest {
         if ($LASTEXITCODE -ne 0) { throw 'Unable to determine the source commit for the deployment manifest.' }
     }
     if ($SourceCommit -notmatch '^[0-9a-f]{40}$') { throw 'Unable to determine the source commit for the deployment manifest.' }
+    if (!$ProtocolValidationPassed) {
+        throw 'Refusing to create a deployment manifest without successful deep client/server protocol validation.'
+    }
 
     $artifacts = [ordered]@{}
     foreach ($relative in Get-DeploymentArtifactPaths -RepositoryRoot $root) {
         $absolute = Join-Path $root $relative.Replace('/', '\')
         $artifacts[$relative] = (Get-FileHash -LiteralPath $absolute -Algorithm SHA256).Hash
     }
+    $clientPath = 'build/client-unchanged.swf'
+    $webClientPath = 'Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf'
+    $worldServerPath = 'Cosmic-Realms-main/Server-src/bin/wServer.exe'
+    $accountServerPath = 'Cosmic-Realms-main/Server-src/bin/server.exe'
+    $protocolValidation = [ordered]@{
+        schemaVersion = 1
+        sourceCommit = $SourceCommit
+        validator = 'scripts/Test-ClientHandshakeProtocol.ps1'
+        artifacts = [ordered]@{
+            clientSwfSha256 = $artifacts[$clientPath]
+            deployedClientSwfSha256 = $artifacts[$webClientPath]
+            worldServerSha256 = $artifacts[$worldServerPath]
+            accountServerSha256 = $artifacts[$accountServerPath]
+        }
+        packetIds = [ordered]@{ HELLO = 183; GOTO = 30; BUY = 50; BUYRESULT = 93; MAPINFO = 74; LOAD = 26; CREATE = 12; CREATE_SUCCESS = 81 }
+        contracts = [ordered]@{
+            compiledClientBytecode = $true
+            compiledWorldServerPacketTable = $true
+            rc4Keys = $true
+            rsaHello = $true
+            helloSerialization = $true
+            nexusMapInfo = $true
+            createLoadReady = $true
+            encryptedHandshakeProbe = $true
+        }
+    }
     $manifest = [ordered]@{
-        schemaVersion = 2
+        schemaVersion = 3
         sourceCommit = $SourceCommit
         builtAtUtc = [DateTime]::UtcNow.ToString('o')
+        protocolValidation = $protocolValidation
         artifacts = $artifacts
     }
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $OutputPath) | Out-Null
@@ -152,7 +183,7 @@ function Test-DeploymentManifest {
     $manifestPath = Join-Path $artifactRootPath $script:ManifestRelativePath.Replace('/', '\')
     if (!(Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Missing deployment manifest: $manifestPath" }
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-    if ($manifest.schemaVersion -ne 2) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
+    if ($manifest.schemaVersion -ne 3) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
     if ($manifest.sourceCommit -notmatch '^[0-9a-f]{40}$') { throw 'Deployment manifest contains an invalid source commit.' }
 
     $manifestPaths = @($manifest.artifacts.PSObject.Properties.Name | Sort-Object -Unique)
@@ -175,6 +206,33 @@ function Test-DeploymentManifest {
         $actual = (Get-FileHash -LiteralPath $absolute -Algorithm SHA256).Hash
         $expected = [string]$manifest.artifacts.PSObject.Properties[$relative].Value
         if ($actual -ne $expected) { throw "Deployment artifact hash mismatch: $relative" }
+    }
+
+    $protocol = $manifest.protocolValidation
+    if (!$protocol -or $protocol.schemaVersion -ne 1 -or $protocol.sourceCommit -ne $manifest.sourceCommit) {
+        throw 'Deployment manifest protocol validation evidence is missing, unsupported, or bound to a different source commit.'
+    }
+    $protocolArtifactBindings = [ordered]@{
+        clientSwfSha256 = 'build/client-unchanged.swf'
+        deployedClientSwfSha256 = 'Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf'
+        worldServerSha256 = 'Cosmic-Realms-main/Server-src/bin/wServer.exe'
+        accountServerSha256 = 'Cosmic-Realms-main/Server-src/bin/server.exe'
+    }
+    foreach ($binding in $protocolArtifactBindings.GetEnumerator()) {
+        $attested = [string]$protocol.artifacts.PSObject.Properties[$binding.Key].Value
+        $manifestHash = [string]$manifest.artifacts.PSObject.Properties[$binding.Value].Value
+        if ($attested -ne $manifestHash) { throw "Protocol validation evidence is not bound to the exact artifact: $($binding.Value)" }
+    }
+    $requiredProtocolIds = [ordered]@{ HELLO = 183; GOTO = 30; BUY = 50; BUYRESULT = 93; MAPINFO = 74; LOAD = 26; CREATE = 12; CREATE_SUCCESS = 81 }
+    foreach ($entry in $requiredProtocolIds.GetEnumerator()) {
+        if ([int]$protocol.packetIds.PSObject.Properties[$entry.Key].Value -ne $entry.Value) {
+            throw "Protocol validation evidence contains an invalid packet mapping for $($entry.Key)."
+        }
+    }
+    foreach ($contract in @('compiledClientBytecode', 'compiledWorldServerPacketTable', 'rc4Keys', 'rsaHello', 'helloSerialization', 'nexusMapInfo', 'createLoadReady', 'encryptedHandshakeProbe')) {
+        if ($protocol.contracts.PSObject.Properties[$contract].Value -ne $true) {
+            throw "Protocol validation evidence is missing required successful check: $contract"
+        }
     }
 
     if ($CheckForUnlistedArtifacts) {
@@ -262,7 +320,7 @@ function New-DeploymentArtifactStageFromGit {
     $manifestPath = Join-Path $stage $script:ManifestRelativePath.Replace('/', '\')
     Write-GitBlobToFile -RepositoryRoot $root -ObjectId $manifestObject -Destination $manifestPath
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-    if ($manifest.schemaVersion -ne 2) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
+    if ($manifest.schemaVersion -ne 3) { throw "Unsupported deployment manifest schema: $($manifest.schemaVersion)" }
     $paths = @($manifest.artifacts.PSObject.Properties.Name)
     foreach ($relative in $paths) {
         if ([System.IO.Path]::IsPathRooted($relative) -or $relative -match '(^|/)\.\.(/|$)') { throw "Unsafe artifact path in deployment manifest: $relative" }

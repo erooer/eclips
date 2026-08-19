@@ -49,7 +49,7 @@ try {
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.xml' ([Text.Encoding]::ASCII.GetBytes("<root>`n</root>`n"))
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\data\settings.json' ([Text.Encoding]::ASCII.GetBytes("{`n  `"ok`": true`n}`n"))
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\resources\data\server.config' ([Text.Encoding]::ASCII.GetBytes("key=value`nnext=value`n"))
-    New-DeploymentManifest -RepositoryRoot $testRoot -SourceCommit $sourceCommit | Out-Null
+    New-DeploymentManifest -RepositoryRoot $testRoot -SourceCommit $sourceCommit -ProtocolValidationPassed | Out-Null
 
     Assert-Rejected 'absent from the Git index' { Test-DeploymentArtifactIndex -RepositoryRoot $testRoot | Out-Null }
     Set-FixtureFile '.gitattributes' '* text=auto'
@@ -79,7 +79,21 @@ try {
     [IO.File]::WriteAllText($textArtifact, "first`r`nsecond`r`n", [Text.Encoding]::ASCII)
     Assert-Rejected 'hash mismatch' { Test-DeploymentManifest -RepositoryRoot $testRoot | Out-Null }
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\common.dll' ([byte[]](255, 0, 1, 2, 3))
-    $materialized = New-DeploymentArtifactStageFromGit -RepositoryRoot $testRoot -Commit $head -DestinationRoot (Join-Path $testRoot 'blob-stage-altered-worktree')
+    $toolTrap = Join-Path $testRoot 'forbidden-toolchain'
+    New-Item -ItemType Directory -Path $toolTrap | Out-Null
+    foreach ($tool in @('java.cmd', 'mxmlc.cmd', 'msbuild.cmd')) {
+        Set-Content -LiteralPath (Join-Path $toolTrap $tool) -Value '@exit /b 86' -Encoding ASCII
+    }
+    $savedPath = $env:PATH
+    $savedJavaHome = $env:JAVA_HOME
+    try {
+        $env:PATH = "$toolTrap;$savedPath"
+        $env:JAVA_HOME = Join-Path $toolTrap 'missing-java-home'
+        $materialized = New-DeploymentArtifactStageFromGit -RepositoryRoot $testRoot -Commit $head -DestinationRoot (Join-Path $testRoot 'blob-stage-altered-worktree')
+    } finally {
+        $env:PATH = $savedPath
+        $env:JAVA_HOME = $savedJavaHome
+    }
     if ($materialized.ArtifactPaths.Count -ne $verified.ArtifactPaths.Count) { throw 'Blob staging lost manifest artifacts.' }
     $stagedText = Join-Path $materialized.ArtifactRoot 'Cosmic-Realms-main\Server-src\bin\resources\data\template.txt'
     $manifestTextHash = [string]$materialized.Manifest.artifacts.PSObject.Properties['Cosmic-Realms-main/Server-src/bin/resources/data/template.txt'].Value
@@ -128,12 +142,19 @@ try {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     $manifest.sourceCommit = '0000000000000000000000000000000000000000'
     $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
-    Assert-Rejected 'Stale deployment bundle' { Test-DeploymentManifest -RepositoryRoot $testRoot -ExpectedHead $head -RequireArtifactBundleCommit | Out-Null }
+    Assert-Rejected 'protocol validation evidence' { Test-DeploymentManifest -RepositoryRoot $testRoot -ExpectedHead $head -RequireArtifactBundleCommit | Out-Null }
+    Invoke-Git @('restore', '--', 'build/deployment-manifest.json')
+
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    $manifest.protocolValidation.packetIds.HELLO = 9
+    $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    Assert-Rejected 'invalid packet mapping' { Test-DeploymentManifest -RepositoryRoot $testRoot | Out-Null }
     Invoke-Git @('restore', '--', 'build/deployment-manifest.json')
 
     Write-Host "PASS: publisher verifies Git blobs; CRLF-sensitive TXT/XML/JSON/CONFIG/DAT and binary DLL/PDB/SWF materialize identically with core.autocrlf=true/false."
     Write-Host "PASS: altered working-tree text/binary bytes are ignored; deployment copy simulation uses only the blob-exact staging tree."
     Write-Host "PASS: index omissions, unstaged bytes, stale DLL/PDB/server/world/SWF/resource, missing file, wrong commit, hashes, and copy integrity verified."
+    Write-Host 'PASS: exact-blob deployment trust and protocol evidence validation require no Java, Flex, MSBuild, or compiler toolchain.'
 } finally {
     if (Test-Path -LiteralPath $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force }
 }

@@ -88,11 +88,8 @@ function Test-CheckedInArtifacts([string]$ExpectedHead) {
     $script:DeploymentArtifactPaths = @($verified.ArtifactPaths)
     $script:SourceClientSwf = Join-Path $verified.ArtifactRoot 'build\client-unchanged.swf'
     $script:SourceServerBin = Join-Path $verified.ArtifactRoot 'Cosmic-Realms-main\Server-src\bin'
-    & (Join-Path $GitRoot 'scripts\Test-ClientHandshakeProtocol.ps1') `
-        -WorldServerPath (Join-Path $script:SourceServerBin 'wServer.exe') `
-        -ClientSwfPath $script:SourceClientSwf
     & (Join-Path $GitRoot 'scripts\Test-TypeIdCollisions.ps1') -IncludeCompiled -CompiledXmlRoot (Join-Path $script:SourceServerBin 'resources\xmls')
-    Write-Step "VERIFIED artifact bundle HEAD=$ExpectedHead sourceCommit=$($verified.SourceCommit) artifacts=$($verified.ArtifactPaths.Count)."
+    Write-Step "VERIFIED artifact bundle and hash-bound protocol evidence HEAD=$ExpectedHead sourceCommit=$($verified.SourceCommit) artifacts=$($verified.ArtifactPaths.Count)."
 }
 
 function Remove-DeploymentArtifactStage {
@@ -102,8 +99,16 @@ function Remove-DeploymentArtifactStage {
     if (!$stage.StartsWith($temp + 'EclipseDeployArtifacts-', [StringComparison]::OrdinalIgnoreCase)) {
         throw "Refusing to remove unexpected deployment staging path: $stage"
     }
-    Remove-Item -LiteralPath $stage -Recurse -Force
-    $script:DeploymentArtifactStageRoot = $null
+    $lastError = $null
+    foreach ($delayMilliseconds in @(0, 100, 250, 500, 1000, 2000)) {
+        if ($delayMilliseconds -gt 0) { Start-Sleep -Milliseconds $delayMilliseconds }
+        try {
+            Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction Stop
+            $script:DeploymentArtifactStageRoot = $null
+            return
+        } catch { $lastError = $_ }
+    }
+    throw "Temporary artifact staging cleanup failed after retries: $($lastError.Exception.Message)"
 }
 
 function Sync-ManifestServerArtifacts {

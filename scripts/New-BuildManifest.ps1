@@ -5,4 +5,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
-New-DeploymentManifest -RepositoryRoot $RepositoryRoot -OutputPath $OutputPath | Out-Null
+& (Join-Path $PSScriptRoot 'Test-ClientHandshakeProtocol.ps1') `
+    -WorldServerPath (Join-Path $RepositoryRoot 'Cosmic-Realms-main\Server-src\bin\wServer.exe') `
+    -ClientSwfPath (Join-Path $RepositoryRoot 'build\client-unchanged.swf') `
+    -RequireSwfBytecode
+New-DeploymentManifest -RepositoryRoot $RepositoryRoot -OutputPath $OutputPath -ProtocolValidationPassed | Out-Null

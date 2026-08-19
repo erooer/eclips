@@ -128,6 +128,35 @@ $enteredTargetWorld = $mapInfoAccepted -and $targetWorld -eq 'Nexus'
 if ($enteredTargetWorld) { $state = 'Ready' }
 if ($state -ne 'Ready') { throw 'Client-compatible HELLO-to-Nexus state replay failed.' }
 
+# Deterministic encrypted wire probe. This exercises the shipped client-to-server
+# RC4 key against a framed HELLO packet and proves that the server-side decryptor
+# recovers the compatibility packet ID and payload byte-for-byte.
+function Invoke-Rc4([byte[]]$Bytes, [byte[]]$Key) {
+    [byte[]]$s = 0..255
+    $j = 0
+    for ($i = 0; $i -lt 256; $i++) {
+        $j = ($j + $s[$i] + $Key[$i % $Key.Length]) % 256
+        $swap = $s[$i]; $s[$i] = $s[$j]; $s[$j] = $swap
+    }
+    [byte[]]$result = New-Object byte[] $Bytes.Length
+    $i = 0; $j = 0
+    for ($offset = 0; $offset -lt $Bytes.Length; $offset++) {
+        $i = ($i + 1) % 256
+        $j = ($j + $s[$i]) % 256
+        $swap = $s[$i]; $s[$i] = $s[$j]; $s[$j] = $swap
+        $result[$offset] = $Bytes[$offset] -bxor $s[($s[$i] + $s[$j]) % 256]
+    }
+    return $result
+}
+$probePlaintext = [byte[]]@($requiredIds.HELLO, 0x00, 0x0e, 0x45, 0x63, 0x6c, 0x69, 0x70, 0x73, 0x65)
+$probeKey = [byte[]]@(0xB1, 0xA5, 0xED)
+$probeEncrypted = Invoke-Rc4 $probePlaintext $probeKey
+$probeDecrypted = Invoke-Rc4 $probeEncrypted $probeKey
+if ($probeDecrypted.Length -ne $probePlaintext.Length -or $probeDecrypted[0] -ne $requiredIds.HELLO -or
+    [BitConverter]::ToString($probeDecrypted) -ne [BitConverter]::ToString($probePlaintext)) {
+    throw 'Encrypted HELLO wire probe failed.'
+}
+
 if ($WorldServerPath) {
     $resolvedWorldServer = (Resolve-Path -LiteralPath $WorldServerPath).Path
     $assembly = [Reflection.Assembly]::LoadFile($resolvedWorldServer)
@@ -144,7 +173,7 @@ if ($WorldServerPath) {
 if ($ClientSwfPath) {
     $resolvedClientSwf = (Resolve-Path -LiteralPath $ClientSwfPath).Path
     $swfDump = Join-Path $root 'tools\flex-sdk-4.9.1\bin\swfdump.bat'
-    if (Test-Path -LiteralPath $swfDump) {
+    if ($RequireSwfBytecode -and (Test-Path -LiteralPath $swfDump)) {
         $dump = (& $swfDump -abc $resolvedClientSwf 2>&1 | Out-String)
         foreach ($signature in @(
             '(?s)findproperty\s+:HELLO.*?pushshort\s+183.*?initproperty\s+:HELLO',

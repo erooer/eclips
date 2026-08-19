@@ -22,7 +22,7 @@ foreach ($required in @('$SourceServerBin', '$SourceClientSwf', 'New-DeploymentA
 if ($deploy.Contains('Restore-DeploymentArtifactsFromIndex') -or $deploy -match 'Join-Path \$GitRoot \$relative') {
     throw 'Deploy-VPS.ps1 must not use checkout conversion or working-tree artifact files as deployment sources.'
 }
-foreach ($forbidden in @('Build-Everything.ps1', 'Resolve-FlexSdk', 'Resolve-MSBuild', 'ECLIPSE_FLEX_SDK_HOME', 'New-CurrentHeadBuild')) {
+foreach ($forbidden in @('Build-Everything.ps1', 'Test-ClientHandshakeProtocol.ps1', 'Resolve-FlexSdk', 'Resolve-MSBuild', 'ECLIPSE_FLEX_SDK_HOME', 'New-CurrentHeadBuild', 'swfdump.bat', 'java.exe')) {
     if ($deploy.Contains($forbidden)) { throw "Deploy-VPS.ps1 must not require a build toolchain: $forbidden" }
 }
 if ($buildClient -notmatch 'deployableSwf' -or $buildClient -notmatch 'deployableHash') {
@@ -30,6 +30,13 @@ if ($buildClient -notmatch 'deployableSwf' -or $buildClient -notmatch 'deployabl
 }
 if ($buildEverything -notmatch 'New-BuildManifest\.ps1') {
     throw 'Build-Everything.ps1 must generate the commit-bound artifact manifest.'
+}
+if ($deploy -notmatch 'hash-bound protocol evidence') {
+    throw 'Deploy-VPS.ps1 must report verification of manifest-bound protocol evidence.'
+}
+$manifestModule = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Raw
+foreach ($required in @('protocolValidation', 'compiledClientBytecode', 'encryptedHandshakeProbe', 'worldServerSha256', 'clientSwfSha256')) {
+    if (!$manifestModule.Contains($required)) { throw "Deployment manifest validation is missing protocol evidence binding: $required" }
 }
 foreach ($required in @('Add-DeploymentArtifactsToIndex', 'Test-DeploymentManifest', 'RequireArtifactBundleCommit')) {
     if (!$publisher.Contains($required)) { throw "Artifact publisher is missing guarded publishing behavior: $required" }
