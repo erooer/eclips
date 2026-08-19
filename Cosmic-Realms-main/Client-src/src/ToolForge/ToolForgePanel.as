@@ -13,10 +13,12 @@
     public class ToolForgePanel extends ButtonPanel
     {
         public var openFrame:Signal;
+        public var mode:String;
 
-        public function ToolForgePanel(gameSprite:GameSprite)
+        public function ToolForgePanel(gameSprite:GameSprite, panelMode:String = "legacy")
         {
-            super(gameSprite, "Forge Station", TextKey.PANEL_VIEW_BUTTON);
+            super(gameSprite, panelMode == "imprint" ? "Imprint Master" : (panelMode == "forge" ? "Blacksmith" : "Forge Station"), TextKey.PANEL_VIEW_BUTTON);
+            this.mode = panelMode;
             this.openFrame = new Signal();
             addEventListener(Event.ADDED_TO_STAGE, this.onAddedToStage);
             addEventListener(Event.REMOVED_FROM_STAGE, this.onRemovedFromStage);

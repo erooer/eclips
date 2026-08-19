@@ -10,7 +10,9 @@ $behavior = Get-Content -LiteralPath (Join-Path $server 'wServer\logic\db\Behavi
 
 foreach ($mark in 'Mark of the Ferryman', 'Mark of the Warden', 'Mark of the Ominous One') {
     $node = [regex]::Match($xml, '<Object[^>]+id="' + [regex]::Escape($mark) + '".*?</Object>', [System.Text.RegularExpressions.RegexOptions]::Singleline).Value
-    if ([string]::IsNullOrEmpty($node) -or $node -notmatch '<Activate>LegendaryMarks</Activate>' -or $node -notmatch '<Consumable/>') {
+    if ([string]::IsNullOrEmpty($node) -or $node -notmatch '<Activate>LegendaryMarks</Activate>' -or $node -notmatch '<Consumable/>' -or
+        $node -notmatch '<Treasure/>' -or $node -notmatch '<BagType>5</BagType>' -or $node -notmatch '<feedPower>50</feedPower>' -or
+        $node -match '<Soulbound/>') {
         throw "$mark is not an established consumable Legendary Mark."
     }
 }

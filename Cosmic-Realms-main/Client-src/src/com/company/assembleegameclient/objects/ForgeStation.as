@@ -15,7 +15,7 @@ package com.company.assembleegameclient.objects
 
         public function getPanel(_arg1:GameSprite):Panel
         {
-            return new ToolForgePanel(_arg1);
+            return new ToolForgePanel(_arg1, objectType_ == 0xF972 ? "forge" : "legacy");
         }
     }
 }

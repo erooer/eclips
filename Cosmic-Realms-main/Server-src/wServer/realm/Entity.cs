@@ -671,6 +671,7 @@ namespace wServer.realm
                 case "MarketObject":
                 case "DailyLoginRewards":
                 case "ForgeStation":
+                case "ImprintStation":
                     return new StaticObject(manager, id, null, true, false, false);
                 case "Pet":
                     return new Pet(manager, id);

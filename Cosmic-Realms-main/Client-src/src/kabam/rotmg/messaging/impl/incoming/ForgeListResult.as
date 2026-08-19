@@ -4,6 +4,11 @@ import flash.utils.IDataInput;
 public class ForgeListResult extends IncomingMessage {
     public var Result:String;
     public var Recipes:Vector.<String>;
+    public var ServiceKind:String;
+    public var Details:String;
+    public var Command:String;
+    public var ActionLabel:String;
+    public var Craftable:Boolean;
 
     public function ForgeListResult(_arg1:uint, _arg2:Function) {
         super(_arg1, _arg2);
@@ -17,6 +22,11 @@ public class ForgeListResult extends IncomingMessage {
         for (var i:int = 0; i < ln; i++) {
             Recipes.push(input.readUTF());
         }
+        this.ServiceKind = input.readUTF();
+        this.Details = input.readUTF();
+        this.Command = input.readUTF();
+        this.ActionLabel = input.readUTF();
+        this.Craftable = input.readBoolean();
     }
 }
 }

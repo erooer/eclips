@@ -2219,7 +2219,7 @@ namespace wServer.realm.commands
 
     class ForgeV1Command : Command
     {
-        public ForgeV1Command() : base("forge", alias: "f") { }
+        public ForgeV1Command() : base("forge", alias: "f", listCommand: false) { }
         protected override bool Process(Player player, RealmTime time, string args)
         {
             var words = (args ?? "").Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -2232,7 +2232,7 @@ namespace wServer.realm.commands
     }
     class EclipseImprintCommand : Command
     {
-        public EclipseImprintCommand() : base("imprint") { }
+        public EclipseImprintCommand() : base("imprint", listCommand: false) { }
         protected override bool Process(Player player, RealmTime time, string args)
         {
             var words = (args ?? "").Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);

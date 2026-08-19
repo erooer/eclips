@@ -9,6 +9,11 @@ public class ForgeListStrip extends Sprite {
 
     public function ForgeListStrip(gs:GameSprite, list:ForgeListResult) {
 
+        if (list.ServiceKind != null && list.ServiceKind != "legacy") {
+            addChild(new ForgeServiceStrip(gs, list));
+            return;
+        }
+
         var rX:int = 0;
         var ln:int = 0;
 

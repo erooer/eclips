@@ -149,6 +149,8 @@ namespace wServer.realm.worlds.logic
                 }
             }
 
+            InstallEclipseCraftingHub();
+
             var gifts = _client.Account.Gifts.ToList();
             var giftRecords = _client.Manager.Database.EnsureGiftInstances(_client.Account).ToList();
             gifts = _client.Account.Gifts.ToList();
@@ -193,6 +195,52 @@ namespace wServer.realm.worlds.logic
             }
 
             InitializedUtc = DateTime.UtcNow;
+        }
+
+        private void InstallEclipseCraftingHub()
+        {
+            ushort clothPortalType;
+            ushort legacyForgeType;
+            if (!Manager.Resources.GameData.IdToObjectType.TryGetValue("Cloth Bazaar Portal", out clothPortalType) ||
+                !Manager.Resources.GameData.IdToObjectType.TryGetValue("Forge Station", out legacyForgeType))
+                return;
+
+            var clothPortal = StaticObjects.Values.FirstOrDefault(entity => entity.ObjectType == clothPortalType);
+            if (clothPortal == null)
+                return;
+
+            var hubX = clothPortal.X;
+            var hubY = clothPortal.Y;
+            LeaveWorld(clothPortal);
+
+            // The old station elsewhere in the map is removed so the Vault has
+            // one obvious crafting hub rather than duplicate access points.
+            foreach (var oldForge in StaticObjects.Values.Where(entity => entity.ObjectType == legacyForgeType).ToArray())
+                LeaveWorld(oldForge);
+
+            PlaceHubObject("Blacksmith", hubX, hubY);
+
+            // Prefer an adjacent passable tile and keep the placement stable for
+            // every account's private Vault instance.
+            var offsets = new[] { new IntPoint(2, 0), new IntPoint(-2, 0), new IntPoint(0, 2), new IntPoint(0, -2) };
+            foreach (var offset in offsets)
+            {
+                var x = (int)hubX + offset.X + .5f;
+                var y = (int)hubY + offset.Y + .5f;
+                if (!IsPassable(x, y, true))
+                    continue;
+                PlaceHubObject("Imprint Station", x, y);
+                break;
+            }
+        }
+
+        private void PlaceHubObject(string objectId, float x, float y)
+        {
+            var entity = Entity.Resolve(Manager, objectId);
+            if (entity == null)
+                return;
+            entity.Move(x, y);
+            EnterWorld(entity);
         }
 
         public override void Tick(RealmTime time)

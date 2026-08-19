@@ -17,6 +17,16 @@ namespace wServer.realm
 
     public sealed class ForgeState { public long LastOperationUtcTicks; }
 
+    public sealed class EclipseServiceUiEntry
+    {
+        public string ServiceKind;
+        public string Title;
+        public string Details;
+        public string Command;
+        public string ActionLabel;
+        public bool Craftable;
+    }
+
     public static class ForgeV1Service
     {
         private const int OperationCooldownSeconds = 2;
@@ -37,6 +47,50 @@ namespace wServer.realm
             if (!string.IsNullOrWhiteSpace(recipe) && Recipes.TryGetValue(recipe.Trim(), out value))
                 return "[Forge] " + value.Id + " -> 0x" + value.OutputType.ToString("x4") + " | " + string.Join(", ", value.Costs.Select(c => c.Value + " " + c.Key).ToArray());
             return "[Forge] Recipes: " + string.Join(", ", Recipes.Keys.ToArray()) + ". Use /forge preview <recipe>, /forge salvage <bag-slot>, or /forge craft <recipe>.";
+        }
+
+        public static IEnumerable<EclipseServiceUiEntry> BuildUi(Player player)
+        {
+            if (player == null || player.Client.Account == null)
+                return Enumerable.Empty<EclipseServiceUiEntry>();
+
+            var account = player.Client.Account;
+            var entries = Recipes.Values.OrderBy(recipe => recipe.Id).Select(recipe =>
+            {
+                var costs = recipe.Costs.Select(cost =>
+                {
+                    var owned = MaterialVaultService.GetBalance(account, cost.Key);
+                    return cost.Value + " " + cost.Key + " (owned " + owned + ")";
+                }).ToArray();
+                return new EclipseServiceUiEntry
+                {
+                    ServiceKind = "forge",
+                    Title = player.Manager.Resources.GameData.Items[recipe.OutputType].ObjectId,
+                    Details = string.Join(" + ", costs),
+                    Command = "/forge craft " + recipe.Id,
+                    ActionLabel = "Craft",
+                    Craftable = recipe.Costs.All(cost => MaterialVaultService.GetBalance(account, cost.Key) >= cost.Value) &&
+                        player.Inventory.GetAvailableInventorySlot(player.Manager.Resources.GameData.Items[recipe.OutputType]) >= 4
+                };
+            }).ToList();
+
+            for (var slot = 4; slot < player.Inventory.Length; slot++)
+            {
+                var item = player.Inventory[slot];
+                int dust;
+                if (item == null || !SalvageValues.TryGetValue(item.ObjectType, out dust))
+                    continue;
+                entries.Add(new EclipseServiceUiEntry
+                {
+                    ServiceKind = "salvage",
+                    Title = "Bag " + slot + ": " + item.ObjectId,
+                    Details = "Receive " + dust + " echo_dust (owned " + MaterialVaultService.GetBalance(account, "echo_dust") + ")",
+                    Command = "/forge salvage " + slot,
+                    ActionLabel = "Salvage",
+                    Craftable = true
+                });
+            }
+            return entries;
         }
 
         public static string Salvage(Player player, int slot)

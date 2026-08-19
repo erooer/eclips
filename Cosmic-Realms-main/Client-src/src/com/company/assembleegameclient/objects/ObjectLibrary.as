@@ -78,6 +78,7 @@ public class ObjectLibrary {
         "PotionStorageObject": PotionStorageObject,
         "YardUpgrader": YardUpgrader,
         "ForgeStation": ForgeStation,
+        "ImprintStation": ImprintStation,
         "MarketObject":MarketObject
     };
 

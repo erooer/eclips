@@ -4,6 +4,7 @@ using System.Linq;
 using wServer.networking.packets;
 using wServer.networking.packets.incoming;
 using wServer.networking.packets.outgoing;
+using wServer.realm;
 
 namespace wServer.networking.handlers
 {
@@ -17,6 +18,24 @@ namespace wServer.networking.handlers
 
         protected override void HandlePacket(Client client, ForgeList packet)
         {
+            if (packet.Category == 5 || packet.Category == 6)
+            {
+                var entries = packet.Category == 5
+                    ? ForgeV1Service.BuildUi(client.Player)
+                    : EclipseImprintService.BuildUi(client.Player);
+                client.SendPackets(entries.Select(entry => new ForgeListResult
+                {
+                    Result = entry.Title,
+                    Recipes = new List<string>(),
+                    ServiceKind = entry.ServiceKind,
+                    Details = entry.Details,
+                    Command = entry.Command,
+                    ActionLabel = entry.ActionLabel,
+                    Craftable = entry.Craftable
+                }));
+                return;
+            }
+
             var recipes = client.Manager.Recipes;
             var gameData = client.Manager.Resources.GameData;
 

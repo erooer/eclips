@@ -48,7 +48,10 @@ public class ForgeListPanel extends Sprite {
 
     private var gameSprite:GameSprite;
 
-    public function ForgeListPanel(gs:GameSprite) {
+    private var initialCategory:int;
+    private var serviceOnly:Boolean;
+
+    public function ForgeListPanel(gs:GameSprite, category:int = 0, serviceMode:Boolean = false) {
 
         graphics.beginFill(0, .8);
         graphics.drawRect(0, 0, 600, 600);
@@ -56,6 +59,8 @@ public class ForgeListPanel extends Sprite {
         graphics.endFill();
 
         gameSprite = gs;
+        this.initialCategory = category;
+        this.serviceOnly = serviceMode;
 
         resultSignal = new Signal(ForgeListResult);
         resultSignal.add(onResult);
@@ -100,9 +105,11 @@ public class ForgeListPanel extends Sprite {
         addChild(this.titleTxt);
         addChild(this.closeTxt);
 
-        addBar();
+        if (!this.serviceOnly)
+            addBar();
 
-        this.gameSprite.gsc_.forgeList(0);
+        this.curBar = this.initialCategory;
+        this.gameSprite.gsc_.forgeList(this.initialCategory);
     }
 
     private function addBar():void {

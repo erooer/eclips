@@ -389,6 +389,17 @@ namespace wServer.realm.entities
                     return;
                 }
 
+                if (item.ObjectId == "Eclipse Citadel Key")
+                {
+                    string portalError;
+                    if (!EclipsePortalService.CanOpen(Owner, out portalError))
+                    {
+                        RejectConsumableUse(entity, slot, portalError);
+                        SendError(portalError);
+                        return;
+                    }
+                }
+
 
                 // use item
                 var slotType = 10;
@@ -556,6 +567,9 @@ namespace wServer.realm.entities
                         break;
                     case ActivateEffects.OminousSealBlast:
                         AEOminousSealBlast(time, item, target, eff);
+                        break;
+                    case ActivateEffects.MaterialVaultDeposit:
+                        AEMaterialVaultDeposit(item, eff);
                         break;
                     case ActivateEffects.GenericActivate:
                         AEGenericActivate(time, item, target, eff);
@@ -1625,10 +1639,40 @@ namespace wServer.realm.entities
 
             var acc = Client.Account;
             acc.Fame += eff.Amount;
-            acc.FlushAsync();
-            SendInfo("+" + eff.Amount + " Fame.");
+            if (item.ObjectId == "100K Fame Token")
+            {
+                // This administrative token promises an exact, durable account
+                // credit before the consumed inventory item is acknowledged.
+                acc.FlushAsync().Wait();
+                CurrentFame = acc.Fame;
+                SendInfo("You gained 100,000 Fame.");
+            }
+            else
+            {
+                acc.FlushAsync();
+                SendInfo("+" + eff.Amount + " Fame.");
+            }
             return;
 
+        }
+
+        private void AEMaterialVaultDeposit(Item item, ActivateEffect eff)
+        {
+            if (Owner is Test || Client.Account == null)
+                return;
+
+            // Only authored, allow-listed material IDs can enter the ledger.
+            // The operation key is unique to this consumed item use and makes a
+            // duplicate packet retry harmless.
+            var operation = "material-item:" + Client.Account.AccountId + ":" + item.ObjectType + ":" + DateTime.UtcNow.Ticks;
+            var result = MaterialVaultService.TryDeposit(Client.Account, eff.Id, eff.Amount, operation);
+            if (!result.Success)
+            {
+                SendError(result.Error);
+                return;
+            }
+
+            SendInfo("Added " + eff.Amount + " " + eff.Id + " to your Material Vault. Balance: " + result.Balance + ".");
         }
 
         private void AEAddMoonFame(RealmTime time, Item item, Position target, ActivateEffect eff)
@@ -1751,6 +1795,24 @@ namespace wServer.realm.entities
         }
         private void AECreate(RealmTime time, Item item, Position target, ActivateEffect eff)
         {
+            if (item.ObjectId == "Eclipse Citadel Key" && eff.Id == "Eclipse Citadel Portal")
+            {
+                Portal eclipsePortal;
+                string eclipseError;
+                if (!EclipsePortalService.TryOpen(Owner, X, Y, Name, EclipsePortalService.NaturalLifetimeMs, out eclipsePortal, out eclipseError))
+                {
+                    SendError(eclipseError);
+                    return;
+                }
+                Owner.BroadcastPacket(new Notification
+                {
+                    Color = new ARGB(0xFF00FF00), ObjectId = Id, Message = "Opened by " + Name
+                }, null, PacketPriority.Low);
+                foreach (var player in Owner.Players.Values)
+                    player.SendInfo("{\"key\":\"{server.dungeon_opened_by}\",\"tokens\":{\"dungeon\":\"EclipseCitadel\",\"name\":\"" + Name + "\"}}");
+                return;
+            }
+
             var gameData = Manager.Resources.GameData;
             var isChest = false;
 

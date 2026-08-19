@@ -56,6 +56,48 @@ namespace wServer.realm
             return "[Imprints] " + string.Join(" | ", Definitions.Values.Select(d => d.DisplayName + " (" + d.ShardCost + " imprint_shard): " + DescribeEffects(d)).ToArray());
         }
 
+        public static IEnumerable<EclipseServiceUiEntry> BuildUi(Player player)
+        {
+            if (player == null || player.Client.Account == null || player.DbLink == null)
+                return Enumerable.Empty<EclipseServiceUiEntry>();
+
+            var result = new List<EclipseServiceUiEntry>();
+            var owned = MaterialVaultService.GetBalance(player.Client.Account, "imprint_shard");
+            for (var slot = 4; slot < player.Inventory.Length; slot++)
+            {
+                common.resources.Item item;
+                RInventory.ItemInstanceRecord record;
+                if (ValidateBagItem(player, slot, out item, out record) != null)
+                    continue;
+                var current = GetImprint(record.Metadata);
+                if (!string.IsNullOrEmpty(current))
+                {
+                    result.Add(new EclipseServiceUiEntry
+                    {
+                        ServiceKind = "imprint",
+                        Title = "Bag " + slot + ": " + item.ObjectId,
+                        Details = "Current Imprint: " + FormatImprint(current),
+                        Command = "",
+                        ActionLabel = "Applied",
+                        Craftable = false
+                    });
+                    continue;
+                }
+
+                foreach (var definition in Definitions.Values.OrderBy(value => value.Id))
+                    result.Add(new EclipseServiceUiEntry
+                    {
+                        ServiceKind = "imprint",
+                        Title = "Bag " + slot + ": " + item.ObjectId + " — " + definition.DisplayName,
+                        Details = DescribeEffects(definition) + " | Cost " + definition.ShardCost + " imprint_shard (owned " + owned + ")",
+                        Command = "/imprint apply " + slot + " " + definition.Id,
+                        ActionLabel = "Apply",
+                        Craftable = owned >= definition.ShardCost
+                    });
+            }
+            return result;
+        }
+
         public static string Inspect(Player player, int slot)
         {
             common.resources.Item item;

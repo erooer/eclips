@@ -7,6 +7,56 @@ using wServer.realm.worlds;
 
 namespace wServer.realm
 {
+    public static class EclipsePortalService
+    {
+        public const ushort PortalType = 0xF960;
+        public const int NaturalLifetimeMs = 180000;
+
+        public static bool CanOpen(World source, out string error)
+        {
+            error = null;
+            if (source == null) { error = "The current world cannot open a portal."; return false; }
+            if (!source.Manager.Resources.GameData.Portals.ContainsKey(PortalType)) { error = "Eclipse Citadel Portal is not registered."; return false; }
+            if (!Program.Resources.Worlds.Data.Values.Any(world => world.portals != null && world.portals.Contains(PortalType)))
+            { error = "Eclipse Citadel destination is not registered."; return false; }
+            if (source.StaticObjects.Values.OfType<Portal>().Any(portal => portal.ObjectType == PortalType && portal.Owner == source))
+            { error = "An Eclipse Citadel portal is already open here."; return false; }
+            return true;
+        }
+
+        public static bool TryOpen(World source, float x, float y, string opener, int lifetimeMs, out Portal portal, out string error)
+        {
+            portal = null;
+            if (!CanOpen(source, out error))
+                return false;
+            try
+            {
+                portal = new Portal(source.Manager, PortalType, lifetimeMs)
+                {
+                    PlayerOpened = !string.IsNullOrWhiteSpace(opener),
+                    Opener = opener ?? ""
+                };
+                portal.Move(x, y);
+                source.EnterWorld(portal);
+                if (lifetimeMs > 0)
+                {
+                    var openedPortal = portal;
+                    source.Timers.Add(new WorldTimer(lifetimeMs, (world, time) =>
+                    {
+                        if (openedPortal.Owner == world) world.LeaveWorld(openedPortal);
+                    }));
+                }
+                return true;
+            }
+            catch (Exception exception)
+            {
+                error = "Eclipse Citadel portal creation failed: " + exception.Message;
+                portal = null;
+                return false;
+            }
+        }
+    }
+
     // The fragment debit happens only after the dynamic portal has a registered
     // destination. A failed preparation therefore cannot consume Citadel access.
     public static class EclipseCitadelAccessService

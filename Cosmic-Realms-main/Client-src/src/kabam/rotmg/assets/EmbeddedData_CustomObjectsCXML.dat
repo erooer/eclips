@@ -1643,4 +1643,28 @@
     <DisplayId>Katar</DisplayId>
   </Object>
 
+  <Object type="0xF971" id="100K Fame Token">
+    <Class>Equipment</Class><Item/><Texture><File>lofiObj5</File><Index>0xfd</Index></Texture>
+    <SlotType>10</SlotType><Consumable/><Soulbound/><BagType>5</BagType>
+    <Activate amount="100000">Fame</Activate><Description>Administrative testing item. Grants exactly 100,000 account Fame.</Description>
+    <DisplayId>100K Fame Token</DisplayId>
+  </Object>
+  <Object type="0xF972" id="Blacksmith">
+    <Class>ForgeStation</Class><Texture><File>CustomItems</File><Index>0x0a</Index></Texture><Static/><DisplayId>Blacksmith</DisplayId>
+  </Object>
+  <Object type="0xF973" id="Imprint Station">
+    <Class>ImprintStation</Class><Texture><File>lofiObj3</File><Index>0x9e</Index></Texture><Static/><DisplayId>Imprint Master</DisplayId>
+  </Object>
+  <Object type="0xF974" id="Eye Blueprint">
+    <Class>Equipment</Class><Item/><Texture><File>lofiObj5</File><Index>0xfc</Index></Texture><SlotType>10</SlotType><Consumable/><Soulbound/><BagType>5</BagType>
+    <Activate id="eye_blueprint" amount="1">MaterialVaultDeposit</Activate><Description>Unlock material used to forge the Eye of the Ominous.</Description><DisplayId>Eye Blueprint</DisplayId>
+  </Object>
+  <Object type="0xF975" id="Mantle Blueprint">
+    <Class>Equipment</Class><Item/><Texture><File>lofiObj5</File><Index>0xfc</Index></Texture><SlotType>10</SlotType><Consumable/><Soulbound/><BagType>5</BagType>
+    <Activate id="mantle_blueprint" amount="1">MaterialVaultDeposit</Activate><Description>Unlock material used to forge the Mantle of the Below.</Description><DisplayId>Mantle Blueprint</DisplayId>
+  </Object>
+  <Object type="0xF976" id="Judgement Blueprint">
+    <Class>Equipment</Class><Item/><Texture><File>lofiObj5</File><Index>0xfc</Index></Texture><SlotType>10</SlotType><Consumable/><Soulbound/><BagType>5</BagType>
+    <Activate id="judgement_blueprint" amount="1">MaterialVaultDeposit</Activate><Description>Unlock material used to forge Judgement.</Description><DisplayId>Judgement Blueprint</DisplayId>
+  </Object>
 </Objects>

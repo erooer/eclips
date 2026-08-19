@@ -372,6 +372,7 @@ namespace common.resources
         BurningLightning,
         FFragments,
         OminousSealBlast,
+        MaterialVaultDeposit,
         MaxStats
     }
 

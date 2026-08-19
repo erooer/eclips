@@ -27,7 +27,7 @@ public class ToolForgePanelMediator extends Mediator
     {
         if (!this.forgeLock.isOpen)
         {
-            this.dialogSignal.dispatch(new ToolForgeFrame(GameSprite(this.view.gs_)));
+            this.dialogSignal.dispatch(new ToolForgeFrame(GameSprite(this.view.gs_), this.view.mode));
         }
     }
 }

@@ -13,6 +13,7 @@ namespace wServer.realm
         public int Threat { get; private set; }
         private readonly HashSet<int> Triggered = new HashSet<int>();
         private readonly HashSet<int> ActiveThreatEntities = new HashSet<int>();
+        private bool CitadelPortalAwarded;
         public void AddActivity(Realm realm, Enemy enemy)
         {
             if (realm == null || realm.Closed || enemy == null) return;
@@ -44,19 +45,15 @@ namespace wServer.realm
             // Portal/reconnect path, not a direct world transfer.
             if (Threat >= 100 && Triggered.Contains(100))
             {
-                var portal = Entity.Resolve(realm.Manager, "Eclipse Citadel Portal");
-                if (portal != null)
+                Portal portal;
+                string error;
+                if (!CitadelPortalAwarded && EclipsePortalService.TryOpen(realm, enemy.X, enemy.Y, null, EclipsePortalService.NaturalLifetimeMs, out portal, out error))
                 {
-                    portal.Move(enemy.X, enemy.Y);
-                    realm.EnterWorld(portal);
-                    realm.Timers.Add(new WorldTimer(180000, (world, time) =>
-                    {
-                        if (portal.Owner == world) world.LeaveWorld(portal);
-                    }));
+                    CitadelPortalAwarded = true;
                     foreach (var p in realm.Players.Values) p.SendInfo("[Threat] The Eclipse Citadel portal has opened for 3 minutes.");
                 }
             }
         }
-        public void Reset() { Threat = 0; Triggered.Clear(); ActiveThreatEntities.Clear(); }
+        public void Reset() { Threat = 0; Triggered.Clear(); ActiveThreatEntities.Clear(); CitadelPortalAwarded = false; }
     }
 }

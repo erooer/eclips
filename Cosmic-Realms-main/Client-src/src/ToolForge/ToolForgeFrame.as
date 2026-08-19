@@ -42,7 +42,7 @@ import ToolForge.forgeList.ForgeListPanel;
         private var listPanel:ForgeListPanel;
         private var listBtn:Sprite;
 
-        public function ToolForgeFrame(gameSprite:GameSprite)
+        public function ToolForgeFrame(gameSprite:GameSprite, mode:String = "legacy")
         {
             this.gs = gameSprite;
             this.forgeItem = new Signal(GameSprite, ForgeItemInformation);
@@ -91,6 +91,22 @@ import ToolForge.forgeList.ForgeListPanel;
             this.x = 180;
             this.y = 125;
             addEventListener(Event.REMOVED_FROM_STAGE, this.onRemovedFromStage);
+
+            if (mode == "forge" || mode == "imprint")
+            {
+                this.title.setStringBuilder(new StaticStringBuilder(mode == "imprint" ? "Imprint Master" : "Blacksmith"));
+                this.buttons.visible = false;
+                this.listBtn.visible = false;
+                this.inventory.visible = false;
+                showServicePanel(mode == "imprint" ? 6 : 5);
+            }
+        }
+
+        private function showServicePanel(category:int):void {
+            this.listPanel = new ForgeListPanel(this.gs, category, true);
+            this.listPanel.x = 100 - ((800 - this.width) / 2);
+            this.listPanel.y = -125;
+            addChild(this.listPanel);
         }
 
         private function showPanel(e:MouseEvent):void {

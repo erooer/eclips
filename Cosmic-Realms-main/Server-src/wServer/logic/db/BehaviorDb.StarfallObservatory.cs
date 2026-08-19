@@ -12,8 +12,7 @@ namespace wServer.logic
             .Init("The Parallax", new State(new ScaleHP2(65, 3, 12),
                 new State("Star Lines", new Shoot(25, count: 8, shootAngle: 22.5, projectileIndex: 0, fixedAngle: 0, rotateAngle: 3, coolDown: 650), new TimedTransition(6000, "Mirror")),
                 new State("Mirror", new Shoot(22, count: 8, shootAngle: 22.5, projectileIndex: 1, fixedAngle: 180, rotateAngle: -3, coolDown: 650), new TimedTransition(6000, "Safe Quadrant")),
-                new State("Safe Quadrant", new Shoot(30, count: 12, shootAngle: 18, projectileIndex: 0, fixedAngle: 45, rotateAngle: 4, coolDown: 700), new TimedTransition(6000, "Star Lines")),
-                new DropPortalOnDeath("Eclipse Citadel Portal", .05, 180)),
+                new State("Safe Quadrant", new Shoot(30, count: 12, shootAngle: 18, projectileIndex: 0, fixedAngle: 45, rotateAngle: 4, coolDown: 700), new TimedTransition(6000, "Star Lines"))),
                 new Threshold(.01, new ItemLoot("Astral Mark", 1), new ItemLoot("Parallax Bulwark", .008)));
     }
 }
