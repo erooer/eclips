@@ -227,13 +227,24 @@ namespace wServer.realm.entities
 
                 var isInitialWorldUpdate = _client.MarkInitialWorldUpdate();
 
-                var initialUpdate = new Update
+                var updateFrame = new Update
                 {
                     Tiles = _tiles,
                     NewObjs = _newObjects,
                     Drops = _removedObjects
                 };
-                var initialFrameLength = -1;
+                int frameLength;
+                try
+                {
+                    frameLength = updateFrame.GetFrameLength();
+                }
+                catch (Exception e)
+                {
+                    Log.Error($"[WORLD_SYNC] UPDATE serialization failed world={Owner.Id} account={AccountId}.", e);
+                    _client.Disconnect("World synchronization serialization failed.");
+                    return;
+                }
+
                 if (isInitialWorldUpdate)
                 {
                     var objectIds = new HashSet<int>();
@@ -252,33 +263,20 @@ namespace wServer.realm.entities
                         _client.Disconnect("Initial world synchronization invariant failed.");
                         return;
                     }
-                    try
-                    {
-                        initialFrameLength = initialUpdate.GetFrameLength();
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Error($"[INITIAL_SYNC] UPDATE serialization failed world={Owner.Id} account={AccountId}.", e);
-                        _client.Disconnect("Initial world synchronization serialization failed.");
-                        return;
-                    }
-                }
-
-                // Normal UPDATEs retain the original single-packet fast path. The
-                // expensive size check and chunking are reserved for an oversized
-                // first synchronization frame only.
-                var chunkInitialUpdate = isInitialWorldUpdate && initialFrameLength > Server.BufferSize;
-                if (isInitialWorldUpdate)
-                {
                     Log.InfoFormat(
                         "[INITIAL_SYNC] begin worldType={0} world={1} account={2} bytes={3} chunked={4} tiles={5} staticObjects={6} entities={7} removed={8}",
-                        Owner.GetType().Name, Owner.Id, AccountId, initialFrameLength, chunkInitialUpdate,
+                        Owner.GetType().Name, Owner.Id, AccountId, frameLength, frameLength > Server.BufferSize,
                         _tiles.Length, staticsUpdate.Length, _newObjects.Length, _removedObjects.Length);
                 }
 
-                if (!chunkInitialUpdate)
+                // Visibility collections are advanced while this batch is built.
+                // Therefore every UPDATE, not only the first one in a world, must
+                // be guaranteed to fit the socket buffer before it is queued. An
+                // oversized frame would otherwise be requeued forever while these
+                // objects remain incorrectly marked as known by the client.
+                if (frameLength <= Server.BufferSize)
                 {
-                    _client.SendPacket(initialUpdate);
+                    _client.SendPacket(updateFrame);
                     AwaitUpdateAck(time.TotalElapsedMs);
                     if (isInitialWorldUpdate)
                         Log.InfoFormat("[INITIAL_SYNC] released worldType={0} world={1} account={2} elapsedMs=0 acknowledgements=0/0 deferredPackets=0",
@@ -293,11 +291,11 @@ namespace wServer.realm.entities
                 }
                 catch (Exception e)
                 {
-                    Log.Error($"[VAULT_SYNC] UPDATE chunk creation failed world={Owner.Id} account={AccountId}.", e);
-                    _client.Disconnect("Initial world synchronization serialization failed.");
+                    Log.Error($"[WORLD_SYNC] UPDATE chunk creation failed world={Owner.Id} account={AccountId}.", e);
+                    _client.Disconnect("World synchronization serialization failed.");
                     return;
                 }
-                if (!_client.RegisterInitialUpdatePackets(updates.Length))
+                if (isInitialWorldUpdate && !_client.RegisterInitialUpdatePackets(updates.Length))
                 {
                     Log.ErrorFormat("[INITIAL_SYNC] could not register oversized initial UPDATE world={0} account={1} chunks={2}.",
                         Owner.Id, AccountId, updates.Length);
@@ -305,35 +303,35 @@ namespace wServer.realm.entities
                     return;
                 }
 
-                Log.InfoFormat("[INITIAL_SYNC] chunking worldType={0} world={1} account={2} chunks={3} expectedAcknowledgements={3}",
-                    Owner.GetType().Name, Owner.Id, AccountId, updates.Length);
+                Log.InfoFormat("[WORLD_SYNC] chunking initial={0} worldType={1} world={2} account={3} chunks={4}",
+                    isInitialWorldUpdate, Owner.GetType().Name, Owner.Id, AccountId, updates.Length);
 
                 for (var index = 0; index < updates.Length; index++)
                 {
                     var update = updates[index];
-                    int frameLength;
+                    int chunkFrameLength;
                     try
                     {
-                        frameLength = update.GetFrameLength();
+                        chunkFrameLength = update.GetFrameLength();
                     }
                     catch (Exception e)
                     {
-                        Log.Error($"[VAULT_SYNC] UPDATE serialization failed world={Owner.Id} account={AccountId} chunk={index + 1}/{updates.Length}.", e);
-                        _client.Disconnect("Initial world synchronization serialization failed.");
+                        Log.Error($"[WORLD_SYNC] UPDATE serialization failed world={Owner.Id} account={AccountId} chunk={index + 1}/{updates.Length}.", e);
+                        _client.Disconnect("World synchronization serialization failed.");
                         return;
                     }
 
-                    if (frameLength > Server.BufferSize)
+                    if (chunkFrameLength > Server.BufferSize)
                     {
-                        Log.ErrorFormat("[VAULT_SYNC] rejected oversized UPDATE world={0} account={1} chunk={2}/{3} bytes={4}.",
-                            Owner.Id, AccountId, index + 1, updates.Length, frameLength);
-                        _client.Disconnect("Initial world synchronization packet was too large.");
+                        Log.ErrorFormat("[WORLD_SYNC] rejected oversized UPDATE world={0} account={1} chunk={2}/{3} bytes={4}.",
+                            Owner.Id, AccountId, index + 1, updates.Length, chunkFrameLength);
+                        _client.Disconnect("World synchronization packet was too large.");
                         return;
                     }
 
-                    Log.InfoFormat("[INITIAL_SYNC] chunk worldType={0} world={1} account={2} index={3}/{4} bytes={5} tiles={6} objects={7} drops={8}",
-                            Owner.GetType().Name, Owner.Id, AccountId, index + 1, updates.Length, frameLength,
-                            update.Tiles.Length, update.NewObjs.Length, update.Drops.Length);
+                    Log.InfoFormat("[WORLD_SYNC] chunk initial={0} worldType={1} world={2} account={3} index={4}/{5} bytes={6} tiles={7} objects={8} drops={9}",
+                            isInitialWorldUpdate, Owner.GetType().Name, Owner.Id, AccountId, index + 1,
+                            updates.Length, chunkFrameLength, update.Tiles.Length, update.NewObjs.Length, update.Drops.Length);
 
                     _client.SendPacket(update);
                     AwaitUpdateAck(time.TotalElapsedMs);

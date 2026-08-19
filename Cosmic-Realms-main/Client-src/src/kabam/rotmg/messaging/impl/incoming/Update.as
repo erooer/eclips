@@ -36,7 +36,6 @@ public class Update extends IncomingMessage {
             this.tiles_[_local2].parseFromInput(_arg1);
             _local2++;
         }
-        this.newObjs_.length = 0;
         _local3 = _arg1.readShort();
         _local2 = _local3;
         while (_local2 < this.newObjs_.length) {

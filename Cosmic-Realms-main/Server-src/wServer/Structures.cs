@@ -305,6 +305,7 @@ namespace wServer
             ObjectStats ret = new ObjectStats();
             ret.Id = rdr.ReadInt32();
             ret.Position = Position.Read(rdr);
+            ret.DamageDealt = rdr.ReadInt32();
             ret.Stats = new KeyValuePair<StatsType, object>[rdr.ReadInt16()];
             for (var i = 0; i < ret.Stats.Length; i++)
             {

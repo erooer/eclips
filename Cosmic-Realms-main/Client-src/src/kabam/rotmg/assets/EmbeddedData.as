@@ -72,6 +72,16 @@ public class EmbeddedData {
     private static const PuppetMasterEncoreCXML:Class = EmbeddedData_PuppetMasterEncoreCXML;
     private static const IceTombCXML:Class = EmbeddedData_IceTombCXML;
     private static const OminousBelowCXML:Class = EmbeddedData_OminousBelowCXML;
+    private static const ServerAshenFoundryCXML:Class = EmbeddedData_ServerAshenFoundryCXML;
+    private static const ServerEclipseCitadelCXML:Class = EmbeddedData_ServerEclipseCitadelCXML;
+    private static const ServerGroundCXML:Class = EmbeddedData_ServerGroundCXML;
+    private static const ServerEquipCXML:Class = EmbeddedData_ServerEquipCXML;
+    private static const ServerObjectsCXML:Class = EmbeddedData_ServerObjectsCXML;
+    private static const ServerPetsCXML:Class = EmbeddedData_ServerPetsCXML;
+    private static const ServerSkinsCXML:Class = EmbeddedData_ServerSkinsCXML;
+    private static const ServerStarfallObservatoryCXML:Class = EmbeddedData_ServerStarfallObservatoryCXML;
+    private static const ServerSummerNexusObjectsCXML:Class = EmbeddedData_ServerSummerNexusObjectsCXML;
+    private static const ServerSunkenReliquaryCXML:Class = EmbeddedData_ServerSunkenReliquaryCXML;
 
     public static const CustomDataCXML:Class = EmbeddedData_CustomDataCXML;
     public static const SilentWildernessCXML:Class = EmbeddedData_SilentWildernessCXML;
@@ -86,8 +96,11 @@ public class EmbeddedData {
     private static const CustomObjectsCXML:Class = EmbeddedData_CustomObjectsCXML;
     public static const skinsXML:XML = XML(new SkinsCXML());
     public static const skinsEquipmentSetsXML:XML = XML(new EquipmentSetsCXML());
-    public static const groundFiles:Array = [new GroundCXML(), new stPatricksGroundCXML(), new hanaminexusGroundCXML(), new mountainTempleGroundCXML()];
-    public static const objectFiles:Array = [new OminousBelowCXML(),new SilentWildernessCXML(),new CustomDataCXML(),new ProjectilesCXML(), new EquipCXML(), new DyesCXML(), new TextilesCXML(), new PermapetsCXML(), new TokenCXML(), new WillemTestingCXML(), new TTestingCXML(), new STestingCXML(), new MTestingCXML(), new KTestingCXML(), new PlayersCXML(), new ContainersCXML(), new ObjectsCXML(), new PortalsCXML(), new TestingObjectsCXML(), new StaticObjectsCXML(), new TutorialObjectsCXML(), new TutorialMonstersCXML(), new AlliesCXML(), new HeroesCXML(), new PlayersZombiesCXML(), new PetsCXML(), new NPCsCXML(), new ShoreCXML(), new LowCXML(), new MidCXML(), new HighCXML(), new MountainsCXML(), new EncountersCXML(), new OryxCastleCXML(), new TombOfTheAncientsCXML(), new SpriteWorldCXML(), new UndeadLairCXML(), new OceanTrenchCXML(), new ForbiddenJungleCXML(), new OryxChamberCXML(), new OryxChickenChamberCXML(), new OryxWineCellarCXML(), new ManorOfTheImmortalsCXML(), new PirateCaveCXML(), new SnakePitCXML(), new SpiderDenCXML(), new AbyssOfDemonsCXML(), new GhostShipCXML(), new MadLabCXML(), new CaveOfAThousandTreasuresCXML(), new CandyLandCXML(), new HauntedCemeteryCXML(), new ForestMazeCXML(), new EpicForestMazeCXML(), new EpicPirateCaveCXML(), new EpicSpiderDenCXML(), new NexusDestroyedCXML(), new MiniDungeonHubCXML(), new LairOfDraconisCXML(), new LairOfShaitanCXML(), new ShattersCXML(), new BelladonnaCXML(), new PuppetMasterCXML(), new IceCaveCXML(), new TheHiveCXML(), new ToxicSewersCXML(), new PuppetMasterEncoreCXML(), new IceTombCXML(), new stPatricksObjectCXML(), new buffedBunnyObjectCXML(), new hanaminexusObjectCXML(), new mountainTempleObjectCXML(), new CustomObjectsCXML()];
+    // Server resources load first as a completeness layer. Existing client XML
+    // remains authoritative for legacy duplicate IDs while server-only world
+    // types are guaranteed to reach ObjectLibrary in the compiled SWF.
+    public static const groundFiles:Array = [new ServerGroundCXML(), new GroundCXML(), new stPatricksGroundCXML(), new hanaminexusGroundCXML(), new mountainTempleGroundCXML(), new EmbeddedData_summerNexusGroundCXML()];
+    public static const objectFiles:Array = [new ServerAshenFoundryCXML(), new ServerEclipseCitadelCXML(), new ServerEquipCXML(), new ServerObjectsCXML(), new ServerPetsCXML(), new ServerSkinsCXML(), new ServerStarfallObservatoryCXML(), new ServerSummerNexusObjectsCXML(), new ServerSunkenReliquaryCXML(), new OminousBelowCXML(),new SilentWildernessCXML(),new CustomDataCXML(),new ProjectilesCXML(), new EquipCXML(), new DyesCXML(), new TextilesCXML(), new PermapetsCXML(), new TokenCXML(), new WillemTestingCXML(), new TTestingCXML(), new STestingCXML(), new MTestingCXML(), new KTestingCXML(), new PlayersCXML(), new ContainersCXML(), new ObjectsCXML(), new PortalsCXML(), new TestingObjectsCXML(), new StaticObjectsCXML(), new TutorialObjectsCXML(), new TutorialMonstersCXML(), new AlliesCXML(), new HeroesCXML(), new PlayersZombiesCXML(), new PetsCXML(), new NPCsCXML(), new ShoreCXML(), new LowCXML(), new MidCXML(), new HighCXML(), new MountainsCXML(), new EncountersCXML(), new OryxCastleCXML(), new TombOfTheAncientsCXML(), new SpriteWorldCXML(), new UndeadLairCXML(), new OceanTrenchCXML(), new ForbiddenJungleCXML(), new OryxChamberCXML(), new OryxChickenChamberCXML(), new OryxWineCellarCXML(), new ManorOfTheImmortalsCXML(), new PirateCaveCXML(), new SnakePitCXML(), new SpiderDenCXML(), new AbyssOfDemonsCXML(), new GhostShipCXML(), new MadLabCXML(), new CaveOfAThousandTreasuresCXML(), new CandyLandCXML(), new HauntedCemeteryCXML(), new ForestMazeCXML(), new EpicForestMazeCXML(), new EpicPirateCaveCXML(), new EpicSpiderDenCXML(), new NexusDestroyedCXML(), new MiniDungeonHubCXML(), new LairOfDraconisCXML(), new LairOfShaitanCXML(), new ShattersCXML(), new BelladonnaCXML(), new PuppetMasterCXML(), new IceCaveCXML(), new TheHiveCXML(), new ToxicSewersCXML(), new PuppetMasterEncoreCXML(), new IceTombCXML(), new stPatricksObjectCXML(), new buffedBunnyObjectCXML(), new hanaminexusObjectCXML(), new mountainTempleObjectCXML(), new CustomObjectsCXML()];
     private static const RegionsCXML:Class = EmbeddedData_RegionsCXML;
     public static const regionFiles:Array = [new RegionsCXML()];
     private static const TutorialScriptCXML:Class = EmbeddedData_TutorialScriptCXML;
