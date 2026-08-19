@@ -12,7 +12,10 @@ public class TextureFactory {
 
     private static var textures:Dictionary = new Dictionary();
     private static var flippedTextures:Dictionary = new Dictionary();
+    private static var lastUsedFrame:Dictionary = new Dictionary();
     private static var count:int = 0;
+    private static var frameId:uint = 0;
+    private static const MAX_RETAINED_TEXTURES:int = 1000;
 
     [Inject]
     public var context3D:Context3DProxy;
@@ -58,6 +61,7 @@ public class TextureFactory {
             _local1.dispose();
         }
         textures = new Dictionary();
+        lastUsedFrame = new Dictionary();
         for each (_local2 in flippedTextures) {
             _local2.dispose();
         }
@@ -71,6 +75,47 @@ public class TextureFactory {
             _local1.dispose();
         }
         textures = new Dictionary();
+        lastUsedFrame = new Dictionary();
+        count = 0;
+    }
+
+    // Stage3D commands are not guaranteed to consume their resources until
+    // Context3D.present().  Texture eviction must therefore happen at a frame
+    // boundary, never while Renderer is still submitting draw calls.
+    public static function beginFrame():void {
+        frameId++;
+        if (frameId == 0) {
+            frameId = 1;
+            // uint wrap is practically unreachable, but retaining every
+            // existing marker would make them look current again at frame 1.
+            // Reset markers so the next post-present prune remains correct.
+            lastUsedFrame = new Dictionary();
+        }
+    }
+
+    public static function endFrame():void {
+        if (count <= MAX_RETAINED_TEXTURES) {
+            return;
+        }
+
+        var bitmapData:BitmapData;
+        var texture:TextureProxy;
+        for (var key:Object in textures) {
+            bitmapData = key as BitmapData;
+            if (bitmapData == null || lastUsedFrame[bitmapData] == frameId) {
+                continue;
+            }
+            texture = textures[bitmapData] as TextureProxy;
+            if (texture != null) {
+                texture.dispose();
+            }
+            delete textures[bitmapData];
+            delete lastUsedFrame[bitmapData];
+            count--;
+            if (count <= MAX_RETAINED_TEXTURES) {
+                break;
+            }
+        }
     }
 
 
@@ -83,6 +128,7 @@ public class TextureFactory {
             return null;
         }
         if ((_arg1 in textures)) {
+            lastUsedFrame[_arg1] = frameId;
             return (textures[_arg1]);
         }
         _local2 = getNextPowerOf2(_arg1.width);
@@ -91,11 +137,8 @@ public class TextureFactory {
         _local5 = new BitmapData(_local2, _local3, true, 0);
         _local5.copyPixels(_arg1, _arg1.rect, new Point(0, 0));
         _local4.uploadFromBitmapData(_local5);
-        if (count > 1000) {
-            disposeNormalTextures();
-            count = 0;
-        }
         textures[_arg1] = _local4;
+        lastUsedFrame[_arg1] = frameId;
         count++;
         return (_local4);
     }

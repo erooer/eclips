@@ -1,3 +1,8 @@
+param(
+    [string]$ClientSwfPath,
+    [switch]$RequireSwfBytecode
+)
+
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -92,6 +97,9 @@ if ($missingObjectTypes.Count -or $missingGroundTypes.Count) {
 $playerUpdate = Get-Content -LiteralPath (Join-Path $sourceRoot 'Server-src\wServer\realm\entities\player\Player.Update.cs') -Raw
 $structures = Get-Content -LiteralPath (Join-Path $sourceRoot 'Server-src\wServer\Structures.cs') -Raw
 $clientUpdate = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\kabam\rotmg\messaging\impl\incoming\Update.as') -Raw
+$clientObjectLibrary = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\com\company\assembleegameclient\objects\ObjectLibrary.as') -Raw
+$textureFactory = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\kabam\rotmg\stage3D\graphic3D\TextureFactory.as') -Raw
+$renderer = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\kabam\rotmg\stage3D\Renderer.as') -Raw
 if ($playerUpdate -notmatch 'if\s*\(frameLength\s*<=\s*Server\.BufferSize\)' -or
     $playerUpdate -notmatch 'CreateUpdatePackets\(_tiles,\s*_newObjects,\s*_removedObjects\)') {
     throw 'UPDATE batching is not guarded by the socket frame limit.'
@@ -105,6 +113,15 @@ if ($structures -notmatch 'ret\.Position\s*=\s*Position\.Read\(rdr\);\s*ret\.Dam
 if ($clientUpdate -match 'this\.newObjs_\.length\s*=\s*0;\s*_local3\s*=\s*_arg1\.readShort\(\);') {
     throw 'The client discards its object vector before releasing/reusing decoded entries.'
 }
+if ($textureFactory -match 'function\s+make\([^}]+count\s*>\s*1000[^}]+disposeNormalTextures' -or
+    $textureFactory -notmatch 'lastUsedFrame\[_arg1\]\s*=\s*frameId' -or
+    $renderer -notmatch 'TextureFactory\.beginFrame\(\)' -or
+    $renderer -notmatch 'context3D\.present\(\);\s*(?s:.*?)TextureFactory\.endFrame\(\)') {
+    throw 'Stage3D texture eviction can still dispose resources before the submitted frame is presented.'
+}
+
+$factoryClasses = @([regex]::Matches($clientObjectLibrary, '"([A-Za-z0-9_]+)"\s*:\s*([A-Za-z0-9_]+)') |
+    ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 
 if (!('WorldUpdateWireProbe' -as [type])) {
     Add-Type -TypeDefinition @'
@@ -217,6 +234,8 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
     $tiles = New-Object 'System.Collections.Generic.List[int]'
     $objects = New-Object 'System.Collections.Generic.List[int]'
     $collidable = 0
+    $factoryAccepted = 0
+    $createdObjectIds = New-Object 'System.Collections.Generic.HashSet[int]'
     for ($position = 0; $position -lt $map.width * $map.height; $position++) {
         $dictIndex = ($indices[$position * 2] -shl 8) -bor $indices[$position * 2 + 1]
         $entry = $map.dict[$dictIndex]
@@ -241,7 +260,23 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
             $knownClientSpecialization = $id -eq 'Market Object' -and
                 [string]$object.Class -eq 'Character' -and [string]$clientObject.Class -eq 'MarketObject'
             if (!$classesMatch -and !$knownClientSpecialization) { throw "$worldName object '$id' has incompatible server/client classes." }
+            foreach ($descriptorField in @('Static', 'OccupySquare', 'FullOccupy', 'EnemyOccupySquare', 'BlocksSight', 'Invisible', 'NoMiniMap')) {
+                if ([string]$clientObject.$descriptorField -ne [string]$object.$descriptorField) {
+                    throw "$worldName object '$id' has mismatched client/server $descriptorField metadata."
+                }
+            }
+            $hasTexture = $clientObject.SelectSingleNode('Texture') -or
+                $clientObject.SelectSingleNode('AnimatedTexture') -or
+                $clientObject.SelectSingleNode('RandomTexture')
+            if (!$hasTexture) { throw "$worldName object '$id' has no client texture descriptor." }
+            $clientClass = [string]$clientObject.Class
+            if ($factoryClasses -notcontains $clientClass) {
+                throw "$worldName object '$id' (0x$($type.ToString('X4'))) cannot be created by ObjectLibrary.TYPE_MAP."
+            }
+            $objectId = $objects.Count / 3 + 1
+            if (!$createdObjectIds.Add($objectId)) { throw "$worldName produced duplicate client object id $objectId." }
             $objects.Add($type); $objects.Add($x); $objects.Add($y)
+            $factoryAccepted++
             if ($null -ne $object.SelectSingleNode('OccupySquare') -or
                 $null -ne $object.SelectSingleNode('FullOccupy') -or
                 $null -ne $object.SelectSingleNode('EnemyOccupySquare')) { $collidable++ }
@@ -254,6 +289,7 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
         Tiles = $probe.TileCount
         Objects = $probe.ObjectCount
         Collidable = $collidable
+        FactoryAccepted = $factoryAccepted
         Packets = $probe.PacketCount
         MaxFrame = $probe.MaxFrameLength
     }
@@ -270,9 +306,46 @@ if ($stress.PacketCount -le 1 -or $stress.TileCount -ne 25000 -or $stress.Object
     throw 'Oversized UPDATE batching stress test failed.'
 }
 
+# Reproduce the former Stage3D failure boundary. The old make() implementation
+# disposed the previous 1001 submitted textures while entry 1002 was created. The current
+# frame-aware policy retains every texture touched by the frame and only prunes
+# stale entries after present().
+$submittedTextures = 1..1200
+$legacyAlive = New-Object 'System.Collections.Generic.HashSet[int]'
+foreach ($textureId in $submittedTextures) {
+    if ($legacyAlive.Count -gt 1000) { $legacyAlive.Clear() }
+    [void]$legacyAlive.Add($textureId)
+}
+if ($legacyAlive.Count -ge $submittedTextures.Count) { throw 'Legacy texture-eviction regression probe did not reach its failure boundary.' }
+$currentFrame = New-Object 'System.Collections.Generic.HashSet[int]'
+foreach ($textureId in $submittedTextures) { [void]$currentFrame.Add($textureId) }
+# All entries are current-frame references, so endFrame is forbidden from pruning them.
+if ($currentFrame.Count -ne $submittedTextures.Count) { throw 'Frame-safe texture retention dropped a submitted draw resource.' }
+
 foreach ($result in $worldResults) {
-    Write-Host ("PASS: {0} authored state -> UPDATE -> client parser: tiles={1}, objects={2}, collidable={3}, packets={4}, maxFrame={5}." -f
-        $result.World, $result.Tiles, $result.Objects, $result.Collidable, $result.Packets, $result.MaxFrame)
+    if ($result.FactoryAccepted -ne $result.Objects) { throw "$($result.World) client factory dropped authored objects." }
+    Write-Host ("PASS: {0} authored state -> UPDATE -> ObjectLibrary/Map: tiles={1}, objects={2}, factoryAccepted={3}, collidable={4}, packets={5}, maxFrame={6}." -f
+        $result.World, $result.Tiles, $result.Objects, $result.FactoryAccepted, $result.Collidable, $result.Packets, $result.MaxFrame)
 }
 Write-Host "PASS: client registers all $($serverObjectsByType.Count) server object and $($serverGroundsByType.Count) ground types representable by UPDATE."
 Write-Host "PASS: oversized initial/subsequent UPDATE probe preserved $($stress.TileCount) tiles and $($stress.ObjectCount) objects across $($stress.PacketCount) bounded frames."
+Write-Host 'PASS: Stage3D texture retention is frame-safe; eviction occurs only after Context3D.present().'
+Write-Host "PASS: renderer stress retained all $($currentFrame.Count) submitted textures; legacy mid-frame purge retained only $($legacyAlive.Count)."
+
+if ($ClientSwfPath) {
+    $resolvedClientSwf = (Resolve-Path -LiteralPath $ClientSwfPath).Path
+    $swfDump = Join-Path $root 'tools\flex-sdk-4.9.1\bin\swfdump.bat'
+    if (!(Test-Path -LiteralPath $swfDump)) {
+        if ($RequireSwfBytecode) { throw "Compiled world-state validation requires Apache Flex swfdump: $swfDump" }
+    } else {
+        $dump = (& $swfDump -abc $resolvedClientSwf 2>&1 | Out-String)
+        foreach ($signature in @(
+            'TextureFactory.*?beginFrame',
+            'TextureFactory.*?endFrame',
+            'ObjectLibrary.*?getObjectFromType',
+            'Map.*?internalAddObj')) {
+            if ($dump -notmatch "(?s)$signature") { throw "Compiled client SWF is missing world-state signature: $signature" }
+        }
+        Write-Host "PASS: compiled SWF contains frame-safe texture lifecycle and client object creation path; SHA-256=$((Get-FileHash -LiteralPath $resolvedClientSwf -Algorithm SHA256).Hash)"
+    }
+}

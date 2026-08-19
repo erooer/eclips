@@ -162,6 +162,7 @@ public class Renderer {
     }
 
     private function onRender(_arg1:Vector.<IGraphicsData>, _arg2:Vector.<Object3DStage3D>, _arg3:Number, _arg4:Number, _arg5:Camera, _arg6:uint):void {
+        TextureFactory.beginFrame();
         WebMain.STAGE.scaleMode = StageScaleMode.NO_SCALE;
         if (WebMain.STAGE.stageWidth != this.stageWidth || WebMain.STAGE.stageHeight != this.stageHeight) {
             this.resizeStage3DBackBuffer();
@@ -179,6 +180,10 @@ public class Renderer {
             this.renderScene(_arg1, _arg2, _arg3, _arg4, _arg5);
         }
         this.context3D.present();
+        // Resource retirement is safe only after the submitted frame has been
+        // presented. This keeps large static-world frames from losing the first
+        // textures drawn when the cache crosses its retention target.
+        TextureFactory.endFrame();
     }
 
     private function resizeStage3DBackBuffer():void {
