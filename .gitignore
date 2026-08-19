@@ -56,6 +56,7 @@ Desktop.ini
 !Cosmic-Realms-main/Server-src/bin/
 !Cosmic-Realms-main/Server-src/bin/**
 **/obj/
+build/generated-client/
 
 ########################################################
 # RELEASES

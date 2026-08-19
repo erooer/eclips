@@ -8,6 +8,7 @@ if ($IncludeAir) { & (Join-Path $PSScriptRoot 'Build-AirClient.ps1') }
     -RequireSwfBytecode
 & (Join-Path $PSScriptRoot 'Test-WorldGeometryRender.ps1')
 & (Join-Path $PSScriptRoot 'Test-FameTokenContract.ps1')
+& (Join-Path $PSScriptRoot 'Test-ClientBuildIdentity.ps1')
 & (Join-Path $PSScriptRoot 'Test-ClientArtifactDelivery.ps1')
 & (Join-Path $PSScriptRoot 'New-BuildManifest.ps1')
 Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force

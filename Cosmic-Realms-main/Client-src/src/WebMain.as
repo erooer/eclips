@@ -18,6 +18,10 @@ import flash.events.KeyboardEvent;
 import flash.events.MouseEvent;
 import flash.system.Capabilities;
 import flash.text.TextField;
+import flash.ui.ContextMenu;
+import flash.ui.ContextMenuItem;
+
+import eclipse.ClientBuildInfo;
 
 import kabam.lib.net.NetConfig;
 import kabam.rotmg.account.AccountConfig;
@@ -121,6 +125,7 @@ public class WebMain extends Sprite {
     }
 
     private function setup():void {
+        this.publishClientBuildIdentity();
         this.initFlashVars();
         this.setEnvironment();
         this.hackParameters();
@@ -142,6 +147,17 @@ public class WebMain extends Sprite {
         if (Parameters.data_.GPURender == true) {
             Parameters.data_.GPURender = false;
         }
+    }
+
+    private function publishClientBuildIdentity():void {
+        // This is deliberately visible in the production projector's context
+        // menu as well as the debug trace. It proves which compiled client is
+        // executing; checking the server's rotmg.swf on disk cannot prove that
+        // a standalone projector did not open an older local/cached SWF.
+        trace("[ECLIPSE_CLIENT_BUILD] " + ClientBuildInfo.LABEL);
+        var menu:ContextMenu = this.contextMenu || new ContextMenu();
+        menu.customItems.push(new ContextMenuItem(ClientBuildInfo.LABEL, false, false));
+        this.contextMenu = menu;
     }
 
     private function setEnvironment():void {

@@ -153,6 +153,11 @@ function New-DeploymentManifest {
             nexusMapInfo = $true
             createLoadReady = $true
             encryptedHandshakeProbe = $true
+            runtimeClientBuildIdentity = $true
+        }
+        clientBuildIdentity = [ordered]@{
+            sourceCommit = $SourceCommit
+            label = 'Eclipse client ' + $SourceCommit.Substring(0, 12)
         }
     }
     $manifest = [ordered]@{
@@ -229,10 +234,15 @@ function Test-DeploymentManifest {
             throw "Protocol validation evidence contains an invalid packet mapping for $($entry.Key)."
         }
     }
-    foreach ($contract in @('compiledClientBytecode', 'compiledWorldServerPacketTable', 'rc4Keys', 'rsaHello', 'helloSerialization', 'nexusMapInfo', 'createLoadReady', 'encryptedHandshakeProbe')) {
+    foreach ($contract in @('compiledClientBytecode', 'compiledWorldServerPacketTable', 'rc4Keys', 'rsaHello', 'helloSerialization', 'nexusMapInfo', 'createLoadReady', 'encryptedHandshakeProbe', 'runtimeClientBuildIdentity')) {
         if ($protocol.contracts.PSObject.Properties[$contract].Value -ne $true) {
             throw "Protocol validation evidence is missing required successful check: $contract"
         }
+    }
+    $expectedClientLabel = 'Eclipse client ' + $manifest.sourceCommit.Substring(0, 12)
+    if ($protocol.clientBuildIdentity.sourceCommit -ne $manifest.sourceCommit -or
+        $protocol.clientBuildIdentity.label -ne $expectedClientLabel) {
+        throw 'Protocol validation evidence contains an invalid runtime client build identity.'
     }
 
     if ($CheckForUnlistedArtifacts) {

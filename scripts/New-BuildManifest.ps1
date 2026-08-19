@@ -9,4 +9,6 @@ Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
     -WorldServerPath (Join-Path $RepositoryRoot 'Cosmic-Realms-main\Server-src\bin\wServer.exe') `
     -ClientSwfPath (Join-Path $RepositoryRoot 'build\client-unchanged.swf') `
     -RequireSwfBytecode
+& (Join-Path $PSScriptRoot 'Test-ClientBuildIdentity.ps1') `
+    -ClientSwfPath (Join-Path $RepositoryRoot 'build\client-unchanged.swf')
 New-DeploymentManifest -RepositoryRoot $RepositoryRoot -OutputPath $OutputPath -ProtocolValidationPassed | Out-Null

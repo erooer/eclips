@@ -10,6 +10,7 @@ $compiler = Join-Path $sdk 'bin\mxmlc.bat'
 $playerGlobalHome = Join-Path $sdk 'frameworks\libs\player'
 $projector = Join-Path $root 'tools\flashplayer_32_sa_debug.exe'
 $probeSource = Join-Path $PSScriptRoot 'probes\WorldGeometryRenderProbe.as'
+$buildInfo = & (Join-Path $PSScriptRoot 'New-ClientBuildInfo.ps1') -RepositoryRoot $root
 $probeSwf = Join-Path ([IO.Path]::GetTempPath()) "WorldGeometryRenderProbe-$([guid]::NewGuid().ToString('N')).swf"
 $flashLog = Join-Path $env:APPDATA 'Macromedia\Flash Player\Logs\flashlog.txt'
 
@@ -29,7 +30,7 @@ try {
     $savedErrorPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $compilerOutput = & $compiler '-static-link-runtime-shared-libraries=true' "-source-path+=$($project)\src" "-library-path+=$($project)\libs" "-output=$probeSwf" '-default-size=800,600' '-swf-version=15' '-target-player=15.0' $probeSource 2>&1
+        $compilerOutput = & $compiler '-static-link-runtime-shared-libraries=true' "-source-path+=$($project)\src" "-source-path+=$($buildInfo.SourceRoot)" "-library-path+=$($project)\libs" "-output=$probeSwf" '-default-size=800,600' '-swf-version=15' '-target-player=15.0' $probeSource 2>&1
         $compilerExitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $savedErrorPreference
