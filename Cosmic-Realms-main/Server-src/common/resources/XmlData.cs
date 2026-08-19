@@ -196,6 +196,27 @@ namespace common.resources
             log.InfoFormat("{0} Additions", addition.Elements().Count());
         }
 
+        public bool TryResolveItem(string name, out Item item)
+        {
+            item = null;
+            if (string.IsNullOrWhiteSpace(name))
+                return false;
+
+            ushort type;
+            if (!DisplayIdToObjectType.TryGetValue(name, out type) &&
+                !IdToObjectType.TryGetValue(name, out type))
+            {
+                var match = DisplayIdToObjectType
+                    .Concat(IdToObjectType)
+                    .FirstOrDefault(entry => string.Equals(entry.Key, name, StringComparison.OrdinalIgnoreCase));
+                if (string.IsNullOrEmpty(match.Key))
+                    return false;
+                type = match.Value;
+            }
+
+            return Items.TryGetValue(type, out item);
+        }
+
         private void LoadXmls(string basePath, string ext)
         {
             var xmls = Directory.EnumerateFiles(basePath, ext, SearchOption.AllDirectories).ToArray();

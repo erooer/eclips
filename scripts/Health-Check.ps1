@@ -16,4 +16,19 @@ if ($lastSave.ExitCode -ne 0) { throw "Redis LASTSAVE failed after a successful 
 "REDIS aofEnabled=$($info['aof_enabled']) aofLastRewriteStatus=$($info['aof_last_bgrewrite_status']) rdbLastSaveStatus=$($info['rdb_last_bgsave_status']) lastSave=$($lastSave.Text)"
 Get-ChildItem -LiteralPath $data -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -in 'matching-rebuild.rdb','appendonly.aof' } | ForEach-Object { "REDIS file=$($_.Name) bytes=$($_.Length) modified=$($_.LastWriteTime.ToString('o'))" }
 foreach ($port in 2050,843) { if (-not (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue)) { throw "Required world/policy listener is absent on port $port." } }
-foreach ($request in @(@{ Uri = 'http://127.0.0.1/crossdomain.xml'; Method = 'Get'; Body = $null }, @{ Uri = 'http://127.0.0.1/app/init'; Method = 'Post'; Body = @{} }, @{ Uri = 'http://127.0.0.1/rotmg.swf'; Method = 'Get'; Body = $null })) { $response = Invoke-WebRequest -UseBasicParsing -Uri $request.Uri -Method $request.Method -Body $request.Body -TimeoutSec 15; if ($response.StatusCode -ne 200 -or $response.RawContentLength -eq 0) { throw "Unhealthy endpoint: $($request.Uri)" }; "$($response.StatusCode) $($response.RawContentLength) $($request.Method) $($request.Uri)" }
+foreach ($request in @(@{ Uri = 'http://127.0.0.1/crossdomain.xml'; Method = 'Get'; Body = $null }, @{ Uri = 'http://127.0.0.1/app/init'; Method = 'Post'; Body = @{} })) { $response = Invoke-WebRequest -UseBasicParsing -Uri $request.Uri -Method $request.Method -Body $request.Body -TimeoutSec 15; if ($response.StatusCode -ne 200 -or $response.RawContentLength -eq 0) { throw "Unhealthy endpoint: $($request.Uri)" }; "$($response.StatusCode) $($response.RawContentLength) $($request.Method) $($request.Uri)" }
+
+$expectedClient = Join-Path $base 'build\client-unchanged.swf'
+if (!(Test-Path -LiteralPath $expectedClient)) { throw "Expected deployed client artifact is missing: $expectedClient" }
+$download = Join-Path ([IO.Path]::GetTempPath()) "EclipseHealthClient-$([guid]::NewGuid().ToString('N')).swf"
+try {
+    $response = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1/rotmg.swf?health=1' -OutFile $download -PassThru -TimeoutSec 30
+    if ($response.StatusCode -ne 200) { throw 'Unhealthy endpoint: http://127.0.0.1/rotmg.swf' }
+    $expectedHash = (Get-FileHash -LiteralPath $expectedClient -Algorithm SHA256).Hash
+    $servedHash = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash
+    if ($servedHash -ne $expectedHash) { throw "Hosted SWF differs from deployed client artifact. expected=$expectedHash actual=$servedHash" }
+    if ([string]$response.Headers['Cache-Control'] -notmatch 'no-store') { throw 'Hosted SWF does not disable stale client caching.' }
+    "200 $((Get-Item -LiteralPath $download).Length) GET http://127.0.0.1/rotmg.swf sha256=$servedHash"
+} finally {
+    if (Test-Path -LiteralPath $download) { Remove-Item -LiteralPath $download -Force }
+}

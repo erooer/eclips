@@ -63,7 +63,7 @@ function Assert-FameToken([xml]$xml, [string]$origin) {
     Require ([string]$token.type -match '^(?i:0x0*F971)$') "$origin Fame Token must use type 0xF971."
     Require ($token.Class -eq 'Equipment' -and $token.Item -ne $null -and [int]$token.SlotType -eq 10) "$origin Fame Token is not standard slot-10 Equipment."
     Require ($token.Consumable -ne $null -and $token.Potion -ne $null -and $token.Sound -eq 'use_potion') "$origin Fame Token is not a usable Potion consumable."
-    Require ($token.Texture.File -eq 'lofiObj3' -and [int]$token.Texture.Index -eq 0xE0) "$origin Fame Token does not use the known Fame consumable texture."
+    Require ($token.Texture.File -eq 'lofiObj3' -and [int]$token.Texture.Index -eq 0xE0) "$origin Fame Token does not use the known-good compiled-server 5000 Fame consumable/Fame UI texture."
     Require ($token.Activate.'#text' -eq 'Fame' -and [int]$token.Activate.amount -eq 100000) "$origin Fame Token does not grant exactly 100,000 Fame."
     return $token
 }
@@ -89,7 +89,35 @@ foreach ($file in Get-ChildItem -LiteralPath $compiledXmlRoot -Filter '*.dat') {
 }
 Require ($compiledOwners.Count -eq 1 -and $compiledOwners[0] -eq '100K Fame Token') 'Type 0xF971 collides in compiled server resources.'
 
-$giveSource = Get-Content -LiteralPath (Join-Path $sourceRoot 'Server-src\wServer\realm\commands\RankedCommands.cs') -Raw
-Require ($giveSource -match 'DisplayIdToObjectType' -and $giveSource -match 'IdToObjectType') '/give does not resolve the canonical GameData item-name tables.'
+$serverBin = Split-Path (Split-Path (Split-Path $ServerResourcePath -Parent) -Parent) -Parent
+$commonAssembly = Join-Path $serverBin 'common.dll'
+$logAssembly = Join-Path $serverBin 'log4net.dll'
+Require (Test-Path -LiteralPath $commonAssembly) 'Compiled common.dll is required for the /give descriptor integration test.'
+if (Test-Path -LiteralPath $logAssembly) { [void][Reflection.Assembly]::LoadFrom($logAssembly) }
+[void][Reflection.Assembly]::LoadFrom($commonAssembly)
+$gameData = New-Object common.resources.XmlData($compiledXmlRoot)
+try {
+    $arguments = [object[]]@('100K Fame Token', $null)
+    $resolved = $gameData.GetType().GetMethod('TryResolveItem').Invoke($gameData, $arguments)
+    Require $resolved 'The compiled GameData resolver used by /give rejected 100K Fame Token.'
+    $resolvedItem = $arguments[1]
+    Require ($null -ne $resolvedItem) 'The compiled /give resolver returned no Item descriptor.'
+    Require ($resolvedItem.ObjectType -eq 0xF971 -and $resolvedItem.ObjectId -eq '100K Fame Token') 'The compiled /give resolver returned the wrong item identity.'
+    Require ($resolvedItem.Class -eq 'Equipment' -and $resolvedItem.SlotType -eq 10 -and $resolvedItem.Consumable -and $resolvedItem.Potion) 'The compiled inventory descriptor is not a usable slot-10 consumable potion.'
+    $fameEffects = @($resolvedItem.ActivateEffects | Where-Object { $_.Effect.ToString() -eq 'Fame' })
+    Require ($fameEffects.Count -eq 1 -and $fameEffects[0].Amount -eq 100000) 'The compiled UseItem descriptor does not resolve exactly one +100,000 Fame activation.'
+    $caseArguments = [object[]]@('100k fame token', $null)
+    $caseResolved = $gameData.GetType().GetMethod('TryResolveItem').Invoke($gameData, $caseArguments)
+    Require ($caseResolved -and $caseArguments[1].ObjectType -eq 0xF971) 'The shared /give resolver regressed case-insensitive item commands.'
+} finally {
+    if ($null -ne $gameData) { $gameData.Dispose() }
+}
 
-Write-Host "PASS: /give 100K Fame Token resolves unique type 0xF971; compiled client/server resources agree on Equipment, Potion, slot 10, Fame 100000, lofiObj3:0xE0, and use_potion. SWF SHA-256=$((Get-FileHash -LiteralPath $ClientSwfPath -Algorithm SHA256).Hash)"
+$giveSource = Get-Content -LiteralPath (Join-Path $sourceRoot 'Server-src\wServer\realm\commands\RankedCommands.cs') -Raw
+Require ($giveSource -match 'gameData\.TryResolveItem\(args,\s*out item\)') '/give does not call the compiled GameData item resolver exercised above.'
+$useItemSource = Get-Content -LiteralPath (Join-Path $sourceRoot 'Server-src\wServer\realm\entities\player\Player.UseItem.cs') -Raw
+Require ($useItemSource -match 'case\s+ActivateEffects\.Fame:\s*AEAddFame' -and
+    $useItemSource -match 'acc\.Fame\s*\+=\s*eff\.Amount' -and
+    $useItemSource -match 'acc\.FlushAsync\(\)\.Wait\(\)') 'The real UseItem Fame activation is not synchronously persisted.'
+
+Write-Host "PASS: compiled /give GameData resolution returns unique type 0xF971 and the exact inventory/UseItem descriptor; compiled client/server resources agree on Equipment, Potion, slot 10, Fame 100000, lofiObj3:0xE0, and use_potion. SWF SHA-256=$((Get-FileHash -LiteralPath $ClientSwfPath -Algorithm SHA256).Hash)"

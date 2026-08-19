@@ -574,33 +574,18 @@ namespace wServer.realm.commands
         {
             var gameData = player.Manager.Resources.GameData;
 
-            ushort objType;
             int playerRank = player.Rank;
 
-            // Allow both DisplayId and Id for query. XML keeps the canonical
-            // spelling, but item commands should resolve names consistently
-            // regardless of the player's casing.
-            if (!gameData.DisplayIdToObjectType.TryGetValue(args, out objType) &&
-                !gameData.IdToObjectType.TryGetValue(args, out objType))
+            // Use the same compiled GameData resolution boundary exercised by
+            // artifact validation. This prevents command-only fallback logic
+            // from returning a different object than the inventory descriptor.
+            Item item;
+            if (!gameData.TryResolveItem(args, out item))
             {
-                var match = gameData.DisplayIdToObjectType
-                    .Concat(gameData.IdToObjectType)
-                    .FirstOrDefault(entry => string.Equals(entry.Key, args, StringComparison.OrdinalIgnoreCase));
-                if (string.IsNullOrEmpty(match.Key))
-                {
-                    player.SendError("Unknown item type!");
-                    return false;
-                }
-                objType = match.Value;
-            }
-
-            if (!gameData.Items.ContainsKey(objType))
-            {
-                player.SendError("Not an item!");
+                player.SendError("Unknown item type or not an item!");
                 return false;
             }
 
-            var item = gameData.Items[objType];
             List<String> BannedItems = new List<String> { "key", "sigil", "admin", "fame", "credits", "chest" };
             if (playerRank < 70)
             {

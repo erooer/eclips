@@ -87,12 +87,12 @@ public class Square {
             this.rebuild3D();
         }
         for each (_local4 in this.faces_) {
-            if (!_local4.draw(_arg1, _arg2, _arg3)) {
-                if (_local4.face_.vout_[1] < _arg2.clipRect_.bottom) {
-                    this.lastVisible_ = 0;
-                }
-                return;
-            }
+            // A ground face being clipped or back-facing does not make the map
+            // square invisible. Static objects are anchored to lastVisible_, so
+            // clearing it here silently removed otherwise-visible walls from the
+            // object draw list. The traversal in Map.draw owns square visibility;
+            // individual faces only decide whether their own pixels are emitted.
+            _local4.draw(_arg1, _arg2, _arg3);
         }
     }
 

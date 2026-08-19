@@ -111,18 +111,24 @@ public class Face3D {
         var _local4:Number = (_arg2.clipRect_.y - 10);
         var _local5:Number = (_arg2.clipRect_.right + 10);
         var _local6:Number = (_arg2.clipRect_.bottom + 10);
-        var _local7:Boolean = true;
+        var entirelyLeft:Boolean = true;
+        var entirelyRight:Boolean = true;
+        var entirelyAbove:Boolean = true;
+        var entirelyBelow:Boolean = true;
         var _local8:int = this.vout_.length;
         var _local9:int;
         while (_local9 < _local8) {
             _local15 = (_local9 + 1);
-            if ((((((((this.vout_[_local9] >= _local3)) && ((this.vout_[_local9] <= _local5)))) && ((this.vout_[_local15] >= _local4)))) && ((this.vout_[_local15] <= _local6)))) {
-                _local7 = false;
-                break;
-            }
+            if (this.vout_[_local9] >= _local3) entirelyLeft = false;
+            if (this.vout_[_local9] <= _local5) entirelyRight = false;
+            if (this.vout_[_local15] >= _local4) entirelyAbove = false;
+            if (this.vout_[_local15] <= _local6) entirelyBelow = false;
             _local9 = (_local9 + 2);
         }
-        if (_local7) {
+        // Reject only when every vertex is outside the same clip edge. The old
+        // any-vertex-inside test dropped faces which crossed the viewport (or
+        // contained it) even though they had a non-empty visible intersection.
+        if (entirelyLeft || entirelyRight || entirelyAbove || entirelyBelow) {
             return false;
         }
         if (this.blackOut_) {

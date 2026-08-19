@@ -294,6 +294,33 @@ function Test-Http([string]$Uri, [string]$Method = 'GET') {
     $response = Invoke-WebRequest -Uri $Uri -Method $Method -UseBasicParsing -TimeoutSec 15
     if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) { throw "HTTP $Method $Uri returned $($response.StatusCode)" }
     Write-Step "HEALTH HTTP $Method $Uri = $($response.StatusCode)"
+    return $response
+}
+
+function Test-ServedClientArtifact {
+    Assert-Path $SourceClientSwf 'verified deployment client SWF'
+    $expectedHash = Get-Sha256 $SourceClientSwf
+    $download = Join-Path ([System.IO.Path]::GetTempPath()) "EclipseServedClient-$([guid]::NewGuid().ToString('N')).swf"
+    try {
+        $response = Invoke-WebRequest -Uri 'http://127.0.0.1/rotmg.swf?deployment-health=1' -OutFile $download -PassThru -UseBasicParsing -TimeoutSec 30
+        if ($response.StatusCode -ne 200) { throw "Hosted client returned HTTP $($response.StatusCode)." }
+        $actualHash = Get-Sha256 $download
+        if ($actualHash -ne $expectedHash) {
+            throw "Hosted rotmg.swf is not the verified deployment artifact. expected=$expectedHash actual=$actualHash"
+        }
+        $cacheControl = [string]$response.Headers['Cache-Control']
+        if ($cacheControl -notmatch 'no-store' -or $cacheControl -notmatch 'no-cache') {
+            throw "Hosted rotmg.swf is missing required no-store/no-cache headers: '$cacheControl'"
+        }
+        $index = Invoke-WebRequest -Uri 'http://127.0.0.1/' -UseBasicParsing -TimeoutSec 15
+        $version = $expectedHash.Substring(0, 16).ToLowerInvariant()
+        if ([string]$index.Content -notmatch [regex]::Escape("rotmg.swf?v=$version")) {
+            throw "Hosted index does not bind the client URL to verified SWF version $version."
+        }
+        Write-Step "HEALTH hosted SWF byte identity/cache busting = $expectedHash"
+    } finally {
+        if (Test-Path -LiteralPath $download) { Remove-Item -LiteralPath $download -Force }
+    }
 }
 
 function Start-AndVerify {
@@ -315,9 +342,9 @@ function Start-AndVerify {
     foreach ($name in @('server.exe', 'wServer.exe')) {
         if (!($runtimeProcesses | Where-Object Name -eq $name)) { throw "$name is not running from $LiveRuntime." }
     }
-    Test-Http 'http://127.0.0.1/crossdomain.xml'
-    Test-Http 'http://127.0.0.1/app/init' 'POST'
-    Test-Http 'http://127.0.0.1/rotmg.swf'
+    [void](Test-Http 'http://127.0.0.1/crossdomain.xml')
+    [void](Test-Http 'http://127.0.0.1/app/init' 'POST')
+    Test-ServedClientArtifact
     $health = Join-Path $LiveRoot 'scripts\Health-Check.ps1'
     if (Test-Path -LiteralPath $health) { & $health; Write-Step 'Health-Check.ps1 passed.' }
 }

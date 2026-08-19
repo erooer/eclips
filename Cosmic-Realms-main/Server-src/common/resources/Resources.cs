@@ -5,6 +5,8 @@ using log4net;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace common.resources
@@ -74,6 +76,24 @@ namespace common.resources
                     .Replace("\\", "/");
 
                 webFiles[webPath] = File.ReadAllBytes(file);
+            }
+
+            // A deployment can replace the SWF while retaining the same URL.
+            // Flash/browser caches then continue executing stale client code even
+            // though the server artifacts are current. Bind the bootstrap URL to
+            // the exact in-memory SWF bytes loaded by this server process.
+            byte[] swf;
+            byte[] index;
+            if (webFiles.TryGetValue("/rotmg.swf", out swf) &&
+                webFiles.TryGetValue("/index.html", out index))
+            {
+                string version;
+                using (var sha256 = SHA256.Create())
+                    version = BitConverter.ToString(sha256.ComputeHash(swf)).Replace("-", "").Substring(0, 16).ToLowerInvariant();
+                var html = Encoding.UTF8.GetString(index);
+                html = html.Replace("\"rotmg.swf\"", "\"rotmg.swf?v=" + version + "\"");
+                webFiles["/index.html"] = Encoding.UTF8.GetBytes(html);
+                Log.InfoFormat("Serving cache-busted rotmg.swf version {0}.", version);
             }
         }
 

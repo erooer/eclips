@@ -90,10 +90,12 @@ namespace server
             if (Get.ContainsKey("/"))
                 throw new InvalidOperationException("Get handlers have already been initialized.");
             
-            Get["/"] = new StaticFile(resources.WebFiles["/index.html"], "text/html");
+            Get["/"] = new StaticFile(resources.WebFiles["/index.html"], "text/html", true);
 
             foreach (var f in resources.WebFiles)
-                Get[f.Key] = new StaticFile(f.Value, MimeMapping.GetMimeMapping(f.Key));
+                Get[f.Key] = new StaticFile(f.Value, MimeMapping.GetMimeMapping(f.Key),
+                    f.Key.EndsWith(".swf", StringComparison.OrdinalIgnoreCase) ||
+                    f.Key.EndsWith(".html", StringComparison.OrdinalIgnoreCase));
         }
 
         public static readonly Dictionary<string, RequestHandler> Get = new Dictionary<string, RequestHandler>
