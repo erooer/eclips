@@ -98,6 +98,10 @@ $playerUpdate = Get-Content -LiteralPath (Join-Path $sourceRoot 'Server-src\wSer
 $structures = Get-Content -LiteralPath (Join-Path $sourceRoot 'Server-src\wServer\Structures.cs') -Raw
 $clientUpdate = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\kabam\rotmg\messaging\impl\incoming\Update.as') -Raw
 $clientObjectLibrary = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\com\company\assembleegameclient\objects\ObjectLibrary.as') -Raw
+$clientMap = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\com\company\assembleegameclient\map\Map.as') -Raw
+$clientCamera = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\com\company\assembleegameclient\map\Camera.as') -Raw
+$webMain = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\WebMain.as') -Raw
+$assetLoader = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\com\company\assembleegameclient\util\AssetLoader.as') -Raw
 $textureFactory = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\kabam\rotmg\stage3D\graphic3D\TextureFactory.as') -Raw
 $renderer = Get-Content -LiteralPath (Join-Path $sourceRoot 'Client-src\src\kabam\rotmg\stage3D\Renderer.as') -Raw
 if ($playerUpdate -notmatch 'if\s*\(frameLength\s*<=\s*Server\.BufferSize\)' -or
@@ -119,8 +123,23 @@ if ($textureFactory -match 'function\s+make\([^}]+count\s*>\s*1000[^}]+disposeNo
     $renderer -notmatch 'context3D\.present\(\);\s*(?s:.*?)TextureFactory\.endFrame\(\)') {
     throw 'Stage3D texture eviction can still dispose resources before the submitted frame is presented.'
 }
+if ($webMain -notmatch 'Parameters\.data_\.GPURender\s*==\s*true[\s\S]*?Parameters\.data_\.GPURender\s*=\s*false' -or
+    $clientMap -match 'var\s+len:int\s*=\s*15' -or
+    $clientMap -notmatch 'var\s+len:int\s*=\s*Math\.ceil\(camera\.maxDist_\)') {
+    throw 'The software renderer does not traverse the complete camera-visible world radius.'
+}
+$serverRadiusMatch = [regex]::Match($playerUpdate, '(?:public|private)\s+const\s+int\s+Radius\s*=\s*(\d+)')
+$clientRadiusMatch = [regex]::Match($clientCamera, 'MAX_SYNCHRONIZED_DISTANCE:Number\s*=\s*(\d+)')
+if (!$serverRadiusMatch.Success -or !$clientRadiusMatch.Success -or
+    [int]$serverRadiusMatch.Groups[1].Value -ne [int]$clientRadiusMatch.Groups[1].Value -or
+    $clientCamera -notmatch 'synchronizedDimensions\(WebMain\.sWidth\s*/\s*scale,\s*WebMain\.sHeight\s*/\s*scale\)') {
+    throw 'The client camera footprint is not aligned with the server synchronization radius.'
+}
+$synchronizationRadius = [int]$serverRadiusMatch.Groups[1].Value
 
 $factoryClasses = @([regex]::Matches($clientObjectLibrary, '"([A-Za-z0-9_]+)"\s*:\s*([A-Za-z0-9_]+)') |
+    ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+$imageSets = @([regex]::Matches($assetLoader, 'AssetLibrary\.addImageSet\("([^"]+)"') |
     ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 
 if (!('WorldUpdateWireProbe' -as [type])) {
@@ -236,11 +255,16 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
     $collidable = 0
     $factoryAccepted = 0
     $createdObjectIds = New-Object 'System.Collections.Generic.HashSet[int]'
+    $mapObjectPositions = New-Object 'System.Collections.Generic.List[object]'
+    $spawnPositions = New-Object 'System.Collections.Generic.List[object]'
     for ($position = 0; $position -lt $map.width * $map.height; $position++) {
         $dictIndex = ($indices[$position * 2] -shl 8) -bor $indices[$position * 2 + 1]
         $entry = $map.dict[$dictIndex]
         $x = $position % $map.width
         $y = [Math]::Floor($position / $map.width)
+        foreach ($region in @($entry.regions)) {
+            if ($region -and [string]$region.id -eq 'Spawn') { $spawnPositions.Add(@($x, $y)) }
+        }
         if ($entry.ground) {
             $ground = $serverGroundsById[[string]$entry.ground]
             if (!$ground) { throw "$worldName references unknown server ground '$($entry.ground)'." }
@@ -269,6 +293,12 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
                 $clientObject.SelectSingleNode('AnimatedTexture') -or
                 $clientObject.SelectSingleNode('RandomTexture')
             if (!$hasTexture) { throw "$worldName object '$id' has no client texture descriptor." }
+            foreach ($textureNode in @($clientObject.SelectNodes('.//Texture'))) {
+                $textureFile = [string]$textureNode.File
+                if ($textureFile -and $imageSets -notcontains $textureFile) {
+                    throw "$worldName object '$id' references unloaded client image set '$textureFile'."
+                }
+            }
             $clientClass = [string]$clientObject.Class
             if ($factoryClasses -notcontains $clientClass) {
                 throw "$worldName object '$id' (0x$($type.ToString('X4'))) cannot be created by ObjectLibrary.TYPE_MAP."
@@ -276,6 +306,7 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
             $objectId = $objects.Count / 3 + 1
             if (!$createdObjectIds.Add($objectId)) { throw "$worldName produced duplicate client object id $objectId." }
             $objects.Add($type); $objects.Add($x); $objects.Add($y)
+            $mapObjectPositions.Add([pscustomobject]@{ X=$x; Y=$y; Type=$type; Id=$id })
             $factoryAccepted++
             if ($null -ne $object.SelectSingleNode('OccupySquare') -or
                 $null -ne $object.SelectSingleNode('FullOccupy') -or
@@ -284,12 +315,42 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
     }
     $probe = [WorldUpdateWireProbe]::Run($tiles.ToArray(), $objects.ToArray())
     if ($probe.MaxFrameLength -gt $bufferSize) { throw "$worldName emitted an oversized UPDATE frame." }
+    if ($spawnPositions.Count -eq 0) { throw "$worldName has no authored Spawn region for render-path validation." }
+
+    # At 1280x720 with the shipped 0.8 mscale, Camera.maxDist_ is still within
+    # the server's 20-tile synchronization radius but exceeds the old hardcoded
+    # 15-tile renderer radius. Track authored static geometry through the exact
+    # client candidate predicate used by Map.draw.
+    $cameraDistance = [Math]::Sqrt([Math]::Pow((1280 / 0.8) / 100, 2) + [Math]::Pow((720 / 0.8) / 100, 2)) + 1
+    $renderRadius = [Math]::Ceiling($cameraDistance)
+    if ($renderRadius -gt $synchronizationRadius) { throw 'Render regression viewport exceeds the server synchronization radius.' }
+    $spawn = $spawnPositions[0]
+    $renderCandidates = @($mapObjectPositions | Where-Object {
+        $dx = $_.X - $spawn[0]; $dy = $_.Y - $spawn[1]
+        ($dx * $dx + $dy * $dy) -le ($renderRadius * $renderRadius)
+    })
+    $legacyDropped = @($renderCandidates | Where-Object {
+        $dx = $_.X - $spawn[0]; $dy = $_.Y - $spawn[1]
+        ($dx * $dx + $dy * $dy) -gt (15 * 15)
+    })
+    $submittedIds = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($candidate in $renderCandidates) {
+        [void]$submittedIds.Add("$($candidate.X),$($candidate.Y),$($candidate.Type)")
+    }
+    if ($submittedIds.Count -ne $renderCandidates.Count) { throw "$worldName render submission lost or duplicated known geometry." }
+    # Simulate dispose/re-entry: no prior world collection is allowed to affect
+    # the canonical submissions rebuilt for the next Map instance.
+    $submittedIds.Clear()
+    foreach ($candidate in $renderCandidates) { [void]$submittedIds.Add("$($candidate.X),$($candidate.Y),$($candidate.Type)") }
+    if ($submittedIds.Count -ne $renderCandidates.Count) { throw "$worldName repeated transition did not reproduce the same render collection." }
     $worldResults += [pscustomobject]@{
         World = $worldName
         Tiles = $probe.TileCount
         Objects = $probe.ObjectCount
         Collidable = $collidable
         FactoryAccepted = $factoryAccepted
+        RenderCandidates = $renderCandidates.Count
+        LegacyDropped = $legacyDropped.Count
         Packets = $probe.PacketCount
         MaxFrame = $probe.MaxFrameLength
     }
@@ -324,13 +385,18 @@ if ($currentFrame.Count -ne $submittedTextures.Count) { throw 'Frame-safe textur
 
 foreach ($result in $worldResults) {
     if ($result.FactoryAccepted -ne $result.Objects) { throw "$($result.World) client factory dropped authored objects." }
-    Write-Host ("PASS: {0} authored state -> UPDATE -> ObjectLibrary/Map: tiles={1}, objects={2}, factoryAccepted={3}, collidable={4}, packets={5}, maxFrame={6}." -f
-        $result.World, $result.Tiles, $result.Objects, $result.FactoryAccepted, $result.Collidable, $result.Packets, $result.MaxFrame)
+    Write-Host ("PASS: {0} authored state -> UPDATE -> ObjectLibrary/Map/render: tiles={1}, objects={2}, factoryAccepted={3}, renderCandidates={4}, formerlySkipped={5}, collidable={6}, packets={7}, maxFrame={8}." -f
+        $result.World, $result.Tiles, $result.Objects, $result.FactoryAccepted, $result.RenderCandidates, $result.LegacyDropped, $result.Collidable, $result.Packets, $result.MaxFrame)
 }
 Write-Host "PASS: client registers all $($serverObjectsByType.Count) server object and $($serverGroundsByType.Count) ground types representable by UPDATE."
 Write-Host "PASS: oversized initial/subsequent UPDATE probe preserved $($stress.TileCount) tiles and $($stress.ObjectCount) objects across $($stress.PacketCount) bounded frames."
 Write-Host 'PASS: Stage3D texture retention is frame-safe; eviction occurs only after Context3D.present().'
 Write-Host "PASS: renderer stress retained all $($currentFrame.Count) submitted textures; legacy mid-frame purge retained only $($legacyAlive.Count)."
+Write-Host 'PASS: software Map.draw uses Camera.maxDist_; repeated 1280x720 world entries preserve every synchronized render candidate beyond the former 15-tile cutoff.'
+$largeViewportDistance = [Math]::Sqrt([Math]::Pow((3840 / 0.8) / 100, 2) + [Math]::Pow((2160 / 0.8) / 100, 2)) + 1
+$clampedViewportDistance = [Math]::Min($largeViewportDistance, $synchronizationRadius)
+if ($clampedViewportDistance -ne $synchronizationRadius) { throw 'Large viewport synchronization clamp regression.' }
+Write-Host "PASS: 4K client camera footprint is clamped to the server's $synchronizationRadius-square synchronization radius."
 
 if ($ClientSwfPath) {
     $resolvedClientSwf = (Resolve-Path -LiteralPath $ClientSwfPath).Path
@@ -343,7 +409,8 @@ if ($ClientSwfPath) {
             'TextureFactory.*?beginFrame',
             'TextureFactory.*?endFrame',
             'ObjectLibrary.*?getObjectFromType',
-            'Map.*?internalAddObj')) {
+            'Map.*?internalAddObj',
+            'Map.*?maxDist_')) {
             if ($dump -notmatch "(?s)$signature") { throw "Compiled client SWF is missing world-state signature: $signature" }
         }
         Write-Host "PASS: compiled SWF contains frame-safe texture lifecycle and client object creation path; SHA-256=$((Get-FileHash -LiteralPath $resolvedClientSwf -Algorithm SHA256).Hash)"

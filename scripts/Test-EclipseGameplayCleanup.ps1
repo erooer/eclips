@@ -30,9 +30,28 @@ $clientUi = (Read-Source 'Client-src\src\ToolForge\forgeList\ForgeServiceStrip.a
     (Read-Source 'Client-src\src\com\company\assembleegameclient\objects\ImprintStation.as')
 
 $fame = $custom.Objects.Object | Where-Object id -eq '100K Fame Token'
+$clientFame = $clientCustom.Objects.Object | Where-Object id -eq '100K Fame Token'
+$knownFame = ([xml](Read-Source 'Server-src\common\resources\xmls\EmbeddedData_EquipCXML.dat')).Objects.Object |
+    Where-Object id -eq '5000 Fame'
 Require ($fame.type -eq '0xF971') '100K Fame Token must retain collision-reviewed type 0xF971.'
-Require ($fame.Consumable -ne $null -and $fame.Activate.'#text' -eq 'Fame' -and [int]$fame.Activate.amount -eq 100000) '100K Fame Token must be a 100,000 Fame consumable.'
+foreach ($definition in @($fame, $clientFame)) {
+    Require ($definition.Class -eq $knownFame.Class -and $definition.Item -ne $null) '100K Fame Token must use the standard Equipment/Item contract.'
+    Require ([int]$definition.SlotType -eq [int]$knownFame.SlotType -and $definition.Consumable -ne $null -and $definition.Potion -ne $null) '100K Fame Token must use the standard consumable Fame slot and Potion flags.'
+    Require ($definition.Sound -eq $knownFame.Sound -and $definition.Texture.File -eq $knownFame.Texture.File -and [int]$definition.Texture.Index -eq [int]$knownFame.Texture.Index) '100K Fame Token must resolve through the known-good Fame consumable sound and texture.'
+    Require ($definition.Activate.'#text' -eq 'Fame' -and [int]$definition.Activate.amount -eq 100000) '100K Fame Token must grant exactly 100,000 Fame.'
+}
 Require ($useItem -match 'item\.ObjectId == "100K Fame Token"' -and $useItem -match 'FlushAsync\(\)\.Wait\(\)' -and $useItem -match 'You gained 100,000 Fame\.') '100K Fame Token must synchronously persist and send the exact confirmation.'
+Require ($useItem -match 'cInv\[slot\]\s*=\s*successor[\s\S]*?PersistConsumableState\(\)[\s\S]*?foreach\s*\(var\s+eff\s+in\s+item\.ActivateEffects\)') 'Consumables must be removed and persisted before activation.'
+Require ($useItem -match 'return\s*\(\s*!affectsHealth\s*&&\s*!affectsMana\s*\)\s*\|\|') 'Non-restorative consumables such as Fame tokens must remain usable.'
+
+$typeOwners = New-Object 'System.Collections.Generic.List[string]'
+foreach ($xmlFile in Get-ChildItem -LiteralPath (Join-Path $server 'common\resources\xmls') -Filter '*.dat') {
+    try { [xml]$resource = Get-Content -LiteralPath $xmlFile.FullName -Raw } catch { continue }
+    foreach ($object in @($resource.Objects.Object)) {
+        if ([string]$object.type -match '^(?i:0x0*F971)$') { $typeOwners.Add([string]$object.id) }
+    }
+}
+Require ($typeOwners.Count -eq 1 -and $typeOwners[0] -eq '100K Fame Token') 'Type 0xF971 collides in authored server resources.'
 
 Require (($custom.Objects.Object | Where-Object id -eq 'Blacksmith').Class -eq 'ForgeStation') 'Blacksmith must reuse ForgeStation interaction architecture.'
 Require (($custom.Objects.Object | Where-Object id -eq 'Imprint Station').Class -eq 'ImprintStation') 'Imprint Station must expose the Imprint UI.'
@@ -89,5 +108,6 @@ Require ($portalService -match 'class EclipsePortalService' -and $portalService 
 Require ($starfallBehavior -notmatch 'DropPortalOnDeath\("Eclipse Citadel Portal"' -and $starfallWorld -match 'random\.NextDouble\(\)<\.05' -and $starfallWorld -match 'EclipsePortalService\.TryOpen') 'Starfall natural access must use its authoritative completion path at 5%.'
 Require ($threat -match 'EclipsePortalService\.TryOpen' -and $useItem -match 'item\.ObjectId == "Eclipse Citadel Key"' -and $useItem -match 'EclipsePortalService\.CanOpen') 'Threat and key paths must share duplicate-safe portal creation.'
 Require ($give -match 'alias: "give"' -and $give -match 'DisplayIdToObjectType' -and $give -match 'IdToObjectType') '/give must resolve the Eclipse key by its authored name.'
+Require ($fame.id -eq '100K Fame Token' -and $fame.DisplayId -eq '100K Fame Token') '/give 100K Fame Token must resolve the canonical token name without an alias or ART fallback.'
 
 Write-Host 'PASS: Eclipse gameplay cleanup validates Fame token persistence, Vault NPC/UI access, Forge/Imprint service wiring, natural blueprints, standard marks, and duplicate-safe natural/key Citadel access.'

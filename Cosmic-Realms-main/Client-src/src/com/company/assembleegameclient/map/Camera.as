@@ -19,6 +19,10 @@ public class Camera {
     public static const OFFSET_SCREEN_RECT:Rectangle = new Rectangle(-300, -450, 600, 600);
     public static var MapRectFSCentered:Rectangle = new Rectangle(-300,-325,600,600);
     public static var MapRectFSNonCentered:Rectangle = new Rectangle(-300,-450,600,600);
+    // Player.Update synchronizes a 20-square radius. Keep the logical camera
+    // footprint inside that contract even when a large stage or small mscale
+    // would otherwise expose squares the server has not sent yet.
+    public static const MAX_SYNCHRONIZED_DISTANCE:Number = 20;
 
     private const MAX_JITTER:Number = 0.5;
     private const JITTER_BUILDUP_MS:int = 10000;
@@ -59,8 +63,9 @@ public class Camera {
     public static function resetDimensions() : void
     {
         var _loc1_:Number = Parameters.data_.mscale;
-        var _loc2_:Number = WebMain.sWidth / _loc1_;
-        var _loc3_:Number = WebMain.sHeight / _loc1_;
+        var dimensions:Point = synchronizedDimensions(WebMain.sWidth / _loc1_, WebMain.sHeight / _loc1_);
+        var _loc2_:Number = dimensions.x;
+        var _loc3_:Number = dimensions.y;
         var _loc4_:Number = Number(_loc3_ / 3);
         MapRectFSCentered = new Rectangle((_loc4_ - _loc2_) / 2,-_loc3_ * 13 / 24,_loc2_,_loc3_);
         MapRectFSNonCentered = new Rectangle((_loc4_ - _loc2_) / 2,-_loc3_ * 3 / 4,_loc2_,_loc3_);
@@ -74,8 +79,9 @@ public class Camera {
         if(Parameters.data_.stageScale == StageScaleMode.NO_SCALE)
         {
             _loc2_ = Parameters.data_.mscale;
-            _loc3_ = WebMain.sWidth / _loc2_;
-            _loc4_ = WebMain.sHeight / _loc2_;
+            var dimensions:Point = synchronizedDimensions(WebMain.sWidth / _loc2_, WebMain.sHeight / _loc2_);
+            _loc3_ = dimensions.x;
+            _loc4_ = dimensions.y;
             _loc5_ = Number(200 * WebMain.sHeight / 600 / _loc2_);
             if(param1)
             {
@@ -92,8 +98,9 @@ public class Camera {
 
     public function configureCamera(_arg1:GameObject, _arg2:Boolean):void {
         var scale:Number = Parameters.data_["mscale"];
-        var width:Number = WebMain.sWidth / scale;
-        var height:Number = WebMain.sHeight / scale;
+        var dimensions:Point = synchronizedDimensions(WebMain.sWidth / scale, WebMain.sHeight / scale);
+        var width:Number = dimensions.x;
+        var height:Number = dimensions.y;
         var camera:Rectangle = Parameters.data_.centerOnPlayer ? MapRectFSCentered = new Rectangle((height / 3 - width) / 2,-height * 13 / 24,width,height) : MapRectFSNonCentered = new Rectangle((height / 3 - width) / 2,-height * 3 / 4,width,height);
         var cameraAngle:Number = Parameters.data_.cameraAngle;
         this.configure(_arg1.x_, _arg1.y_, 12, cameraAngle, camera);
@@ -107,11 +114,24 @@ public class Camera {
         var cps:Number = Math.cos(atan2) * distance + number;
         var sin:Number = Math.sin(atan2) * distance + number2;
         var scale:Number = Parameters.data_["mscale"];
-        var width:Number = WebMain.sWidth / scale;
-        var height:Number = WebMain.sHeight / scale;
+        var dimensions:Point = synchronizedDimensions(WebMain.sWidth / scale, WebMain.sHeight / scale);
+        var width:Number = dimensions.x;
+        var height:Number = dimensions.y;
         this.configure(cps,sin,number3,Parameters.data_.cameraAngle, Parameters.data_.centerOnPlayer ? MapRectFSCentered = new Rectangle((height / 3 - width) / 2,-height * 13 / 24,width,height) : MapRectFSNonCentered = new Rectangle((height / 3 - width) / 2,-height * 3 / 4,width,height));
         //this.configure(cps,sin,number3,Parameters.data_.cameraAngle,Parameters.data_.centerOnPlayer ? MapRectFSCentered : MapRectFSNonCentered);
         this.isHallucinating_ = hallucinating;
+    }
+
+    private static function synchronizedDimensions(width:Number, height:Number):Point
+    {
+        var halfDiagonalInSquares:Number = Math.sqrt(width * width + height * height) / 100;
+        var maximumHalfDiagonal:Number = MAX_SYNCHRONIZED_DISTANCE - 1;
+        if (halfDiagonalInSquares <= maximumHalfDiagonal)
+        {
+            return new Point(width, height);
+        }
+        var factor:Number = maximumHalfDiagonal / halfDiagonalInSquares;
+        return new Point(width * factor, height * factor);
     }
 
     public function startJitter():void {
@@ -179,4 +199,3 @@ public class Camera {
 
 }
 }
-

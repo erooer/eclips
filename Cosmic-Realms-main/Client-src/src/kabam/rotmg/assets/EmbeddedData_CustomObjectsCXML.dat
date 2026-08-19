@@ -1644,8 +1644,8 @@
   </Object>
 
   <Object type="0xF971" id="100K Fame Token">
-    <Class>Equipment</Class><Item/><Texture><File>lofiObj5</File><Index>0xfd</Index></Texture>
-    <SlotType>10</SlotType><Consumable/><Soulbound/><BagType>5</BagType>
+    <Class>Equipment</Class><Item/><Texture><File>lofiObj3</File><Index>0xe0</Index></Texture>
+    <SlotType>10</SlotType><Consumable/><Potion/><Soulbound/><BagType>5</BagType><Sound>use_potion</Sound>
     <Activate amount="100000">Fame</Activate><Description>Administrative testing item. Grants exactly 100,000 account Fame.</Description>
     <DisplayId>100K Fame Token</DisplayId>
   </Object>

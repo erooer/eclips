@@ -6,6 +6,7 @@ if ($IncludeAir) { & (Join-Path $PSScriptRoot 'Build-AirClient.ps1') }
 & (Join-Path $PSScriptRoot 'Test-WorldStateSynchronization.ps1') `
     -ClientSwfPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'build\client-unchanged.swf') `
     -RequireSwfBytecode
+& (Join-Path $PSScriptRoot 'Test-FameTokenContract.ps1')
 & (Join-Path $PSScriptRoot 'New-BuildManifest.ps1')
 Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
 $verified = Test-DeploymentManifest -RepositoryRoot (Split-Path -Parent $PSScriptRoot)
