@@ -37,7 +37,7 @@ public class AirMain extends Sprite {
 
         addChild(new WebMain());
         if (WebMain.BOOTSTRAP_READY) log("[AIR_BOOTSTRAP_READY] assets and application context initialized");
-        else showFatalError("The client could not finish startup. See air-client.log for details.");
+        else showStartupFailure("The client could not start. See air-client.log for details.");
     }
 
     private function loadConfig():Object {
@@ -68,23 +68,25 @@ public class AirMain extends Sprite {
         var error:Error = event.error as Error;
         var detail:String = String(event.error) + (error && error.getStackTrace() ? "\n" + error.getStackTrace() : "");
         log("[FATAL_UNCAUGHT] " + detail);
-        showFatalError("Client startup failed:\n" + String(event.error) + "\n\nSee air-client.log for details.");
+        // Runtime exceptions remain visible to developers in air-client.log,
+        // but must not replace gameplay with a diagnostic overlay or dialog.
+        event.preventDefault();
     }
 
-    private function showFatalError(message:String):void {
-        if (!stage || getChildByName("airFatalError")) return;
+    private function showStartupFailure(message:String):void {
+        if (!stage || getChildByName("airStartupFailure")) return;
         var field:TextField = new TextField();
-        field.name = "airFatalError";
-        field.defaultTextFormat = new TextFormat("_sans", 16, 0xFFFFFF);
+        field.name = "airStartupFailure";
+        field.defaultTextFormat = new TextFormat("_sans", 14, 0xFFFFFF);
         field.background = true;
-        field.backgroundColor = 0x240000;
+        field.backgroundColor = 0x242424;
         field.wordWrap = true;
-        field.multiline = true;
-        field.selectable = true;
-        field.width = Math.max(400, stage.stageWidth - 40);
-        field.height = Math.max(180, stage.stageHeight - 40);
-        field.x = 20;
-        field.y = 20;
+        field.multiline = false;
+        field.selectable = false;
+        field.width = Math.min(520, Math.max(320, stage.stageWidth - 32));
+        field.height = 42;
+        field.x = Math.max(16, (stage.stageWidth - field.width) / 2);
+        field.y = Math.max(16, (stage.stageHeight - field.height) / 2);
         field.text = message;
         addChild(field);
     }

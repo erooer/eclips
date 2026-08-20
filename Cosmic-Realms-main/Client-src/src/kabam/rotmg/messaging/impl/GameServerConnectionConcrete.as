@@ -1577,7 +1577,8 @@ public class GameServerConnectionConcrete extends GameServerConnection {
                 this.gs_.addChild(legendarySplashText);
 
                 var t:GTween = new GTween(legendarySplashText, 2, {alpha:0}, {delay: 1, ease: Sine.easeIn, onComplete: function() :void {
-                        this.gs_.removeChild(legendarySplashText);
+                        if (legendarySplashText.parent != null)
+                            legendarySplashText.parent.removeChild(legendarySplashText);
                     }});
                 return;
             case "MythicalPopupUI":
@@ -1591,7 +1592,8 @@ public class GameServerConnectionConcrete extends GameServerConnection {
                 this.gs_.addChild(mythicalSplashText);
 
                 var t2:GTween = new GTween(mythicalSplashText, 2, {alpha:0}, {delay: 1, ease: Sine.easeIn, onComplete: function() :void {
-                        this.gs_.removeChild(mythicalSplashText);
+                        if (mythicalSplashText.parent != null)
+                            mythicalSplashText.parent.removeChild(mythicalSplashText);
                     }});
                 return;
         }

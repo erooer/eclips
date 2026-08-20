@@ -63,6 +63,21 @@ namespace wServer.realm
 
             var result = new List<EclipseServiceUiEntry>();
             var owned = MaterialVaultService.GetBalance(player.Client.Account, "imprint_shard");
+            if (!HasEligibleBagItem(player))
+            {
+                foreach (var definition in Definitions.Values.OrderBy(value => value.Id))
+                    result.Add(new EclipseServiceUiEntry
+                    {
+                        ServiceKind = "imprint",
+                        Title = definition.DisplayName,
+                        Details = DescribeEffects(definition) + " | Cost " + definition.ShardCost +
+                            " shards (owned " + owned + ") | Eligible: Eclipse equipment (" + EligibleTypes.Count + " types)",
+                        Command = "",
+                        ActionLabel = "Select eligible item",
+                        Craftable = false
+                    });
+                return result;
+            }
             for (var slot = 4; slot < player.Inventory.Length; slot++)
             {
                 common.resources.Item item;
@@ -189,6 +204,18 @@ namespace wServer.realm
             if (string.IsNullOrEmpty(imprint)) return Enumerable.Empty<KeyValuePair<StatsType, int>>();
             EclipseImprintDefinition definition;
             return Definitions.TryGetValue(imprint, out definition) ? definition.Effects : Enumerable.Empty<KeyValuePair<StatsType, int>>();
+        }
+
+        private static bool HasEligibleBagItem(Player player)
+        {
+            for (var slot = 4; slot < player.Inventory.Length; slot++)
+            {
+                common.resources.Item item;
+                RInventory.ItemInstanceRecord record;
+                if (ValidateBagItem(player, slot, out item, out record) == null)
+                    return true;
+            }
+            return false;
         }
 
         private static string ValidateBagItem(Player player, int slot, out common.resources.Item item, out RInventory.ItemInstanceRecord record)

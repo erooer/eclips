@@ -22,7 +22,7 @@ if ($service -notmatch 'var imprint = GetImprint\(records\[slot\]\.Metadata\);\s
 foreach ($forbidden in @('StatsType.Luck', 'StatsType.CriticalHit', 'StatsType.CriticalDmg', 'mark', 'LegendaryMarks', 'Fame')) {
     if ($service -match [regex]::Escape($forbidden)) { throw "Forbidden Imprint dependency found: $forbidden" }
 }
-foreach ($required in @('EclipseImprintService.EffectsFor', 'base("imprint")', 'inspect', 'preview', 'apply', 'imprint_shard', 'player.Stats.ReCalculateValues')) {
+foreach ($required in @('EclipseImprintService.EffectsFor', 'base("imprint", listCommand: false)', 'inspect', 'preview', 'apply', 'imprint_shard', 'player.Stats.ReCalculateValues')) {
     if (($boost + $commands + $materials + $swap) -notmatch [regex]::Escape($required)) { throw "Missing Imprint runtime wiring: $required" }
 }
 

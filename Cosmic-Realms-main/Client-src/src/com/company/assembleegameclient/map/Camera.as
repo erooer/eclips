@@ -63,6 +63,7 @@ public class Camera {
     public static function resetDimensions() : void
     {
         var _loc1_:Number = Parameters.data_.mscale;
+        if (isNaN(_loc1_) || _loc1_ <= 0) _loc1_ = 1;
         var dimensions:Point = synchronizedDimensions(WebMain.sWidth / _loc1_, WebMain.sHeight / _loc1_);
         var _loc2_:Number = dimensions.x;
         var _loc3_:Number = dimensions.y;
@@ -82,7 +83,10 @@ public class Camera {
             var dimensions:Point = synchronizedDimensions(WebMain.sWidth / _loc2_, WebMain.sHeight / _loc2_);
             _loc3_ = dimensions.x;
             _loc4_ = dimensions.y;
-            _loc5_ = Number(200 * WebMain.sHeight / 600 / _loc2_);
+            // The character panel is a fixed 200 stage pixels. Scaling its
+            // camera exclusion by window height over-reserved space on 16:9
+            // displays and produced a large empty band beside the world.
+            _loc5_ = Number(200 / _loc2_);
             if(param1)
             {
                 return new Rectangle(-((_loc3_ - _loc5_) / 2),-(_loc4_ * 13 / 24),_loc3_,_loc4_);
@@ -98,6 +102,7 @@ public class Camera {
 
     public function configureCamera(_arg1:GameObject, _arg2:Boolean):void {
         var scale:Number = Parameters.data_["mscale"];
+        if (isNaN(scale) || scale <= 0) scale = 1;
         var dimensions:Point = synchronizedDimensions(WebMain.sWidth / scale, WebMain.sHeight / scale);
         var width:Number = dimensions.x;
         var height:Number = dimensions.y;
@@ -114,6 +119,7 @@ public class Camera {
         var cps:Number = Math.cos(atan2) * distance + number;
         var sin:Number = Math.sin(atan2) * distance + number2;
         var scale:Number = Parameters.data_["mscale"];
+        if (isNaN(scale) || scale <= 0) scale = 1;
         var dimensions:Point = synchronizedDimensions(WebMain.sWidth / scale, WebMain.sHeight / scale);
         var width:Number = dimensions.x;
         var height:Number = dimensions.y;

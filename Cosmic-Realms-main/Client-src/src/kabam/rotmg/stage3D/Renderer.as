@@ -308,8 +308,8 @@ public class Renderer {
         }
         else
         {
-            this.tX = -200 / Parameters.data_["mscale"] * (WebMain.STAGE.stageHeight / 600);
-            this.tY = !Parameters.data_.centerOnPlayer?Number((Camera.MapRectFSNonCentered.y + Camera.MapRectFSCentered.height / 2) * 2):Number(-50 / Parameters.data_["mscale"] * (WebMain.STAGE.stageHeight / 600));
+            this.tX = -200 / Parameters.data_["mscale"];
+            this.tY = !Parameters.data_.centerOnPlayer?Number((Camera.MapRectFSNonCentered.y + Camera.MapRectFSCentered.height / 2) * 2):Number(-50 / Parameters.data_["mscale"]);
         }
         //this.tX = 0;
         //this.tY = ((Parameters.data_.centerOnPlayer) ? -50 : ((Camera.OFFSET_SCREEN_RECT.y + (Camera.CENTER_SCREEN_RECT.height / 2)) * 2));

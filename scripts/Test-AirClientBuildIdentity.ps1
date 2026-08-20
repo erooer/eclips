@@ -21,6 +21,12 @@ $airMain = Get-Content -LiteralPath (Join-Path $root 'Cosmic-Realms-main\Client-
 foreach ($required in @('stage.nativeWindow.title = "Cosmic Realms - " + ClientBuildInfo.SHORT_SOURCE', '[ECLIPSE_CLIENT_BUILD]', 'AIR window title=', '[AIR_BOOTSTRAP_READY]', '[FATAL_UNCAUGHT]')) {
     if (!$airMain.Contains($required)) { throw "AIR startup does not expose its compiled build identity: $required" }
 }
+if ($airMain.Contains('airFatalError') -or $airMain.Contains('Client startup failed:')) {
+    throw 'Production AIR startup still contains the intrusive runtime diagnostic overlay.'
+}
+if (!$airMain.Contains('event.preventDefault()') -or !$airMain.Contains('field.height = 42')) {
+    throw 'AIR must log handled runtime errors and reserve only a compact startup-only fallback.'
+}
 
 $short = $ExpectedSourceCommit.Substring(0, 12).ToLowerInvariant()
 Write-Host "PASS: AIR and packaged desktop SWFs are byte-identical ($airHash) and set the native title to 'Cosmic Realms - $short'."

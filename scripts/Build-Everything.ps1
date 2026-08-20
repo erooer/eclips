@@ -1,6 +1,7 @@
 param([switch]$IncludeAir = $true)
 $ErrorActionPreference = 'Stop'
 & (Join-Path $PSScriptRoot 'Test-AirBootstrapResources.ps1')
+& (Join-Path $PSScriptRoot 'Test-AirLayoutAndImprintUi.ps1')
 & (Join-Path $PSScriptRoot 'Build-Server.ps1')
 & (Join-Path $PSScriptRoot 'Build-Client.ps1')
 if ($IncludeAir) {

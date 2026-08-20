@@ -69,7 +69,8 @@ public class ForgeListPanel extends Sprite {
         this.titleTxt.setColor(0xFFFFFF);
         this.titleTxt.setSize(21);
         this.titleTxt.setBold(true);
-        this.titleTxt.setStringBuilder(new StaticStringBuilder("Forge List"));
+        this.titleTxt.setStringBuilder(new StaticStringBuilder(
+            this.serviceOnly ? (this.initialCategory == 6 ? "Imprint Recipes" : "Blacksmith Recipes") : "Forge List"));
         this.closeTxt = new TextFieldDisplayConcrete();
         this.closeTxt.setColor(0xFFFFFF);
         this.closeTxt.setSize(21);
