@@ -83,8 +83,13 @@ function Get-DeploymentArtifactPaths {
 
     $root = [System.IO.Path]::GetFullPath($RepositoryRoot)
     $serverBin = Join-Path $root 'Cosmic-Realms-main\Server-src\bin'
+    $airBuild = Join-Path $root 'build\air'
     $required = @(
         'build\client-unchanged.swf',
+        'build\air\CosmicRealmsAir.swf',
+        'build\air\CosmicRealms.air',
+        'build\air\CosmicRealms-Desktop\CosmicRealms.exe',
+        'build\air\CosmicRealms-Desktop\CosmicRealmsAir.swf',
         'Cosmic-Realms-main\Server-src\bin\common.dll',
         'Cosmic-Realms-main\Server-src\bin\server.exe',
         'Cosmic-Realms-main\Server-src\bin\wServer.exe',
@@ -99,6 +104,7 @@ function Get-DeploymentArtifactPaths {
 
     $files = [System.Collections.Generic.List[string]]::new()
     $files.Add((Join-Path $root 'build\client-unchanged.swf'))
+    Get-ChildItem -LiteralPath $airBuild -File -Recurse | ForEach-Object { $files.Add($_.FullName) }
     foreach ($name in @('server.exe', 'wServer.exe')) { $files.Add((Join-Path $serverBin $name)) }
     Get-ChildItem -LiteralPath $serverBin -File | Where-Object { $_.Extension -in @('.dll', '.pdb') } | ForEach-Object { $files.Add($_.FullName) }
     Get-ChildItem -LiteralPath (Join-Path $serverBin 'resources') -File -Recurse | ForEach-Object { $files.Add($_.FullName) }
@@ -130,6 +136,9 @@ function New-DeploymentManifest {
         $artifacts[$relative] = (Get-FileHash -LiteralPath $absolute -Algorithm SHA256).Hash
     }
     $clientPath = 'build/client-unchanged.swf'
+    $airClientPath = 'build/air/CosmicRealmsAir.swf'
+    $airPackagePath = 'build/air/CosmicRealms.air'
+    $airDesktopClientPath = 'build/air/CosmicRealms-Desktop/CosmicRealmsAir.swf'
     $webClientPath = 'Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf'
     $worldServerPath = 'Cosmic-Realms-main/Server-src/bin/wServer.exe'
     $accountServerPath = 'Cosmic-Realms-main/Server-src/bin/server.exe'
@@ -139,6 +148,9 @@ function New-DeploymentManifest {
         validator = 'scripts/Test-ClientHandshakeProtocol.ps1'
         artifacts = [ordered]@{
             clientSwfSha256 = $artifacts[$clientPath]
+            airClientSwfSha256 = $artifacts[$airClientPath]
+            airPackageSha256 = $artifacts[$airPackagePath]
+            airDesktopClientSwfSha256 = $artifacts[$airDesktopClientPath]
             deployedClientSwfSha256 = $artifacts[$webClientPath]
             worldServerSha256 = $artifacts[$worldServerPath]
             accountServerSha256 = $artifacts[$accountServerPath]
@@ -154,6 +166,7 @@ function New-DeploymentManifest {
             createLoadReady = $true
             encryptedHandshakeProbe = $true
             runtimeClientBuildIdentity = $true
+            airNativeWindowBuildIdentity = $true
         }
         clientBuildIdentity = [ordered]@{
             sourceCommit = $SourceCommit
@@ -194,6 +207,10 @@ function Test-DeploymentManifest {
     $manifestPaths = @($manifest.artifacts.PSObject.Properties.Name | Sort-Object -Unique)
     $requiredPaths = @(
         'build/client-unchanged.swf',
+        'build/air/CosmicRealmsAir.swf',
+        'build/air/CosmicRealms.air',
+        'build/air/CosmicRealms-Desktop/CosmicRealms.exe',
+        'build/air/CosmicRealms-Desktop/CosmicRealmsAir.swf',
         'Cosmic-Realms-main/Server-src/bin/common.dll',
         'Cosmic-Realms-main/Server-src/bin/server.exe',
         'Cosmic-Realms-main/Server-src/bin/wServer.exe',
@@ -219,6 +236,9 @@ function Test-DeploymentManifest {
     }
     $protocolArtifactBindings = [ordered]@{
         clientSwfSha256 = 'build/client-unchanged.swf'
+        airClientSwfSha256 = 'build/air/CosmicRealmsAir.swf'
+        airPackageSha256 = 'build/air/CosmicRealms.air'
+        airDesktopClientSwfSha256 = 'build/air/CosmicRealms-Desktop/CosmicRealmsAir.swf'
         deployedClientSwfSha256 = 'Cosmic-Realms-main/Server-src/bin/resources/web/rotmg.swf'
         worldServerSha256 = 'Cosmic-Realms-main/Server-src/bin/wServer.exe'
         accountServerSha256 = 'Cosmic-Realms-main/Server-src/bin/server.exe'
@@ -234,7 +254,7 @@ function Test-DeploymentManifest {
             throw "Protocol validation evidence contains an invalid packet mapping for $($entry.Key)."
         }
     }
-    foreach ($contract in @('compiledClientBytecode', 'compiledWorldServerPacketTable', 'rc4Keys', 'rsaHello', 'helloSerialization', 'nexusMapInfo', 'createLoadReady', 'encryptedHandshakeProbe', 'runtimeClientBuildIdentity')) {
+    foreach ($contract in @('compiledClientBytecode', 'compiledWorldServerPacketTable', 'rc4Keys', 'rsaHello', 'helloSerialization', 'nexusMapInfo', 'createLoadReady', 'encryptedHandshakeProbe', 'runtimeClientBuildIdentity', 'airNativeWindowBuildIdentity')) {
         if ($protocol.contracts.PSObject.Properties[$contract].Value -ne $true) {
             throw "Protocol validation evidence is missing required successful check: $contract"
         }
@@ -258,6 +278,9 @@ function Test-DeploymentManifest {
     $clientHash = (Get-FileHash -LiteralPath (Join-Path $artifactRootPath 'build\client-unchanged.swf') -Algorithm SHA256).Hash
     $webHash = (Get-FileHash -LiteralPath (Join-Path $artifactRootPath 'Cosmic-Realms-main\Server-src\bin\resources\web\rotmg.swf') -Algorithm SHA256).Hash
     if ($clientHash -ne $webHash) { throw 'Stale SWF copy: build client and deployable server web client differ.' }
+    $airHash = (Get-FileHash -LiteralPath (Join-Path $artifactRootPath 'build\air\CosmicRealmsAir.swf') -Algorithm SHA256).Hash
+    $desktopAirHash = (Get-FileHash -LiteralPath (Join-Path $artifactRootPath 'build\air\CosmicRealms-Desktop\CosmicRealmsAir.swf') -Algorithm SHA256).Hash
+    if ($airHash -ne $desktopAirHash) { throw 'Stale AIR SWF copy: build client and packaged desktop client differ.' }
 
     if ($RequireArtifactBundleCommit) {
         if (!$ExpectedHead) { $ExpectedHead = (& git -C $root rev-parse HEAD).Trim() }

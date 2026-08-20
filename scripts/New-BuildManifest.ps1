@@ -11,4 +11,7 @@ Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
     -RequireSwfBytecode
 & (Join-Path $PSScriptRoot 'Test-ClientBuildIdentity.ps1') `
     -ClientSwfPath (Join-Path $RepositoryRoot 'build\client-unchanged.swf')
+& (Join-Path $PSScriptRoot 'Test-AirClientBuildIdentity.ps1') `
+    -AirSwfPath (Join-Path $RepositoryRoot 'build\air\CosmicRealmsAir.swf') `
+    -DesktopSwfPath (Join-Path $RepositoryRoot 'build\air\CosmicRealms-Desktop\CosmicRealmsAir.swf')
 New-DeploymentManifest -RepositoryRoot $RepositoryRoot -OutputPath $OutputPath -ProtocolValidationPassed | Out-Null

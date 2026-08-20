@@ -35,7 +35,7 @@ if (!$compiledText.Contains($expected)) { throw "Compiled SWF does not contain i
 if (!$compiledText.Contains("Eclipse client $short")) { throw "Compiled SWF does not expose the expected runtime build label Eclipse client $short." }
 
 $webMain = Get-Content -LiteralPath (Join-Path $root 'Cosmic-Realms-main\Client-src\src\WebMain.as') -Raw
-foreach ($required in @('ECLIPSE_CLIENT_BUILD', 'ContextMenuItem(ClientBuildInfo.LABEL', 'publishClientBuildIdentity')) {
+foreach ($required in @('ECLIPSE_CLIENT_BUILD', 'ClientBuildInfo.LABEL', 'ClientBuildInfo.SOURCE_COMMIT', 'publishClientBuildIdentity', 'clientBuildIdentity')) {
     if (!$webMain.Contains($required)) { throw "Production client build identity is not observable at runtime: $required" }
 }
 

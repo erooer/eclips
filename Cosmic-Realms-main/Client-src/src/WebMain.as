@@ -18,9 +18,6 @@ import flash.events.KeyboardEvent;
 import flash.events.MouseEvent;
 import flash.system.Capabilities;
 import flash.text.TextField;
-import flash.ui.ContextMenu;
-import flash.ui.ContextMenuItem;
-
 import eclipse.ClientBuildInfo;
 
 import kabam.lib.net.NetConfig;
@@ -150,14 +147,16 @@ public class WebMain extends Sprite {
     }
 
     private function publishClientBuildIdentity():void {
-        // This is deliberately visible in the production projector's context
-        // menu as well as the debug trace. It proves which compiled client is
-        // executing; checking the server's rotmg.swf on disk cannot prove that
-        // a standalone projector did not open an older local/cached SWF.
-        trace("[ECLIPSE_CLIENT_BUILD] " + ClientBuildInfo.LABEL);
-        var menu:ContextMenu = this.contextMenu || new ContextMenu();
-        menu.customItems.push(new ContextMenuItem(ClientBuildInfo.LABEL, false, false));
-        this.contextMenu = menu;
+        // AIR exposes this identity in its native window title. Retain the trace
+        // marker for projector/debug builds without importing Flash ContextMenu,
+        // whose type conflicts with AIR's NativeMenu API.
+        trace("[ECLIPSE_CLIENT_BUILD] " + this.clientBuildIdentity);
+    }
+
+    public function get clientBuildIdentity():String {
+        // Keep the identity reachable in optimized non-AIR builds as well. Public
+        // accessors are retained by mxmlc even when trace statements are omitted.
+        return ClientBuildInfo.LABEL + " (" + ClientBuildInfo.SOURCE_COMMIT + ")";
     }
 
     private function setEnvironment():void {

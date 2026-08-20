@@ -31,13 +31,17 @@ try {
     Invoke-Git @('config', 'user.name', 'Artifact Test')
     Set-FixtureFile 'source.txt' 'source revision'
     Set-FixtureFile '.gitignore' 'Cosmic-Realms-main/Server-src/bin/'
-    Set-FixtureFile '.gitattributes' "build/client-unchanged.swf -text`nCosmic-Realms-main/Server-src/bin/** -text"
+    Set-FixtureFile '.gitattributes' "build/client-unchanged.swf -text`nbuild/air/** -text`nCosmic-Realms-main/Server-src/bin/** -text"
     Invoke-Git @('add', 'source.txt', '.gitignore', '.gitattributes')
     Invoke-Git @('commit', '--quiet', '-m', 'source')
     $sourceCommit = (& git -C $testRoot rev-parse HEAD).Trim()
 
     $clientBytes = [byte[]](0, 13, 10, 255, 83, 87, 70)
     Set-FixtureBytes 'build\client-unchanged.swf' $clientBytes
+    Set-FixtureBytes 'build\air\CosmicRealmsAir.swf' $clientBytes
+    Set-FixtureBytes 'build\air\CosmicRealms.air' ([byte[]](0, 65, 73, 82, 255))
+    Set-FixtureBytes 'build\air\CosmicRealms-Desktop\CosmicRealms.exe' ([byte[]](0, 69, 88, 69, 255))
+    Set-FixtureBytes 'build\air\CosmicRealms-Desktop\CosmicRealmsAir.swf' $clientBytes
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\common.dll' ([byte[]](0, 68, 76, 76, 255))
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\common.pdb' ([byte[]](0, 80, 68, 66, 255))
     Set-FixtureBytes 'Cosmic-Realms-main\Server-src\bin\server.exe' ([byte[]](0, 69, 88, 69, 255))
@@ -126,6 +130,7 @@ try {
         @{ Path = 'Cosmic-Realms-main\Server-src\bin\wServer.exe'; Error = 'wServer.exe' },
         @{ Path = 'Cosmic-Realms-main\Server-src\bin\common.pdb'; Error = 'common.pdb' },
         @{ Path = 'build\client-unchanged.swf'; Error = 'client-unchanged.swf' },
+        @{ Path = 'build\air\CosmicRealmsAir.swf'; Error = 'CosmicRealmsAir.swf' },
         @{ Path = 'Cosmic-Realms-main\Server-src\bin\resources\xmls\Extra.dat'; Error = 'Extra.dat' }
     )) {
         Add-Content -LiteralPath (Join-Path $testRoot $fixture.Path) -Value 'stale'

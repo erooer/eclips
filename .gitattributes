@@ -1,4 +1,5 @@
 # Deployment artifacts are hashed byte-for-byte. Never transform them during
 # checkout, otherwise a manifest produced on the PC would fail on the VPS.
 build/client-unchanged.swf -text
+build/air/** binary
 Cosmic-Realms-main/Server-src/bin/** -text
