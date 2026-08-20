@@ -12,7 +12,6 @@ import com.company.assembleegameclient.util.StageProxy;
 import flash.display.LoaderInfo;
 import flash.display.Sprite;
 import flash.display.Stage;
-import flash.display.StageAlign;
 import flash.display.StageScaleMode;
 import flash.events.Event;
 import flash.events.KeyboardEvent;
@@ -111,13 +110,10 @@ public class WebMain extends Sprite {
     }
 
     public function onStageResize(_arg_1:Event):void {
-        // The game, camera, HUD and Stage3D renderer all consume the real stage
-        // dimensions. Scaling this root as well applied a second, non-uniform
-        // transform and left most of a maximized AIR window unusable.
-        this.scaleX = 1;
-        this.scaleY = 1;
-        this.x = 0;
-        this.y = 0;
+        this.scaleX = stage.stageWidth / 800;
+        this.scaleY = stage.stageHeight / 600;
+        this.x = (800 - stage.stageWidth) >> 1;
+        this.y = (600 - stage.stageHeight) >> 1;
         sWidth = stage.stageWidth;
         sHeight = stage.stageHeight;
         Camera.resetDimensions();
@@ -126,7 +122,6 @@ public class WebMain extends Sprite {
 
     private function setup():void {
         stage.scaleMode = StageScaleMode.NO_SCALE;
-        stage.align = StageAlign.TOP_LEFT;
         this.publishClientBuildIdentity();
         this.initFlashVars();
         this.setEnvironment();
@@ -149,7 +144,6 @@ public class WebMain extends Sprite {
         if (Parameters.data_.GPURender == true) {
             Parameters.data_.GPURender = false;
         }
-        this.onStageResize(null);
     }
 
     private function publishClientBuildIdentity():void {

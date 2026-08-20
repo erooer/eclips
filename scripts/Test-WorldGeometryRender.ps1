@@ -19,11 +19,10 @@ foreach ($required in @($compiler, $projector, $probeSource, $ClientSwfPath)) {
 }
 
 $squareSource = Get-Content -LiteralPath (Join-Path $project 'src\com\company\assembleegameclient\map\Square.as') -Raw
-if ($squareSource -match 'lastVisible_\s*=\s*0') { throw 'Square face clipping can still clear anchored-object visibility.' }
+if ($squareSource -notmatch 'lastVisible_\s*=\s*0') { throw 'Square no longer matches the original visibility lifecycle.' }
 $faceSource = Get-Content -LiteralPath (Join-Path $project 'src\com\company\assembleegameclient\engine3d\Face3D.as') -Raw
-foreach ($edge in @('entirelyLeft', 'entirelyRight', 'entirelyAbove', 'entirelyBelow')) {
-    if ($faceSource -notmatch $edge) { throw "Face3D is missing polygon/viewport edge rejection state: $edge" }
-}
+if ($faceSource -match 'entirelyLeft|entirelyRight|entirelyAbove|entirelyBelow' -or
+    $faceSource -notmatch 'var _local7:Boolean = true') { throw 'Face3D no longer matches the original vertex visibility test.' }
 
 try {
     $env:PLAYERGLOBAL_HOME = $playerGlobalHome

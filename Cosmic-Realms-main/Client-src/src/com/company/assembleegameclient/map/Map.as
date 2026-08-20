@@ -396,12 +396,7 @@ public class Map extends AbstractMap {
 
         // visible tiles
         var sqr:Square;
-        // Camera dimensions expand with the actual stage size and mscale. A
-        // fixed 15-tile traversal leaves camera-visible squares (and every
-        // static object anchored to them) out of the render collections on
-        // larger windows. Use the same camera-derived distance that drives
-        // client culling so synchronized geometry cannot be silently skipped.
-        var len:int = Math.ceil(camera.maxDist_);
+        var len:int = 15;
         for (var i:int = -len; i <= len; i++) {
             for (var j:int = -len; j <= len; j++) {
                 if (i * i + j * j <= len * len) {

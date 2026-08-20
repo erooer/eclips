@@ -436,63 +436,100 @@ public class GameSprite extends AGameSprite {
     }
 
     public function onScreenResize(_arg_1:Event):void {
-        var mapScale:Number = Number(Parameters.data_.mscale);
-        if (isNaN(mapScale) || mapScale <= 0) mapScale = 1;
-        var chatScale:Number = Number(Parameters.data_.ScaleChat);
-        if (isNaN(chatScale) || chatScale <= 0) chatScale = 1;
-        var hudX:Number = Math.max(0, stage.stageWidth - 200);
+        var _local_5:Number;
+        var _local_2:Boolean = Parameters.data_.uiscale;
+        var _local_3:Number = (800 / stage.stageWidth);
+        var _local_6:Number = (600 / stage.stageHeight);
+        var _local_7:Number = (_local_3 / _local_6);
         if (this.hudView != null) {
-            this.hudView.scaleX = 1;
-            this.hudView.scaleY = 1;
-            this.hudView.x = hudX;
-            this.hudView.y = 0;
+            if (_local_2) {
+                this.hudView.scaleX = _local_7;
+                this.hudView.scaleY = 1;
+                this.hudView.y = 0;
+            } else {
+                this.hudView.scaleX = _local_3;
+                this.hudView.scaleY = _local_6;
+                this.hudView.y = (300 * (1 - _local_6));
+            }
+            this.hudView.x = (800 - (200 * this.hudView.scaleX));
             if (this.creditDisplay_ != null) {
-                this.creditDisplay_.x = hudX - 6;
+                this.creditDisplay_.x = (this.hudView.x - (6 * this.creditDisplay_.scaleX));
             }
         }
         if (this.bossCombatHUD != null) {
-            this.bossCombatHUD.scaleX = 1;
-            this.bossCombatHUD.scaleY = 1;
-            this.bossCombatHUD.x = Math.max(0, ((stage.stageWidth - 200) - 300) / 2);
-            this.bossCombatHUD.y = 5;
+            if (_local_2) {
+                this.bossCombatHUD.scaleX = _local_7;
+                this.bossCombatHUD.scaleY = 1;
+            } else {
+                this.bossCombatHUD.scaleX = _local_3;
+                this.bossCombatHUD.scaleY = _local_6;
+            }
+            this.bossCombatHUD.x = (400 - (150 * this.bossCombatHUD.scaleX));
+            this.bossCombatHUD.y = (5 * this.bossCombatHUD.scaleY);
         }
         if (this.map) {
-            this.map.scaleX = mapScale;
-            this.map.scaleY = mapScale;
+            _local_5 = Parameters.data_.mscale = !null ? Parameters.data_.mscale : 1;
+            this.map.scaleX = (_local_3 * _local_5);
+            this.map.scaleY = (_local_6 * _local_5);
         }
         if (this.chatBox_ != null) {
-            this.chatBox_.scaleX = chatScale;
-            this.chatBox_.scaleY = chatScale;
-            this.chatBox_.y = Math.max(0, stage.stageHeight - (300 * chatScale));
+            this.chatBox_.scaleX = _local_7 * Parameters.data_.ScaleChat;
+            this.chatBox_.scaleY = 1 * Parameters.data_.ScaleChat;
+            this.chatBox_.y = (300 + (300 * (1 - this.chatBox_.scaleY)));
         }
         if (this.rankText_ != null) {
-            this.rankText_.scaleX = 1;
-            this.rankText_.scaleY = 1;
-            this.rankText_.x = 8;
-            this.rankText_.y = 2;
+            if (_local_2) {
+                this.rankText_.scaleX = _local_7;
+                this.rankText_.scaleY = 1;
+            } else {
+                this.rankText_.scaleX = _local_3;
+                this.rankText_.scaleY = _local_6;
+            }
+            this.rankText_.x = (8 * this.rankText_.scaleX);
+            this.rankText_.y = (2 * this.rankText_.scaleY);
         }
         if (this.guildText_ != null) {
-            this.guildText_.scaleX = 1;
-            this.guildText_.scaleY = 1;
-            this.guildText_.x = 64;
-            this.guildText_.y = 2;
+            if (_local_2) {
+                this.guildText_.scaleX = _local_7;
+                this.guildText_.scaleY = 1;
+            } else {
+                this.guildText_.scaleX = _local_3;
+                this.guildText_.scaleY = _local_6;
+            }
+            this.guildText_.x = (64 * this.guildText_.scaleX);
+            this.guildText_.y = (2 * this.guildText_.scaleY);
         }
         if (this.creditDisplay_ != null) {
-            this.creditDisplay_.scaleX = 1;
-            this.creditDisplay_.scaleY = 1;
+            if (_local_2) {
+                this.creditDisplay_.scaleX = _local_7;
+                this.creditDisplay_.scaleY = 1;
+            } else {
+                this.creditDisplay_.scaleX = _local_3;
+                this.creditDisplay_.scaleY = _local_6;
+            }
         }
         if (this.giftStatusDisplay != null) {
-            this.giftStatusDisplay.scaleX = 1;
-            this.giftStatusDisplay.scaleY = 1;
-            this.giftStatusDisplay.x = 6;
-            this.giftStatusDisplay.y = 66;
+            if (_local_2) {
+                this.giftStatusDisplay.scaleX = _local_7;
+                this.giftStatusDisplay.scaleY = 1;
+            } else {
+                this.giftStatusDisplay.scaleX = _local_3;
+                this.giftStatusDisplay.scaleY = _local_6;
+            }
+            this.giftStatusDisplay.x = (6 * this.giftStatusDisplay.scaleX);
+            this.giftStatusDisplay.y = (66 * this.giftStatusDisplay.scaleY);
         }
         var _local_4:int = 98;
         if (this.newsModalButton != null) {
-            this.newsModalButton.scaleX = 1;
-            this.newsModalButton.scaleY = 1;
-            this.newsModalButton.x = 6;
-            this.newsModalButton.y = _local_4;
+            if (_local_2) {
+                this.newsModalButton.scaleX = _local_7;
+                this.newsModalButton.scaleY = 1;
+            } else {
+                this.newsModalButton.scaleX = _local_3;
+                this.newsModalButton.scaleY = _local_6;
+            }
+            this.newsModalButton.x = (6 * this.newsModalButton.scaleX);
+            this.newsModalButton.y = (_local_4 * this.newsModalButton.scaleY);
             _local_4 = 130;
         }
     }

@@ -22,32 +22,39 @@ $packet = Read-Source 'Cosmic-Realms-main\Client-src\src\kabam\rotmg\messaging\i
 
 foreach ($required in @(
     'stage.scaleMode = StageScaleMode.NO_SCALE',
-    'stage.align = StageAlign.TOP_LEFT',
-    'this.scaleX = 1',
-    'this.scaleY = 1',
+    'this.scaleX = stage.stageWidth / 800',
+    'this.scaleY = stage.stageHeight / 600',
+    'this.x = (800 - stage.stageWidth) >> 1',
+    'this.y = (600 - stage.stageHeight) >> 1',
     'sWidth = stage.stageWidth',
     'Camera.resetDimensions()',
     'Stage3DConfig.resetDimensions()')) {
-    Require ($web.Contains($required)) "AIR root resize contract is missing: $required"
+    Require ($web.Contains($required)) "Original AIR resize contract is missing: $required"
 }
-Require (!$web.Contains('this.scaleX = stage.stageWidth / 800')) 'WebMain must not scale the root a second time.'
-Require ($game.Contains('stage.stageWidth - 200') -and $game.Contains('this.hudView.x = hudX')) 'The 200px HUD is not anchored to the right edge.'
-Require ($game.Contains('this.map.scaleX = mapScale') -and $game.Contains('this.map.scaleY = mapScale')) 'World scaling must remain uniform.'
-Require ($camera.Contains('_loc5_ = Number(200 / _loc2_)')) 'Camera culling does not reserve the fixed HUD width.'
-Require ($stageProxy.Contains('this.reference.stage.stageWidth') -and $stageProxy.Contains('this.reference.stage.stageHeight')) 'StageProxy still hides the real AIR window size.'
-Require (!$renderer.Contains('WebMain.STAGE.stageHeight / 600')) 'Stage3D HUD translation must not grow with window height.'
+Require (!$web.Contains('stage.align = StageAlign.TOP_LEFT')) 'The AIR-specific top-left alignment override is still active.'
+Require ($game.Contains('var _local_3:Number = (800 / stage.stageWidth)') -and
+    $game.Contains('var _local_6:Number = (600 / stage.stageHeight)') -and
+    $game.Contains('this.hudView.x = (800 - (200 * this.hudView.scaleX))')) 'The original HUD inverse-scale/anchor contract is missing.'
+Require ($game.Contains('this.map.scaleX = (_local_3 * _local_5)') -and
+    $game.Contains('this.map.scaleY = (_local_6 * _local_5)')) 'The original world scale compensation is missing.'
+Require ($camera.Contains('_loc5_ = Number(200 * WebMain.sHeight / 600 / _loc2_)')) 'The original camera HUD exclusion contract is missing.'
+Require ($stageProxy.Contains('return 800') -and $stageProxy.Contains('return 600')) 'StageProxy no longer exposes the original logical 800x600 stage.'
+Require ($renderer.Contains('WebMain.STAGE.stageHeight / 600')) 'The original Stage3D translation scaling is missing.'
 
-# Exercise the invariant at the baseline and common 16:9 desktop sizes. The
-# world area grows, the fixed HUD remains on-screen, and X/Y map scale matches.
+# Exercise the original two-layer transform at the baseline and common desktop
+# sizes. The root fills the physical window while child UI/world transforms
+# preserve the logical 800x600 composition used by the known-good client.
 foreach ($size in @(
     @{ W = 800; H = 600 },
     @{ W = 1920; H = 1080 },
     @{ W = 2560; H = 1440 },
     @{ W = 3840; H = 2160 })) {
-    $hudX = $size.W - 200
-    $worldWidth = $size.W - 200
-    Require ($hudX -ge 0 -and ($hudX + 200) -eq $size.W) "HUD anchoring failed at $($size.W)x$($size.H)."
-    Require ($worldWidth -gt 0 -and $size.H -gt 0) "World viewport failed at $($size.W)x$($size.H)."
+    $rootScaleX = $size.W / 800
+    $rootScaleY = $size.H / 600
+    $childScaleX = 800 / $size.W
+    $childScaleY = 600 / $size.H
+    Require ([Math]::Abs(($rootScaleX * $childScaleX) - 1) -lt 0.000001) "Horizontal round-trip scaling failed at $($size.W)x$($size.H)."
+    Require ([Math]::Abs(($rootScaleY * $childScaleY) - 1) -lt 0.000001) "Vertical round-trip scaling failed at $($size.W)x$($size.H)."
 }
 
 foreach ($definition in '"swift"', '"bulwark"', '"focused"', '"hunter"') {
@@ -72,4 +79,4 @@ Require (!$connection.Contains('this.gs_.removeChild(legendarySplashText)') -and
 Require ($connection.Contains('legendarySplashText.parent.removeChild') -and
     $connection.Contains('mythicalSplashText.parent.removeChild')) 'Splash tweens do not clean up through their actual display parent.'
 
-Write-Host 'PASS: AIR root/HUD/camera layout covers windowed and 1080p/1440p/4K, Imprint recipes are authoritative and non-empty, and runtime diagnostics stay log-only.'
+Write-Host 'PASS: original AIR 800x600 root/HUD/camera behavior is restored across windowed and 1080p/1440p/4K resize round trips; Imprint recipes and log-only diagnostics remain intact.'

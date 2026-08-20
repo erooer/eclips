@@ -36,7 +36,6 @@ public class Stage3DConfig implements IConfig {
     public static function resetDimensions():void
     {
         var scale:Number = Parameters.data_["mscale"];
-        if (isNaN(scale) || scale <= 0) scale = 1;
         var width:Number = WebMain.sWidth / scale;
         var height:Number = WebMain.sHeight / scale;
         WIDTH = width;

@@ -20,11 +20,11 @@ public class StageProxy implements IEventDispatcher {
     }
 
     public function getStageWidth():Number {
-        return this.reference.stage != null ? this.reference.stage.stageWidth : 800;
+        return 800;
     }
 
     public function getStageHeight():Number {
-        return this.reference.stage != null ? this.reference.stage.stageHeight : 600;
+        return 600;
     }
 
     public function getFocus():InteractiveObject {

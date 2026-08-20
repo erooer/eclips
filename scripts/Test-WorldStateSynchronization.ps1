@@ -124,16 +124,14 @@ if ($textureFactory -match 'function\s+make\([^}]+count\s*>\s*1000[^}]+disposeNo
     throw 'Stage3D texture eviction can still dispose resources before the submitted frame is presented.'
 }
 if ($webMain -notmatch 'Parameters\.data_\.GPURender\s*==\s*true[\s\S]*?Parameters\.data_\.GPURender\s*=\s*false' -or
-    $clientMap -match 'var\s+len:int\s*=\s*15' -or
-    $clientMap -notmatch 'var\s+len:int\s*=\s*Math\.ceil\(camera\.maxDist_\)') {
-    throw 'The software renderer does not traverse the complete camera-visible world radius.'
+    $clientMap -notmatch 'var\s+len:int\s*=\s*15' -or
+    $clientMap -match 'var\s+len:int\s*=\s*Math\.ceil\(camera\.maxDist_\)') {
+    throw 'The software renderer no longer uses the original 15-square traversal footprint.'
 }
 $serverRadiusMatch = [regex]::Match($playerUpdate, '(?:public|private)\s+const\s+int\s+Radius\s*=\s*(\d+)')
-$clientRadiusMatch = [regex]::Match($clientCamera, 'MAX_SYNCHRONIZED_DISTANCE:Number\s*=\s*(\d+)')
-if (!$serverRadiusMatch.Success -or !$clientRadiusMatch.Success -or
-    [int]$serverRadiusMatch.Groups[1].Value -ne [int]$clientRadiusMatch.Groups[1].Value -or
-    $clientCamera -notmatch 'synchronizedDimensions\(WebMain\.sWidth\s*/\s*scale,\s*WebMain\.sHeight\s*/\s*scale\)') {
-    throw 'The client camera footprint is not aligned with the server synchronization radius.'
+if (!$serverRadiusMatch.Success -or
+    $clientCamera -match 'MAX_SYNCHRONIZED_DISTANCE|synchronizedDimensions') {
+    throw 'The experimental client camera synchronization clamp is still present.'
 }
 $synchronizationRadius = [int]$serverRadiusMatch.Groups[1].Value
 
@@ -317,21 +315,14 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
     if ($probe.MaxFrameLength -gt $bufferSize) { throw "$worldName emitted an oversized UPDATE frame." }
     if ($spawnPositions.Count -eq 0) { throw "$worldName has no authored Spawn region for render-path validation." }
 
-    # At 1280x720 with the shipped 0.8 mscale, Camera.maxDist_ is still within
-    # the server's 20-tile synchronization radius but exceeds the old hardcoded
-    # 15-tile renderer radius. Track authored static geometry through the exact
-    # client candidate predicate used by Map.draw.
-    $cameraDistance = [Math]::Sqrt([Math]::Pow((1280 / 0.8) / 100, 2) + [Math]::Pow((720 / 0.8) / 100, 2)) + 1
-    $renderRadius = [Math]::Ceiling($cameraDistance)
-    if ($renderRadius -gt $synchronizationRadius) { throw 'Render regression viewport exceeds the server synchronization radius.' }
+    # Track authored static geometry through the original Map.draw candidate
+    # footprint. The root/UI resize transforms keep this logical footprint
+    # stable while the AIR window changes size.
+    $renderRadius = 15
     $spawn = $spawnPositions[0]
     $renderCandidates = @($mapObjectPositions | Where-Object {
         $dx = $_.X - $spawn[0]; $dy = $_.Y - $spawn[1]
         ($dx * $dx + $dy * $dy) -le ($renderRadius * $renderRadius)
-    })
-    $legacyDropped = @($renderCandidates | Where-Object {
-        $dx = $_.X - $spawn[0]; $dy = $_.Y - $spawn[1]
-        ($dx * $dx + $dy * $dy) -gt (15 * 15)
     })
     $submittedIds = New-Object 'System.Collections.Generic.HashSet[string]'
     foreach ($candidate in $renderCandidates) {
@@ -350,7 +341,6 @@ foreach ($worldName in @('Nexus', 'Vault', 'PirateCave')) {
         Collidable = $collidable
         FactoryAccepted = $factoryAccepted
         RenderCandidates = $renderCandidates.Count
-        LegacyDropped = $legacyDropped.Count
         Packets = $probe.PacketCount
         MaxFrame = $probe.MaxFrameLength
     }
@@ -385,18 +375,14 @@ if ($currentFrame.Count -ne $submittedTextures.Count) { throw 'Frame-safe textur
 
 foreach ($result in $worldResults) {
     if ($result.FactoryAccepted -ne $result.Objects) { throw "$($result.World) client factory dropped authored objects." }
-    Write-Host ("PASS: {0} authored state -> UPDATE -> ObjectLibrary/Map/render: tiles={1}, objects={2}, factoryAccepted={3}, renderCandidates={4}, formerlySkipped={5}, collidable={6}, packets={7}, maxFrame={8}." -f
-        $result.World, $result.Tiles, $result.Objects, $result.FactoryAccepted, $result.RenderCandidates, $result.LegacyDropped, $result.Collidable, $result.Packets, $result.MaxFrame)
+    Write-Host ("PASS: {0} authored state -> UPDATE -> ObjectLibrary/original Map render footprint: tiles={1}, objects={2}, factoryAccepted={3}, renderCandidates={4}, collidable={5}, packets={6}, maxFrame={7}." -f
+        $result.World, $result.Tiles, $result.Objects, $result.FactoryAccepted, $result.RenderCandidates, $result.Collidable, $result.Packets, $result.MaxFrame)
 }
 Write-Host "PASS: client registers all $($serverObjectsByType.Count) server object and $($serverGroundsByType.Count) ground types representable by UPDATE."
 Write-Host "PASS: oversized initial/subsequent UPDATE probe preserved $($stress.TileCount) tiles and $($stress.ObjectCount) objects across $($stress.PacketCount) bounded frames."
 Write-Host 'PASS: Stage3D texture retention is frame-safe; eviction occurs only after Context3D.present().'
 Write-Host "PASS: renderer stress retained all $($currentFrame.Count) submitted textures; legacy mid-frame purge retained only $($legacyAlive.Count)."
-Write-Host 'PASS: software Map.draw uses Camera.maxDist_; repeated 1280x720 world entries preserve every synchronized render candidate beyond the former 15-tile cutoff.'
-$largeViewportDistance = [Math]::Sqrt([Math]::Pow((3840 / 0.8) / 100, 2) + [Math]::Pow((2160 / 0.8) / 100, 2)) + 1
-$clampedViewportDistance = [Math]::Min($largeViewportDistance, $synchronizationRadius)
-if ($clampedViewportDistance -ne $synchronizationRadius) { throw 'Large viewport synchronization clamp regression.' }
-Write-Host "PASS: 4K client camera footprint is clamped to the server's $synchronizationRadius-square synchronization radius."
+Write-Host "PASS: software Map.draw retains the original 15-square render footprint inside the server's $synchronizationRadius-square synchronization radius across repeated world entries."
 
 if ($ClientSwfPath) {
     $resolvedClientSwf = (Resolve-Path -LiteralPath $ClientSwfPath).Path
