@@ -6316,10 +6316,10 @@
 		<Enemy/>
 		<DisplayId>SW Boss</DisplayId>
 		<Class>Character</Class>
-		<Texture>
+		<AnimatedTexture>
 			<File>petsDivine</File>
 			<Index>09</Index>
-		</Texture>
+		</AnimatedTexture>
 			<AltTexture id="1">
 				<Texture>
 					<File>SilentWilderness16x16Objects</File>
@@ -17347,10 +17347,10 @@
     <Enemy/>
     <DisplayId>Shrek</DisplayId>
     <Class>Character</Class>
-    <AnimatedTexture>
+    <Texture>
       <File>lostHallsObjects16x16</File>
       <Index>0x00</Index>
-    </AnimatedTexture>
+    </Texture>
     <HitSound>monster/oryx_hit</HitSound>
     <DeathSound>monster/abyss_brutes_death</DeathSound>
     <Size>160</Size>
@@ -17801,10 +17801,10 @@
     <Class>Portal</Class>
     <IntergamePortal/>
     <DungeonName>Castle of Cyberious</DungeonName>
-    <Texture>
+    <AnimatedTexture>
       <File>chars16x16dEncounters</File>
-      <Index>62</Index>
-    </Texture>
+      <Index>61</Index>
+    </AnimatedTexture>
     <Size>145</Size>
     <DisplayId>Castle of Cyberious Portal</DisplayId>
   </Object>
@@ -23462,7 +23462,7 @@
     <Item/>
     <LG/>
     <Texture>
-      <File>lofiObj0</File>
+      <File>lofiObj8</File>
       <Index>0x17</Index>
     </Texture>
     <SlotType>12</SlotType>
@@ -30718,8 +30718,8 @@
   <Object type="0xaffa" id="Gilded Arrow">
     <Class>Projectile</Class>
     <Texture>
-      <File>theMachineObjects8x8</File>
-      <Index>0x7e</Index>
+      <File>lofiObj3</File>
+      <Index>0xff</Index>
     </Texture>
     <AngleCorrection>1</AngleCorrection>
     <Size>100</Size>

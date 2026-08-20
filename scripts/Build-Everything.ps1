@@ -1,5 +1,6 @@
 param([switch]$IncludeAir = $true)
 $ErrorActionPreference = 'Stop'
+& (Join-Path $PSScriptRoot 'Test-AirBootstrapResources.ps1')
 & (Join-Path $PSScriptRoot 'Build-Server.ps1')
 & (Join-Path $PSScriptRoot 'Build-Client.ps1')
 if ($IncludeAir) {
@@ -19,4 +20,8 @@ if ($IncludeAir) { & (Join-Path $PSScriptRoot 'Test-AirClientBuildIdentity.ps1')
 Import-Module (Join-Path $PSScriptRoot 'DeploymentArtifacts.psm1') -Force
 $verified = Test-DeploymentManifest -RepositoryRoot (Split-Path -Parent $PSScriptRoot)
 Write-Host "PASS: deployment manifest contains and verifies $($verified.ArtifactPaths.Count) deployment artifacts."
+if ($IncludeAir) {
+    & (Join-Path $PSScriptRoot 'Launch-Client.ps1') -ValidateOnly
+    & (Join-Path $PSScriptRoot 'Create-AirDesktopShortcut.ps1')
+}
 Write-Host 'PASS: validation, rebuilt server, and rebuilt client completed.'

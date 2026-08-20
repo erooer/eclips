@@ -77,6 +77,7 @@ public class WebMain extends Sprite {
     public static var serverIP:String = "127.0.0.1";//"13.82.231.124";
     public static var serverPort:int = 80;
     private static var desktopEnvironmentConfigured:Boolean = false;
+    public static var BOOTSTRAP_READY:Boolean = false;
     public static var sWidth:Number = 800;
     public static var sHeight:Number = 600;
     protected var context:IContext;
@@ -128,6 +129,7 @@ public class WebMain extends Sprite {
         this.hackParameters();
         this.createContext();
         new AssetLoader().load();
+        BOOTSTRAP_READY = true;
         stage.scaleMode = "noScale";
         stage.quality = "low";
         //stage.wmodeGPU;

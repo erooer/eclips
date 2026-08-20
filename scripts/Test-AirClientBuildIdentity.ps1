@@ -18,7 +18,7 @@ $desktopHash = (Get-FileHash -LiteralPath $DesktopSwfPath -Algorithm SHA256).Has
 if ($airHash -ne $desktopHash) { throw 'Packaged AIR desktop client contains a stale SWF.' }
 
 $airMain = Get-Content -LiteralPath (Join-Path $root 'Cosmic-Realms-main\Client-src\src\AirMain.as') -Raw
-foreach ($required in @('stage.nativeWindow.title="Cosmic Realms - "+ClientBuildInfo.SHORT_SOURCE', '[ECLIPSE_CLIENT_BUILD]', 'AIR window title=')) {
+foreach ($required in @('stage.nativeWindow.title = "Cosmic Realms - " + ClientBuildInfo.SHORT_SOURCE', '[ECLIPSE_CLIENT_BUILD]', 'AIR window title=', '[AIR_BOOTSTRAP_READY]', '[FATAL_UNCAUGHT]')) {
     if (!$airMain.Contains($required)) { throw "AIR startup does not expose its compiled build identity: $required" }
 }
 
