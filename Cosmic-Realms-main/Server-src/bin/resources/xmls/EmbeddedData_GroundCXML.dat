@@ -1220,8 +1220,7 @@
       <File>Crystal</File>
       <Index>0xb9</Index>
     </Texture>
-    <Animate dy="2.5">Flow</Animate>
-    <Animate dx="0">Flow</Animate>
+    <Animate dx="0" dy="2.5">Flow</Animate>
     <Push/>
     <BlendPriority>1</BlendPriority>
     <Speed>1</Speed>
@@ -1232,8 +1231,7 @@
         <File>Crystal</File>
         <Index>0xd9</Index>
       </Texture>
-      <Animate dy="0">Flow</Animate>
-      <Animate dx="2.5">Flow</Animate>
+      <Animate dx="2.5" dy="0">Flow</Animate>
       <Push/>
     <BlendPriority>1</BlendPriority>
     <Speed>1</Speed>
@@ -1245,8 +1243,7 @@
         <File>Crystal</File>
         <Index>0xda</Index>
       </Texture>
-      <Animate dy="0">Flow</Animate>
-      <Animate dx="-2.5">Flow</Animate>
+      <Animate dx="-2.5" dy="0">Flow</Animate>
       <Push/>
     
     <BlendPriority>1</BlendPriority>
@@ -1259,8 +1256,7 @@
         <File>Crystal</File>
         <Index>0xba</Index>
       </Texture>
-      <Animate dy="-2.5">Flow</Animate>
-      <Animate dx="0">Flow</Animate>
+      <Animate dx="0" dy="-2.5">Flow</Animate>
       <Push/>
     
     <BlendPriority>1</BlendPriority>
